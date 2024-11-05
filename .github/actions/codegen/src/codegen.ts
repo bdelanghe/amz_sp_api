@@ -1,10 +1,31 @@
 import * as core from '@actions/core';
 import { ensureDir, copyFile, readFile, writeFile, move, readdir, remove, pathExists } from 'fs-extra';
 import * as path from 'path';
-import { runCommand } from './utils';
+import { runCommand, getDirectoryContentHash } from './utils';
 
 const CONFIG_TEMPLATE = 'config.json';
 const LIB_DIR = 'lib';
+
+export async function shouldRegenerateSdk(submodulePath: string, versionFilePath: string): Promise<boolean> {
+  const currentHash = await getDirectoryContentHash(submodulePath);
+
+  // Read previous hash from version file
+  let previousHash = '';
+  if (await pathExists(versionFilePath)) {
+    const versionData = await readFile(versionFilePath, 'utf8');
+    previousHash = JSON.parse(versionData).hash;
+  }
+
+  // Compare hashes
+  if (currentHash === previousHash) {
+    core.info('No changes in models based on folder hash.');
+    return false;
+  }
+
+  // Update the version file with the new hash
+  await writeFile(versionFilePath, JSON.stringify({ hash: currentHash }, null, 2));
+  return true;
+}
 
 /**
  * Prepares the configuration file for code generation.
@@ -54,19 +75,20 @@ export async function generateSdk(
   configFile: string,
   outputDir: string,
   language: string
-): Promise<void> {
+): Promise<number> { // Return number of generated files
   core.info(`Generating SDK for ${apiName}...`);
-  try {
-    await runCommand(
-      'swagger-codegen',
-      ['generate', '-i', filePath, '-l', language, '-c', configFile, '-o', outputDir],
-      { errorMessage: `Failed to generate SDK for ${apiName}` }
-    );
-    core.info(`SDK generated for ${apiName}.`);
-  } catch (error: any) {
-    core.error(`Error generating SDK for ${apiName}: ${error.message}`);
-    throw error;
-  }
+  const startTime = Date.now();
+  await runCommand(
+    'swagger-codegen',
+    ['generate', '-i', filePath, '-l', language, '-c', configFile, '-o', outputDir],
+    { errorMessage: `Failed to generate SDK for ${apiName}` }
+  );
+  const duration = (Date.now() - startTime) / 1000;
+  core.info(`SDK generated for ${apiName} in ${duration.toFixed(2)} seconds.`);
+
+  // Count generated files
+  const files = await readdir(outputDir);
+  return files.length;
 }
 
 /**

@@ -8,7 +8,7 @@ import {
   getGitRootDir,
   getSubmodulePath
 } from './git';
-import { prepareConfig, generateSdk, organizeGeneratedFiles } from './codegen';
+import { prepareConfig, generateSdk, organizeGeneratedFiles, shouldRegenerateSdk } from './codegen';
 import { Command } from 'commander';
 import * as core from '@actions/core';
 import { pathExists, readdir, stat } from 'fs-extra';
@@ -59,15 +59,20 @@ async function main(): Promise<void> {
     core.info(chalk.yellow('Dry run mode is enabled. No changes will be made.'));
   }
 
-  core.info(chalk.blue(`Using models directory: ${MODELS_DIR}`));
-  core.info(chalk.blue(`Generating SDKs in: ${OUTPUT_DIR}`));
-  core.info(chalk.blue(`Running in target directory: ${TARGET_DIR}`));
+  core.info(`Using models directory: ${MODELS_DIR}`);
+  core.info(`Generating SDKs in: ${OUTPUT_DIR}`);
+  core.info(`Running in target directory: ${TARGET_DIR}`);
 
-  // Check if the submodule directory exists asynchronously
   if (!(await pathExists(submodulePath))) {
-    throw new Error(
-      `Submodule directory not found at ${submodulePath}. Please ensure the submodule path is correct.`
-    );
+    throw new Error(`Submodule directory not found at ${submodulePath}. Please ensure the submodule path is correct.`);
+  }
+
+  await updateSubmodule(submodulePath);
+
+  // Check for changes using folder hash
+  if (!(await shouldRegenerateSdk(submodulePath, versionFilePath))) {
+    core.info('Exiting as there are no changes to regenerate.');
+    return;
   }
 
   try {
