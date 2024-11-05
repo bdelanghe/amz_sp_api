@@ -1,96 +1,90 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process';
+import * as core from '@actions/core';
+import { execSync, ExecSyncOptions } from 'child_process';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
-// Helper function to run shell commands
-function runCommand(command: string, options = {}) {
-  return execSync(command, { stdio: 'inherit', ...options });
+interface RunCommandOptions extends ExecSyncOptions {
+  errorMessage?: string;
 }
 
-async function main() {
-  const MODELS_DIR = 'models';
-
-  // Update the submodule to the latest commit
-  runCommand('git submodule update --remote --merge');
-
-  // Check for changes in the models submodule
-  const diffOutput = execSync('git diff HEAD@{1} HEAD || true', { cwd: MODELS_DIR }).toString().trim();
-
-  if (!diffOutput) {
-    console.log('No changes in models.');
-    process.exit(0);
-  } else {
-    console.log('Models have changed.');
+// Helper function to execute shell commands
+function runCommand(command: string, options: RunCommandOptions = {}): string | void {
+  try {
+    return execSync(command, { stdio: 'inherit', ...options }).toString().trim();
+  } catch (error: any) {
+    const errorMessage = options.errorMessage ? `${options.errorMessage}: ${error.message}` : `Error executing command '${command}': ${error.message}`;
+    core.setFailed(errorMessage);
+    throw error;
   }
+}
 
-  // Proceed with code generation
-  const modelsPath = path.join(MODELS_DIR, 'models');
-  const jsonFiles = await fs.readdir(modelsPath);
+// Function to update the submodule
+function updateSubmodule(): void {
+  core.info('Updating submodule...');
+  runCommand('git submodule update --remote --merge', {
+    errorMessage: 'Failed to update submodule.',
+  });
+  core.info('Submodule updated successfully.');
+}
 
-  for (const apiFolder of jsonFiles) {
-    const apiFolderPath = path.join(modelsPath, apiFolder);
-    const stats = await fs.stat(apiFolderPath);
-    if (stats.isDirectory()) {
-      const files = await fs.readdir(apiFolderPath);
-      for (const file of files) {
-        if (file.endsWith('.json')) {
-          const filePath = path.join(apiFolderPath, file);
-          const API_NAME = apiFolder;
-          const MODULE_NAME = API_NAME.replace(/(^|-)(\w)/g, (_, __, letter) => letter.toUpperCase());
+// Function to check for changes in the models submodule
+function hasModelsChanged(modelsDir: string): boolean {
+  try {
+    const diffOutput = execSync(`git diff HEAD@{1} HEAD || true`, { cwd: modelsDir }).toString().trim();
+    if (!diffOutput) {
+      core.info('No changes in models.');
+      return false;
+    }
+    core.info('Models have changed.');
+    return true;
+  } catch (error) {
+    core.setFailed(`Failed to check for model changes: ${error.message}`);
+    throw error;
+  }
+}
 
-          const OUTPUT_DIR = path.join('lib', API_NAME);
-          const CONFIG_FILE = path.join(OUTPUT_DIR, 'config.json');
+// Rest of your functions with core.info/core.error as appropriate
 
-          // Clean up previous generation
-          await fs.remove(OUTPUT_DIR);
-          await fs.ensureDir(OUTPUT_DIR);
+// Main function to orchestrate all tasks
+async function main(): Promise<void> {
+  try {
+    const MODELS_DIR = 'models';
 
-          // Prepare configuration
-          await fs.copyFile('config.json', CONFIG_FILE);
-          let configData = await fs.readFile(CONFIG_FILE, 'utf8');
-          configData = configData.replace(/GEMNAME/g, API_NAME).replace(/MODULENAME/g, MODULE_NAME);
-          await fs.writeFile(CONFIG_FILE, configData);
+    updateSubmodule();
 
-          // Run Swagger Codegen
-          const command = `swagger-codegen generate -i "${filePath}" -l ruby -c "${CONFIG_FILE}" -o "${OUTPUT_DIR}"`;
-          runCommand(command);
+    if (!hasModelsChanged(MODELS_DIR)) {
+      return;
+    }
 
-          // Move generated files to the appropriate locations
-          const sourceRb = path.join(OUTPUT_DIR, 'lib', `${API_NAME}.rb`);
-          const destRb = path.join('lib', `${API_NAME}.rb`);
-          await fs.move(sourceRb, destRb, { overwrite: true });
+    const modelsPath = path.join(MODELS_DIR, 'models');
+    const apiFolders = await fs.readdir(modelsPath);
 
-          const generatedFiles = await fs.readdir(path.join(OUTPUT_DIR, 'lib', API_NAME));
-          for (const generatedFile of generatedFiles) {
-            const src = path.join(OUTPUT_DIR, 'lib', API_NAME, generatedFile);
-            const dst = path.join(OUTPUT_DIR, generatedFile);
-            await fs.move(src, dst, { overwrite: true });
-          }
+    for (const apiFolder of apiFolders) {
+      const apiFolderPath = path.join(modelsPath, apiFolder);
+      const isDirectory = (await fs.stat(apiFolderPath)).isDirectory();
 
-          // Clean up unnecessary directories and files
-          await fs.remove(path.join(OUTPUT_DIR, 'lib'));
-          const filesInOutputDir = await fs.readdir(OUTPUT_DIR);
-          for (const gemspecFile of filesInOutputDir.filter(f => f.endsWith('.gemspec'))) {
-            await fs.remove(path.join(OUTPUT_DIR, gemspecFile));
-          }
-        }
+      if (!isDirectory) {
+        continue;
+      }
+
+      const jsonFiles = (await fs.readdir(apiFolderPath)).filter((file) => file.endsWith('.json'));
+      for (const jsonFile of jsonFiles) {
+        const filePath = path.join(apiFolderPath, jsonFile);
+        const outputDir = path.join('lib', apiFolder);
+        const configFile = await prepareConfig(apiFolder, outputDir);
+
+        generateSdk(apiFolder, filePath, configFile, outputDir);
+        await organizeGeneratedFiles(apiFolder, outputDir);
       }
     }
-  }
 
-  // Commit the updated submodule and generated code
-  try {
-    runCommand('git add models');
-    runCommand('git add lib');
-    runCommand('git commit -m "Update SDKs based on latest models"');
+    commitChanges();
   } catch (error) {
-    console.log('No changes to commit.');
+    core.setFailed(`Action failed with error: ${error}`);
   }
 }
 
-main().catch(error => {
-  console.error('An error occurred:', error);
-  process.exit(1);
-});
+// Execute the main function
+main();
