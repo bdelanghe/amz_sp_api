@@ -23,7 +23,11 @@ const program = new Command();
 
 program
   .option('-m, --models-dir <path>', 'Path to the models directory', 'amazon-sp-api-models')
-  .option('-l, --language <lang>', 'Target language for code generation', process.env.DEFAULT_LANGUAGE || 'ruby')
+  .option(
+    '-l, --language <lang>',
+    'Target language for code generation',
+    process.env.DEFAULT_LANGUAGE || 'ruby'
+  )
   .option('-o, --output-dir <path>', 'Output directory for generated code', DEFAULT_OUTPUT_DIR)
   .option('--dry-run', 'Run without making any changes')
   .option('--target-dir <path>', 'Target directory for the project root', getGitRootDir())
@@ -31,10 +35,11 @@ program
 
 function validateLanguage(lang: string): string {
   const supportedLanguages = ['ruby', 'java', 'python']; // Add all supported languages
-  if (!supportedLanguages.includes(lang)) {
+  const normalizedLang = lang.toLowerCase();
+  if (!supportedLanguages.includes(normalizedLang)) {
     throw new Error(`Unsupported language: ${lang}`);
   }
-  return lang;
+  return normalizedLang;
 }
 
 const options = program.opts();
@@ -59,15 +64,22 @@ async function main(): Promise<void> {
 
   // Check if the submodule directory exists asynchronously
   if (!(await pathExists(submodulePath))) {
-    throw new Error(`Submodule directory not found at ${submodulePath}. Please ensure the submodule path is correct.`);
+    throw new Error(
+      `Submodule directory not found at ${submodulePath}. Please ensure the submodule path is correct.`
+    );
   }
 
-  // Update submodule
-  await updateSubmodule(submodulePath);
+  try {
+    // Update submodule
+    await updateSubmodule(submodulePath);
 
-  // Check if models have changed
-  if (!(await hasModelsChanged(MODELS_DIR))) {
-    core.info('No changes detected in models. Exiting.');
+    // Check if models have changed
+    if (!(await hasModelsChanged(MODELS_DIR))) {
+      core.info('No changes detected in models. Exiting.');
+      return;
+    }
+  } catch (error: any) {
+    core.setFailed(`Initialization failed: ${error.message}`);
     return;
   }
 
