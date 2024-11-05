@@ -1,0 +1,7 @@
+name: 'Code Generation Action'
+description: 'Generates SDKs based on the latest models.'
+inputs: {}
+outputs: {}
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
