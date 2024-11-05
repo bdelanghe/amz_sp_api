@@ -71,19 +71,6 @@ export async function updateSubmodule(submodulePath: string): Promise<void> {
 }
 
 /**
- * Retrieves the commit hash of the submodule
- * @param submodulePath - The path to the submodule
- */
-export async function getSubmoduleCommitHash(submodulePath: string): Promise<string> {
-  try {
-    const hash = execSync('git rev-parse HEAD', { cwd: submodulePath }).toString().trim();
-    return hash;
-  } catch (error) {
-    throw new Error(`Failed to retrieve commit hash for submodule at ${submodulePath}: ${error}`);
-  }
-}
-
-/**
  * Checks if the models have changed
  * @param modelsDir - The directory containing the models
  * @returns True if models have changed, false otherwise

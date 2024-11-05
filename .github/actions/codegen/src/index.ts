@@ -6,8 +6,7 @@ import {
   commitChanges,
   createPullRequest,
   getGitRootDir,
-  getSubmodulePath,
-  getSubmoduleCommitHash
+  getSubmodulePath
 } from './git';
 import { prepareConfig, generateSdk, organizeGeneratedFiles } from './codegen';
 import { Command } from 'commander';
