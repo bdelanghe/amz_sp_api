@@ -49,13 +49,16 @@ export function updateSubmodule(submodulePath: string): void {
 
 export function hasModelsChanged(modelsDir: string): boolean {
   try {
-    const diffOutput = runCommand('git', ['diff', '--name-only', 'HEAD~1', 'HEAD', '--', modelsDir], { errorMessage: 'Failed to check for model changes' });
+    const diffOutput = runCommand('git', ['diff', '--name-only', '--relative', '--', modelsDir], {
+      errorMessage: 'Failed to check for model changes',
+    });
 
     if (!diffOutput) {
       core.info('No changes in models.');
       return false;
     }
-    core.info('Models have changed.');
+
+    core.info('Detected changes in models.');
     return true;
   } catch (error) {
     core.setFailed(`Failed to check for model changes: ${error}`);

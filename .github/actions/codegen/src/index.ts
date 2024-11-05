@@ -29,6 +29,7 @@ const submodulePath = getSubmodulePath(TARGET_DIR);
 
 async function main(): Promise<void> {
   if (DRY_RUN) {
+    process.env.DRY_RUN = 'true';
     core.info(chalk.yellow('Dry run mode is enabled. No changes will be made.'));
   }
 
