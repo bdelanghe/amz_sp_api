@@ -63,25 +63,18 @@ async function main(): Promise<void> {
   core.info(`Generating SDKs in: ${OUTPUT_DIR}`);
   core.info(`Running in target directory: ${TARGET_DIR}`);
 
-  if (!(await pathExists(submodulePath))) {
-    throw new Error(`Submodule directory not found at ${submodulePath}. Please ensure the submodule path is correct.`);
-  }
-
-  await updateSubmodule(submodulePath);
-
-  // Check for changes using folder hash
-  if (!(await shouldRegenerateSdk(submodulePath, versionFilePath))) {
-    core.info('Exiting as there are no changes to regenerate.');
-    return;
-  }
-
   try {
+
+    if (!(await pathExists(submodulePath))) {
+      throw new Error(`Submodule directory not found at ${submodulePath}. Please ensure the submodule path is correct.`);
+    }
+
     // Update submodule
     await updateSubmodule(submodulePath);
 
-    // Check if models have changed
-    if (!(await hasModelsChanged(MODELS_DIR))) {
-      core.info('No changes detected in models. Exiting.');
+    // Check for changes using folder hash
+    if (!(await shouldRegenerateSdk(submodulePath, versionFilePath))) {
+      core.info('Exiting as there are no changes to regenerate.');
       return;
     }
   } catch (error: any) {
@@ -110,7 +103,7 @@ async function main(): Promise<void> {
         const outputDir = path.join(OUTPUT_DIR, apiFolder);
         const configFile = await prepareConfig(apiFolder, outputDir, CONFIG_TEMPLATE);
 
-        await generateSdk(apiFolder, filePath, configFile, outputDir, LANGUAGE);
+        await generateSdk(apiFolder, filePath, configFile, outputDir, LANGUAGE, versionFilePath);
         await organizeGeneratedFiles(apiFolder, outputDir);
         changedApis.push(apiFolder);
       }
