@@ -43,13 +43,12 @@ const options = program.opts();
 const LANGUAGE = validateLanguage(options.language);
 const DRY_RUN = options.dryRun || false;
 
-const TARGET_DIR = path.resolve(options.targetDir) || getGitRootDir();
-const MODELS_DIR = path.resolve(TARGET_DIR, options.modelsDir);
-const OUTPUT_DIR = path.resolve(TARGET_DIR, options.outputDir);
+const TARGET_DIR = options.targetDir ? path.resolve(options.targetDir) : getGitRootDir();
+const MODELS_DIR = options.modelsDir ? path.resolve(TARGET_DIR, options.modelsDir) : path.resolve(TARGET_DIR, 'amazon-sp-api-models');
+const OUTPUT_DIR = options.outputDir ? path.resolve(TARGET_DIR, options.outputDir) : path.resolve(TARGET_DIR, 'lib');
 const CONFIG_TEMPLATE = path.resolve(TARGET_DIR, 'config.json');
-const DEFAULT_OUTPUT_DIR = path.resolve(TARGET_DIR, 'lib');
 const submodulePath = getSubmodulePath(TARGET_DIR);
-const versionFilePath = path.join(TARGET_DIR, 'sdk_version.json'); // Adjust this path as needed
+const versionFilePath = path.join(TARGET_DIR, 'sdk_version.json');
 
 /**
  * Main function that orchestrates the SDK generation process.
