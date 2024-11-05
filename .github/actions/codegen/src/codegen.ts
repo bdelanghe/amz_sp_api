@@ -1,19 +1,16 @@
-#!/usr/bin/env node
-
-import { execSync, ExecSyncOptions } from 'child_process';
+import spawn from 'cross-spawn';
 import * as core from '@actions/core';
 import * as fs from 'fs-extra';
 import * as github from '@actions/github';
 import * as path from 'path';
-import spawn from 'cross-spawn';
 
 interface RunCommandOptions {
   errorMessage?: string;
 }
 
 // Helper function to execute shell commands cross-platform
-function runCommand(command: string, options: RunCommandOptions = {}): string {
-  const result = spawn.sync(command, [], { stdio: 'pipe', shell: true });
+function runCommand(command: string, args: string[], options: RunCommandOptions = {}): string {
+  const result = spawn.sync(command, args, { stdio: 'pipe', shell: true });
 
   if (result.error) {
     const errorMessage = options.errorMessage ? `${options.errorMessage}: ${result.error.message}` : `Error executing command '${command}': ${result.error.message}`;
@@ -27,27 +24,16 @@ function runCommand(command: string, options: RunCommandOptions = {}): string {
 // Function to update the submodule
 function updateSubmodule(): void {
   core.info('Initializing and updating submodule...');
-  runCommand('git submodule init', {
-    errorMessage: 'Failed to initialize submodule.',
-  });
-  runCommand('git submodule update --remote --merge', {
-    errorMessage: 'Failed to update submodule.',
-  });
+  runCommand('git', ['submodule', 'init'], { errorMessage: 'Failed to initialize submodule.' });
+  runCommand('git', ['submodule', 'update', '--remote', '--merge'], { errorMessage: 'Failed to update submodule.' });
   core.info('Submodule updated successfully.');
 }
 
 // Function to check for changes in the models submodule
 function hasModelsChanged(modelsDir: string): boolean {
   try {
-    // Use cross-spawn to execute the command in a cross-platform way
-    const result = spawn.sync('git', ['diff', 'HEAD@{1}', 'HEAD'], { cwd: modelsDir, stdio: 'pipe', shell: true });
+    const diffOutput = runCommand('git', ['diff', 'HEAD@{1}', 'HEAD'], { errorMessage: 'Failed to check for model changes' });
     
-    if (result.error) {
-      core.setFailed(`Failed to check for model changes: ${result.error.message}`);
-      throw result.error;
-    }
-    
-    const diffOutput = result.stdout ? result.stdout.toString().trim() : '';
     if (!diffOutput) {
       core.info('No changes in models.');
       return false;
@@ -55,11 +41,7 @@ function hasModelsChanged(modelsDir: string): boolean {
     core.info('Models have changed.');
     return true;
   } catch (error) {
-    if (error instanceof Error) {
-      core.setFailed(`Failed to check for model changes: ${error.message}`);
-    } else {
-      core.setFailed('Failed to check for model changes: Unknown error');
-    }
+    core.setFailed(`Failed to check for model changes: ${error}`);
     throw error;
   }
 }
@@ -81,8 +63,7 @@ async function prepareConfig(apiName: string, outputDir: string): Promise<string
 // Function to generate code for each API
 function generateSdk(apiName: string, filePath: string, configFile: string, outputDir: string): void {
   core.info(`Generating SDK for ${apiName}...`);
-  const command = `swagger-codegen generate -i "${filePath}" -l ruby -c "${configFile}" -o "${outputDir}"`;
-  runCommand(command, { errorMessage: `Failed to generate SDK for ${apiName}` });
+  runCommand('swagger-codegen', ['generate', '-i', filePath, '-l', 'ruby', '-c', configFile, '-o', outputDir], { errorMessage: `Failed to generate SDK for ${apiName}` });
   core.info(`SDK generated for ${apiName}.`);
 }
 
@@ -120,33 +101,23 @@ async function removeGemspecFiles(dir: string): Promise<void> {
 function commitChanges(branchName: string): void {
   core.info('Committing changes...');
   try {
-    // Configure git user
-    runCommand('git config user.name "github-actions[bot]"');
-    runCommand('git config user.email "github-actions[bot]@users.noreply.github.com"');
+    runCommand('git', ['config', 'user.name', '"github-actions[bot]"']);
+    runCommand('git', ['config', 'user.email', '"github-actions[bot]@users.noreply.github.com"']);
 
-    // Fetch all branches
-    runCommand('git fetch');
+    runCommand('git', ['fetch']);
 
-    // Delete remote branch if it exists
     try {
-      runCommand(`git push origin --delete ${branchName}`);
+      runCommand('git', ['push', 'origin', '--delete', branchName]);
       core.info(`Deleted existing remote branch ${branchName}.`);
     } catch {
       core.info(`No existing remote branch ${branchName} to delete.`);
     }
 
-    // Create a new branch or reset it
-    runCommand(`git checkout -B ${branchName}`);
-
-    // Stage changes
-    runCommand('git add models');
-    runCommand('git add lib');
-
-    // Commit changes
-    runCommand('git commit -m "Update SDKs based on latest models"');
-
-    // Push the new branch
-    runCommand(`git push origin ${branchName}`);
+    runCommand('git', ['checkout', '-B', branchName]);
+    runCommand('git', ['add', 'models']);
+    runCommand('git', ['add', 'lib']);
+    runCommand('git', ['commit', '-m', '"Update SDKs based on latest models"']);
+    runCommand('git', ['push', 'origin', branchName]);
     core.info(`Changes pushed to branch ${branchName}.`);
   } catch (error: any) {
     core.setFailed(`Failed to commit and push changes: ${error.message}`);
@@ -174,7 +145,6 @@ async function createPullRequest(branchName: string): Promise<void> {
 
     core.info(`Creating a pull request from ${head} to ${base}.`);
 
-    // Check if a PR from this branch already exists
     const { data: existingPRs } = await octokit.rest.pulls.list({
       owner,
       repo,
@@ -187,7 +157,6 @@ async function createPullRequest(branchName: string): Promise<void> {
       return;
     }
 
-    // Create a new pull request
     const { data: pullRequest } = await octokit.rest.pulls.create({
       owner,
       repo,
@@ -207,7 +176,7 @@ async function createPullRequest(branchName: string): Promise<void> {
 // Main function to orchestrate all tasks
 async function main(): Promise<void> {
   try {
-    const MODELS_DIR = 'models';
+    const MODELS_DIR = process.env.MODELS_DIR || 'amazon-sp-api-models';
     const BRANCH_NAME = 'automated/sdk-update';
 
     updateSubmodule();
@@ -238,15 +207,11 @@ async function main(): Promise<void> {
       }
     }
 
-    // Commit changes to the new branch
     commitChanges(BRANCH_NAME);
-
-    // Create a pull request
     await createPullRequest(BRANCH_NAME);
   } catch (error) {
     core.setFailed(`Action failed with error: ${error}`);
   }
 }
 
-// Execute the main function
 main();
