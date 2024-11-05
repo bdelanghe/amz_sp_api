@@ -16,9 +16,6 @@ import * as path from 'path';
 import chalk from 'chalk';
 import ora from 'ora';
 
-const CONFIG_TEMPLATE = 'config.json';
-const DEFAULT_OUTPUT_DIR = 'lib';
-
 const program = new Command();
 
 program
@@ -28,9 +25,9 @@ program
     'Target language for code generation',
     process.env.DEFAULT_LANGUAGE || 'ruby'
   )
-  .option('-o, --output-dir <path>', 'Output directory for generated code', DEFAULT_OUTPUT_DIR)
+  .option('-o, --output-dir <path>', 'Output directory for generated code')
   .option('--dry-run', 'Run without making any changes')
-  .option('--target-dir <path>', 'Target directory for the project root', getGitRootDir())
+  .option('--target-dir <path>', 'Target directory for the project root')
   .parse(process.argv);
 
 function validateLanguage(lang: string): string {
@@ -43,11 +40,14 @@ function validateLanguage(lang: string): string {
 }
 
 const options = program.opts();
-const MODELS_DIR = path.resolve(options.targetDir, options.modelsDir);
-const OUTPUT_DIR = path.resolve(options.targetDir, options.outputDir);
 const LANGUAGE = validateLanguage(options.language);
 const DRY_RUN = options.dryRun || false;
-const TARGET_DIR = path.resolve(options.targetDir);
+
+const TARGET_DIR = path.resolve(options.targetDir) || getGitRootDir();
+const MODELS_DIR = path.resolve(TARGET_DIR, options.modelsDir);
+const OUTPUT_DIR = path.resolve(TARGET_DIR, options.outputDir);
+const CONFIG_TEMPLATE = path.resolve(TARGET_DIR, 'config.json');
+const DEFAULT_OUTPUT_DIR = path.resolve(TARGET_DIR, 'lib');
 const submodulePath = getSubmodulePath(TARGET_DIR);
 const versionFilePath = path.join(TARGET_DIR, 'sdk_version.json'); // Adjust this path as needed
 
