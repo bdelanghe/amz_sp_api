@@ -1,27 +1,23 @@
 {
-  "name": "amz_sp_api",
+  "name": "codegen-action",
   "version": "1.0.0",
-  "description": "AmzSpApi - Unofficial Ruby gem for the Amazon Selling Partner API (SP-API)",
-  "main": "index.js",
-  "directories": {
-    "lib": "lib"
-  },
+  "description": "GitHub Action to generate SDKs based on Amazon SP-API models",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "ncc build src/codegen.ts -o dist"
+    "build": "ncc build src/codegen.ts -o dist",
+    "test": "echo \"No tests specified\""
   },
-  "keywords": [],
   "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/fs-extra": "^11.0.4",
-    "@types/node": "^22.9.0",
-    "@vercel/ncc": "^0.38.2",
-    "typescript": "^5.6.3"
-  },
+  "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.0",
     "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^18.17.1",
+    "@vercel/ncc": "^0.38.0",
+    "typescript": "^5.2.2"
   }
 }

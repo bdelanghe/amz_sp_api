@@ -1,0 +1,17 @@
+- name: Set up Node.js
+  uses: actions/setup-node@v3
+  with:
+    node-version: '16'
+
+- name: Install Dependencies
+  working-directory: ./.github/actions/codegen
+  run: npm install
+
+- name: Build Action
+  working-directory: ./.github/actions/codegen
+  run: npm run build
+
+- name: Run Code Generation Action
+  uses: ./.github/actions/codegen
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
