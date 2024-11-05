@@ -1,0 +1,3 @@
+[submodule "amazon-sp-api-models"]
+	path = amazon-sp-api-models
+	url = https://github.com/amzn/selling-partner-api-models.git
