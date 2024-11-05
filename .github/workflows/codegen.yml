@@ -1,17 +1,50 @@
-- name: Set up Node.js
-  uses: actions/setup-node@v3
-  with:
-    node-version: '16'
+name: Code Generation
 
-- name: Install Dependencies
-  working-directory: ./.github/actions/codegen
-  run: npm install
+on:
+  schedule:
+    - cron: '0 0 * * *' # Every day at midnight UTC
+  workflow_dispatch:
 
-- name: Build Action
-  working-directory: ./.github/actions/codegen
-  run: npm run build
+permissions:
+  contents: write
+  pull-requests: write
 
-- name: Run Code Generation Action
-  uses: ./.github/actions/codegen
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  generate-sdk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository (with submodules)
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Set up Java (required for Swagger Codegen)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      - name: Install Swagger Codegen
+        run: |
+          wget https://repo1.maven.org/maven2/io/swagger/swagger-codegen-cli/2.4.27/swagger-codegen-cli-2.4.27.jar -O swagger-codegen-cli.jar
+          echo 'swagger-codegen() { java -jar $PWD/swagger-codegen-cli.jar "$@"; }' >> $BASH_ENV
+          source $BASH_ENV
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install Dependencies
+        working-directory: ./.github/actions/codegen
+        run: npm install
+
+      - name: Build Action
+        working-directory: ./.github/actions/codegen
+        run: npm run build
+
+      - name: Run Code Generation Action
+        uses: ./.github/actions/codegen
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
