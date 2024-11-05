@@ -3,7 +3,7 @@ import { ensureDir, copyFile, readFile, writeFile, move, readdir, remove, pathEx
 import * as path from 'path';
 import { runCommand, getDirectoryContentHash, getStoredHash, storeHash } from './utils';
 
-const CONFIG_TEMPLATE = 'config.json';
+const CONFIG_TEMPLATE = path.resolve(__dirname, 'config.json'); // Ensure the correct path to config.json
 const LIB_DIR = 'lib';
 
 /**
@@ -118,29 +118,35 @@ export async function organizeGeneratedFiles(apiName: string, outputDir: string)
  * @param configTemplate - The path to the configuration template.
  * @returns The path to the prepared configuration file.
  */
-export async function prepareConfig(
-  apiName: string,
-  outputDir: string,
-  configTemplate: string
-): Promise<string> {
+export async function prepareConfig(apiName: string, outputDir: string, configTemplate: string): Promise<string> {
+  core.info(`Preparing configuration for API: ${apiName}`);
+  
+  // Ensure output directory exists
   await ensureDir(outputDir);
   const configFilePath = path.join(outputDir, 'config.json');
+
+  // Check if config template exists
+  if (!(await pathExists(configTemplate))) {
+    throw new Error(`Configuration template not found at ${configTemplate}. Ensure config.json is available.`);
+  }
+  core.info(`Found configuration template at ${configTemplate}`);
+  
+  // Copy the config template to the output directory
   await copyFile(configTemplate, configFilePath);
+  core.info(`Copied configuration template to ${configFilePath}`);
 
+  // Read and modify the config data
   let configData = await readFile(configFilePath, 'utf8');
-
-  // Generate the actual gemName and moduleName
   const gemName = apiName;
-  const moduleName = `AmzSpApi::${apiName.replace(
-    /(^|-)(\w)/g,
-    (_: string, __: string, letter: string) => letter.toUpperCase()
-  )}`;
+  const moduleName = `AmzSpApi::${apiName.replace(/(^|-)(\w)/g, (_: string, __: string, letter: string) => letter.toUpperCase())}`;
 
   // Replace placeholders
   configData = configData.replace(/GEMNAME/g, gemName).replace(/MODULENAME/g, moduleName);
 
-  // Write the updated config
+  // Write the modified config data back to the file
   await writeFile(configFilePath, configData);
+  core.info(`Configured gemName as ${gemName} and moduleName as ${moduleName}`);
+  core.info(`Configuration prepared successfully for ${apiName}`);
 
   return configFilePath;
 }
