@@ -1,10 +1,37 @@
 // git.ts
 
 import { runCommand } from './utils';
+import { execSync } from 'child_process';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+
+// Automatically get the path of the first submodule from .gitmodules
+export function getSubmodulePath(rootDir: string): string {
+  try {
+    const submoduleRelativePath = execSync(
+      `git config --file .gitmodules --name-only --get-regexp path | head -n 1 | xargs git config --file .gitmodules --get`,
+      { cwd: rootDir, encoding: 'utf-8' }
+    ).trim();
+
+    if (!submoduleRelativePath) {
+      throw new Error('No submodule path found. Ensure a submodule is defined in .gitmodules.');
+    }
+
+    return path.join(rootDir, submoduleRelativePath);
+  } catch (error) {
+    throw new Error(`Failed to retrieve the path for the submodule. Ensure a submodule exists and is initialized.`);
+  }
+}
+
+export function getGitRootDir(): string {
+  try {
+    return execSync('git rev-parse --show-toplevel').toString().trim();
+  } catch (error) {
+    throw new Error('Could not find Git root directory. Ensure you are running this script in a Git repository.');
+  }
+}
 
 export function updateSubmodule(submodulePath: string): void {
   core.info('Initializing and updating submodule...');

@@ -1,6 +1,7 @@
 {
   "gemName": "GEMNAME",
   "moduleName": "AmzSpApi::MODULENAME",
+  "submodulePath": "amazon-sp-api-models",
   "gemVersion": "0.1.0",
   "gemAuthor": "GEMAUTHOR",
   "gemAuthorEmail": "GEMAUTHOREMAIL",

@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 
+import { updateSubmodule, hasModelsChanged, commitChanges, createPullRequest, getGitRootDir, getSubmodulePath} from './git';
+import { prepareConfig, generateSdk, organizeGeneratedFiles } from './codegen';
 import { Command } from 'commander';
 import * as core from '@actions/core';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import chalk from 'chalk';
 import ora from 'ora';
-import { runCommand } from './utils';
-import { updateSubmodule, hasModelsChanged, commitChanges, createPullRequest } from './git';
-import { prepareConfig, generateSdk, organizeGeneratedFiles } from './codegen';
 
 const program = new Command();
 
@@ -17,13 +16,16 @@ program
   .option('-l, --language <lang>', 'Target language for code generation', 'ruby')
   .option('-o, --output-dir <path>', 'Output directory for generated code', 'lib')
   .option('--dry-run', 'Run without making any changes')
+  .option('--target-dir <path>', 'Target directory for the project root', getGitRootDir())
   .parse(process.argv);
 
 const options = program.opts();
 const MODELS_DIR = path.resolve(options.modelsDir);
-const LANGUAGE = options.language;
 const OUTPUT_DIR = path.resolve(options.outputDir);
+const LANGUAGE = options.language;
 const DRY_RUN = options.dryRun || false;
+const TARGET_DIR = path.resolve(options.targetDir);
+const submodulePath = getSubmodulePath(TARGET_DIR);
 
 async function main(): Promise<void> {
   if (DRY_RUN) {
@@ -32,8 +34,9 @@ async function main(): Promise<void> {
 
   core.info(chalk.blue(`Using models directory: ${MODELS_DIR}`));
   core.info(chalk.blue(`Generating SDKs in: ${OUTPUT_DIR}`));
+  core.info(chalk.blue(`Running in target directory: ${TARGET_DIR}`));
 
-  updateSubmodule(MODELS_DIR);
+  updateSubmodule(submodulePath);
 
   if (!hasModelsChanged(MODELS_DIR)) {
     core.info('No changes detected in models. Exiting.');
@@ -43,7 +46,7 @@ async function main(): Promise<void> {
   const spinner = ora('Generating SDKs...').start();
 
   try {
-    const modelsPath = path.join(MODELS_DIR, 'models');
+    const modelsPath = path.join(TARGET_DIR, MODELS_DIR, 'models');
     const apiFolders = await fs.readdir(modelsPath);
     const changedApis: string[] = [];
 
