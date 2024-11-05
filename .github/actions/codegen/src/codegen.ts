@@ -1,29 +1,35 @@
 #!/usr/bin/env node
 
-import * as core from '@actions/core';
-import * as github from '@actions/github';
 import { execSync, ExecSyncOptions } from 'child_process';
+import * as core from '@actions/core';
 import * as fs from 'fs-extra';
+import * as github from '@actions/github';
 import * as path from 'path';
+import spawn from 'cross-spawn';
 
-interface RunCommandOptions extends ExecSyncOptions {
+interface RunCommandOptions {
   errorMessage?: string;
 }
 
-// Helper function to execute shell commands
-function runCommand(command: string, options: RunCommandOptions = {}): string | void {
-  try {
-    return execSync(command, { stdio: 'inherit', ...options }).toString().trim();
-  } catch (error: any) {
-    const errorMessage = options.errorMessage ? `${options.errorMessage}: ${error.message}` : `Error executing command '${command}': ${error.message}`;
+// Helper function to execute shell commands cross-platform
+function runCommand(command: string, options: RunCommandOptions = {}): string {
+  const result = spawn.sync(command, [], { stdio: 'pipe', shell: true });
+
+  if (result.error) {
+    const errorMessage = options.errorMessage ? `${options.errorMessage}: ${result.error.message}` : `Error executing command '${command}': ${result.error.message}`;
     core.setFailed(errorMessage);
-    throw error;
+    throw result.error;
   }
+
+  return result.stdout ? result.stdout.toString().trim() : '';
 }
 
 // Function to update the submodule
 function updateSubmodule(): void {
-  core.info('Updating submodule...');
+  core.info('Initializing and updating submodule...');
+  runCommand('git submodule init', {
+    errorMessage: 'Failed to initialize submodule.',
+  });
   runCommand('git submodule update --remote --merge', {
     errorMessage: 'Failed to update submodule.',
   });
@@ -33,7 +39,15 @@ function updateSubmodule(): void {
 // Function to check for changes in the models submodule
 function hasModelsChanged(modelsDir: string): boolean {
   try {
-    const diffOutput = execSync(`git diff HEAD@{1} HEAD || true`, { cwd: modelsDir }).toString().trim();
+    // Use cross-spawn to execute the command in a cross-platform way
+    const result = spawn.sync('git', ['diff', 'HEAD@{1}', 'HEAD'], { cwd: modelsDir, stdio: 'pipe', shell: true });
+    
+    if (result.error) {
+      core.setFailed(`Failed to check for model changes: ${result.error.message}`);
+      throw result.error;
+    }
+    
+    const diffOutput = result.stdout ? result.stdout.toString().trim() : '';
     if (!diffOutput) {
       core.info('No changes in models.');
       return false;

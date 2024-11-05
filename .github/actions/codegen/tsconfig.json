@@ -4,6 +4,7 @@
     "module": "CommonJS",
     "lib": ["ES2019"],
     "rootDir": "src",
+    "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
