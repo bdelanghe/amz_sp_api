@@ -4,10 +4,18 @@ import { runCommand } from './utils';
 import { execSync } from 'child_process';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import * as fs from 'fs-extra';
+import { pathExists } from 'fs-extra';
 import * as path from 'path';
 
-// Automatically get the path of the first submodule from .gitmodules
+const GIT_USER_NAME = 'github-actions[bot]';
+const GIT_USER_EMAIL = 'github-actions[bot]@users.noreply.github.com';
+const DEFAULT_BRANCH = 'main';
+
+/**
+ * Automatically gets the path of the first submodule from .gitmodules
+ * @param rootDir - The root directory of the Git repository
+ * @returns The absolute path to the submodule
+ */
 export function getSubmodulePath(rootDir: string): string {
   try {
     const submoduleRelativePath = execSync(
@@ -25,6 +33,10 @@ export function getSubmodulePath(rootDir: string): string {
   }
 }
 
+/**
+ * Gets the root directory of the Git repository
+ * @returns The absolute path to the Git root directory
+ */
 export function getGitRootDir(): string {
   try {
     return execSync('git rev-parse --show-toplevel').toString().trim();
@@ -33,23 +45,38 @@ export function getGitRootDir(): string {
   }
 }
 
-export function updateSubmodule(submodulePath: string): void {
+/**
+ * Initializes and updates the Git submodule
+ * @param submodulePath - The path to the submodule
+ */
+export async function updateSubmodule(submodulePath: string): Promise<void> {
   core.info('Initializing and updating submodule...');
-  runCommand('git', ['submodule', 'update', '--init', '--recursive'], { errorMessage: 'Failed to initialize and update submodule.' });
-  core.info('Submodule updated successfully.');
+  try {
+    await runCommand('git', ['submodule', 'update', '--init', '--recursive'], {
+      errorMessage: 'Failed to initialize and update submodule.',
+    });
 
-  // Check if the submodule directory exists
-  if (!fs.existsSync(submodulePath)) {
-    core.setFailed(`Submodule directory not found at ${submodulePath}. Please ensure the submodule path is correct.`);
-    throw new Error(`Submodule directory not found at ${submodulePath}`);
+    core.info('Submodule updated successfully.');
+
+    // Check if the submodule directory exists asynchronously
+    if (!(await pathExists(submodulePath))) {
+      throw new Error(`Submodule directory not found at ${submodulePath}. Please ensure the submodule path is correct.`);
+    }
+
+    core.info(`Submodule initialized and updated at path: ${submodulePath}`);
+  } catch (error: any) {
+    throw new Error(`Failed to update submodule: ${error.message}`);
   }
-
-  core.info(`Submodule initialized and updated at path: ${submodulePath}`);
 }
 
-export function hasModelsChanged(modelsDir: string): boolean {
+/**
+ * Checks if the models have changed
+ * @param modelsDir - The directory containing the models
+ * @returns True if models have changed, false otherwise
+ */
+export async function hasModelsChanged(modelsDir: string): Promise<boolean> {
   try {
-    const diffOutput = runCommand('git', ['diff', '--name-only', '--relative', '--', modelsDir], {
+    const diffOutput = await runCommand('git', ['diff', '--name-only', '--relative', '--', modelsDir], {
       errorMessage: 'Failed to check for model changes',
     });
 
@@ -60,45 +87,65 @@ export function hasModelsChanged(modelsDir: string): boolean {
 
     core.info('Detected changes in models.');
     return true;
-  } catch (error) {
-    core.setFailed(`Failed to check for model changes: ${error}`);
-    throw error;
+  } catch (error: any) {
+    throw new Error(`Failed to check for model changes: ${error.message}`);
   }
 }
 
-export function commitChanges(branchName: string, changedApis: string[]): void {
-  core.info('Committing changes...');
-  try {
-    runCommand('git', ['config', 'user.name', 'github-actions[bot]']);
-    runCommand('git', ['config', 'user.email', 'github-actions[bot]@users.noreply.github.com']);
+/**
+ * Validates the branch name to ensure it is safe
+ * @param branchName - The branch name to validate
+ */
+function validateBranchName(branchName: string): void {
+  if (!/^[\w.-]+$/.test(branchName)) {
+    throw new Error(`Invalid branch name: ${branchName}`);
+  }
+}
 
-    runCommand('git', ['fetch']);
+/**
+ * Commits changes and pushes to a new branch
+ * @param branchName - The name of the branch to create
+ * @param changedApis - The list of APIs that have changed
+ */
+export async function commitChanges(branchName: string, changedApis: string[]): Promise<void> {
+  core.info('Committing changes...');
+
+  // Validate branchName
+  validateBranchName(branchName);
+
+  try {
+    await runCommand('git', ['config', 'user.name', GIT_USER_NAME]);
+    await runCommand('git', ['config', 'user.email', GIT_USER_EMAIL]);
+
+    await runCommand('git', ['fetch']);
 
     try {
-      runCommand('git', ['push', 'origin', '--delete', branchName]);
+      await runCommand('git', ['push', 'origin', '--delete', branchName]);
       core.info(`Deleted existing remote branch ${branchName}.`);
-    } catch {
+    } catch (error) {
       core.info(`No existing remote branch ${branchName} to delete.`);
     }
 
-    runCommand('git', ['checkout', '-B', branchName]);
-    runCommand('git', ['add', '.']);
-    runCommand('git', ['commit', '-m', `Update SDKs for APIs: ${changedApis.join(', ')}`]);
-    runCommand('git', ['push', 'origin', branchName]);
+    await runCommand('git', ['checkout', '-B', branchName]);
+    await runCommand('git', ['add', '.']);
+    await runCommand('git', ['commit', '-m', `Update SDKs for APIs: ${changedApis.join(', ')}`]);
+    await runCommand('git', ['push', 'origin', branchName]);
     core.info(`Changes pushed to branch ${branchName}.`);
   } catch (error: any) {
-    core.setFailed(`Failed to commit and push changes: ${error.message}`);
-    throw error;
+    throw new Error(`Failed to commit and push changes: ${error.message}`);
   }
 }
 
+/**
+ * Creates a pull request from the specified branch to the main branch
+ * @param branchName - The name of the branch from which to create the PR
+ */
 export async function createPullRequest(branchName: string): Promise<void> {
   try {
     const githubToken = process.env.GITHUB_TOKEN;
 
     if (!githubToken) {
-      core.setFailed('GITHUB_TOKEN is not available. Please make sure it is provided as an environment variable.');
-      return;
+      throw new Error('GITHUB_TOKEN is not available. Please make sure it is provided as an environment variable.');
     }
 
     const octokit = github.getOctokit(githubToken);
@@ -106,7 +153,7 @@ export async function createPullRequest(branchName: string): Promise<void> {
 
     const title = 'Automated SDK Update';
     const body = 'This PR was created automatically by the codegen action.';
-    const base = 'main';
+    const base = DEFAULT_BRANCH;
     const head = branchName;
 
     core.info(`Creating a pull request from ${head} to ${base}.`);
@@ -134,7 +181,6 @@ export async function createPullRequest(branchName: string): Promise<void> {
 
     core.info(`Pull request created: #${pullRequest.number}`);
   } catch (error: any) {
-    core.setFailed(`Failed to create pull request: ${error.message}`);
-    throw error;
+    throw new Error(`Failed to create pull request: ${error.message}`);
   }
 }

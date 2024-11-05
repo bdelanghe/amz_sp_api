@@ -1,32 +1,47 @@
-// utils.ts
-
-import spawn from 'cross-spawn';
-import * as core from '@actions/core';
+import { spawn } from 'child_process';
 
 interface RunCommandOptions {
   errorMessage?: string;
   cwd?: string;
 }
 
-export function runCommand(command: string, args: string[], options: RunCommandOptions = {}): string {
-  const result = spawn.sync(command, args, { stdio: 'pipe', shell: true, cwd: options.cwd });
+/**
+ * Executes a command asynchronously
+ * @param command - The command to execute
+ * @param args - The list of string arguments
+ * @param options - Options including errorMessage and cwd
+ * @returns The stdout output of the command
+ */
+export async function runCommand(command: string, args: string[], options: RunCommandOptions = {}): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { shell: true, cwd: options.cwd });
+    let stdout = '';
+    let stderr = '';
 
-  if (result.error) {
-    const errorMessage = options.errorMessage
-      ? `${options.errorMessage}: ${result.error.message}`
-      : `Error executing command '${command}': ${result.error.message}`;
-    core.setFailed(errorMessage);
-    throw result.error;
-  }
+    child.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
 
-  if (result.status !== 0) {
-    const stderr = result.stderr ? result.stderr.toString() : '';
-    const errorMessage = options.errorMessage
-      ? `${options.errorMessage}: ${stderr}`
-      : `Command '${command}' exited with code ${result.status}: ${stderr}`;
-    core.setFailed(errorMessage);
-    throw new Error(errorMessage);
-  }
+    child.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
 
-  return result.stdout ? result.stdout.toString().trim() : '';
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve(stdout.trim());
+      } else {
+        const errorMessage = options.errorMessage
+          ? `${options.errorMessage}: ${stderr}`
+          : `Command '${command}' exited with code ${code}: ${stderr}`;
+        reject(new Error(errorMessage));
+      }
+    });
+
+    child.on('error', (error) => {
+      const errorMessage = options.errorMessage
+        ? `${options.errorMessage}: ${error.message}`
+        : `Error executing command '${command}': ${error.message}`;
+      reject(new Error(errorMessage));
+    });
+  });
 }
