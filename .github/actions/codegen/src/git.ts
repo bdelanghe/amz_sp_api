@@ -1,10 +1,11 @@
 // git.ts
 
-import { runCommand } from './utils';
+import { runCommand, updateSdkVersion, getDirectoryContentHash } from './utils';
 import { execSync } from 'child_process';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { pathExists } from 'fs-extra';
+import * as semver from 'semver';
 import * as path from 'path';
 
 const GIT_USER_NAME = 'github-actions[bot]';
@@ -70,6 +71,19 @@ export async function updateSubmodule(submodulePath: string): Promise<void> {
 }
 
 /**
+ * Retrieves the commit hash of the submodule
+ * @param submodulePath - The path to the submodule
+ */
+export async function getSubmoduleCommitHash(submodulePath: string): Promise<string> {
+  try {
+    const hash = execSync('git rev-parse HEAD', { cwd: submodulePath }).toString().trim();
+    return hash;
+  } catch (error) {
+    throw new Error(`Failed to retrieve commit hash for submodule at ${submodulePath}: ${error}`);
+  }
+}
+
+/**
  * Checks if the models have changed
  * @param modelsDir - The directory containing the models
  * @returns True if models have changed, false otherwise
@@ -103,34 +117,38 @@ function validateBranchName(branchName: string): void {
 }
 
 /**
- * Commits changes and pushes to a new branch
- * @param branchName - The name of the branch to create
- * @param changedApis - The list of APIs that have changed
+ * Commits changes, adds version bump, and pushes to a new branch.
+ * @param branchName - The branch name to create
+ * @param changedApis - List of changed APIs
+ * @param submodulePath - Path to the submodule for hash generation
+ * @param versionFilePath - Path to the version file
  */
-export async function commitChanges(branchName: string, changedApis: string[]): Promise<void> {
+export async function commitChanges(branchName: string, changedApis: string[], submodulePath: string, versionFilePath: string): Promise<void> {
   core.info('Committing changes...');
-
-  // Validate branchName
   validateBranchName(branchName);
 
   try {
     await runCommand('git', ['config', 'user.name', GIT_USER_NAME]);
     await runCommand('git', ['config', 'user.email', GIT_USER_EMAIL]);
 
+    const contentHash = await getDirectoryContentHash(submodulePath);
+    const newVersion = await updateSdkVersion(versionFilePath, 'patch'); // Use 'patch' or any version strategy
+
     await runCommand('git', ['fetch']);
 
     try {
       await runCommand('git', ['push', 'origin', '--delete', branchName]);
       core.info(`Deleted existing remote branch ${branchName}.`);
-    } catch (error) {
+    } catch {
       core.info(`No existing remote branch ${branchName} to delete.`);
     }
 
     await runCommand('git', ['checkout', '-B', branchName]);
     await runCommand('git', ['add', '.']);
-    await runCommand('git', ['commit', '-m', `Update SDKs for APIs: ${changedApis.join(', ')}`]);
+    await runCommand('git', ['commit', '-m', `Update SDKs for APIs: ${changedApis.join(', ')}\n\nVersion: ${newVersion}\nHash: ${contentHash}`]);
     await runCommand('git', ['push', 'origin', branchName]);
-    core.info(`Changes pushed to branch ${branchName}.`);
+
+    core.info(`Changes pushed to branch ${branchName} with version ${newVersion} and hash ${contentHash}.`);
   } catch (error: any) {
     throw new Error(`Failed to commit and push changes: ${error.message}`);
   }

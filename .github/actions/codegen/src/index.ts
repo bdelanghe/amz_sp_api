@@ -7,6 +7,7 @@ import {
   createPullRequest,
   getGitRootDir,
   getSubmodulePath,
+  getSubmoduleCommitHash
 } from './git';
 import { prepareConfig, generateSdk, organizeGeneratedFiles } from './codegen';
 import { Command } from 'commander';
@@ -49,6 +50,7 @@ const LANGUAGE = validateLanguage(options.language);
 const DRY_RUN = options.dryRun || false;
 const TARGET_DIR = path.resolve(options.targetDir);
 const submodulePath = getSubmodulePath(TARGET_DIR);
+const versionFilePath = path.join(TARGET_DIR, 'sdk_version.json'); // Adjust this path as needed
 
 /**
  * Main function that orchestrates the SDK generation process.
@@ -119,7 +121,7 @@ async function main(): Promise<void> {
     }
 
     if (!DRY_RUN) {
-      await commitChanges('automated/sdk-update', changedApis);
+      await commitChanges('automated/sdk-update', changedApis, submodulePath, versionFilePath);;
       await createPullRequest('automated/sdk-update');
     } else {
       core.info('Dry run mode enabled. Skipping commit and pull request creation.');
