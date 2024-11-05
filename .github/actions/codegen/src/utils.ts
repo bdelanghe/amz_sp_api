@@ -110,3 +110,25 @@ export async function getDirectoryContentHash(dirPath: string): Promise<string> 
   await processDirectory(dirPath);
   return hash.digest('hex'); // Return the final hex hash
 }
+
+/**
+ * Retrieves the stored hash from the version file.
+ * @param versionFilePath - Path to the version file.
+ * @returns The stored hash or an empty string if the file does not exist.
+ */
+export async function getStoredHash(versionFilePath: string): Promise<string> {
+  if (await pathExists(versionFilePath)) {
+    const versionData = await readFile(versionFilePath, 'utf8');
+    return JSON.parse(versionData).hash || '';
+  }
+  return '';
+}
+
+/**
+ * Writes the provided hash to the version file.
+ * @param versionFilePath - Path to the version file.
+ * @param hash - The hash to store.
+ */
+export async function storeHash(versionFilePath: string, hash: string): Promise<void> {
+  await writeFile(versionFilePath, JSON.stringify({ hash }, null, 2));
+}
