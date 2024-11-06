@@ -2,67 +2,30 @@
 
 import {
   updateSubmodule,
-  hasModelsChanged,
   commitChanges,
   createPullRequest,
-  getGitRootDir,
   getSubmodulePath
 } from './git';
-import { prepareConfig, generateSdk, organizeGeneratedFiles, shouldRegenerateSdk } from './codegen';
-import { Command } from 'commander';
+import { generateSdk, organizeGeneratedFiles, shouldRegenerateSdk } from './codegen';
 import * as core from '@actions/core';
-import { pathExists, readdir, stat } from 'fs-extra';
 import * as path from 'path';
 import chalk from 'chalk';
 import ora from 'ora';
+import { pathExists, readdir, stat } from 'fs-extra';
+import { ENV } from './env';
+import { prepareConfig } from './config';
 
-const program = new Command();
-
-program
-  .option('-m, --models-dir <path>', 'Path to the models directory', 'amazon-sp-api-models')
-  .option(
-    '-l, --language <lang>',
-    'Target language for code generation',
-    process.env.DEFAULT_LANGUAGE || 'ruby'
-  )
-  .option('-o, --output-dir <path>', 'Output directory for generated code')
-  .option('--dry-run', 'Run without making any changes')
-  .option('--target-dir <path>', 'Target directory for the project root')
-  .parse(process.argv);
-
-function validateLanguage(lang: string): string {
-  const supportedLanguages = ['ruby', 'java', 'python']; // Add all supported languages
-  const normalizedLang = lang.toLowerCase();
-  if (!supportedLanguages.includes(normalizedLang)) {
-    throw new Error(`Unsupported language: ${lang}`);
-  }
-  return normalizedLang;
-}
-
-const options = program.opts();
-const LANGUAGE = validateLanguage(options.language);
-const DRY_RUN = options.dryRun || false;
-
-const TARGET_DIR = options.targetDir ? path.resolve(options.targetDir) : getGitRootDir();
-const MODELS_DIR = options.modelsDir ? path.resolve(TARGET_DIR, options.modelsDir) : path.resolve(TARGET_DIR, 'amazon-sp-api-models');
-const OUTPUT_DIR = options.outputDir ? path.resolve(TARGET_DIR, options.outputDir) : path.resolve(TARGET_DIR, 'lib');
-const CONFIG_TEMPLATE = path.resolve(TARGET_DIR, 'config.json');
-const submodulePath = getSubmodulePath(TARGET_DIR);
-const versionFilePath = path.join(TARGET_DIR, 'sdk_version.json');
-
-/**
- * Main function that orchestrates the SDK generation process.
- */
 async function main(): Promise<void> {
-  if (DRY_RUN) {
+  if (ENV.dryRun) {
     core.info(chalk.yellow('Dry run mode is enabled. No changes will be made.'));
   }
 
-  core.info(`Using models directory: ${MODELS_DIR}`);
-  core.info(`Generating SDKs in: ${OUTPUT_DIR}`);
-  core.info(`Running in target directory: ${TARGET_DIR}`);
+  core.info(`Using models directory: ${ENV.modelsDir}`);
+  core.info(`Generating SDKs in: ${ENV.outputDir}`);
+  core.info(`Running in target directory: ${ENV.targetDir}`);
 
   try {
+    const submodulePath = getSubmodulePath(ENV.targetDir);
 
     if (!(await pathExists(submodulePath))) {
       throw new Error(`Submodule directory not found at ${submodulePath}. Please ensure the submodule path is correct.`);
@@ -72,7 +35,7 @@ async function main(): Promise<void> {
     await updateSubmodule(submodulePath);
 
     // Check for changes using folder hash
-    if (!(await shouldRegenerateSdk(submodulePath, versionFilePath))) {
+    if (!(await shouldRegenerateSdk(submodulePath, ENV.versionFilePath))) {
       core.info('Exiting as there are no changes to regenerate.');
       return;
     }
@@ -84,7 +47,7 @@ async function main(): Promise<void> {
   const spinner = ora('Generating SDKs...').start();
 
   try {
-    const modelsPath = path.join(MODELS_DIR, 'models');
+    const modelsPath = path.join(ENV.modelsDir, 'models');
     const apiFolders = await readdir(modelsPath);
     const changedApis: string[] = [];
 
@@ -92,17 +55,15 @@ async function main(): Promise<void> {
       const apiFolderPath = path.join(modelsPath, apiFolder);
       const isDirectory = (await stat(apiFolderPath)).isDirectory();
 
-      if (!isDirectory) {
-        continue;
-      }
+      if (!isDirectory) continue;
 
       const jsonFiles = (await readdir(apiFolderPath)).filter((file) => file.endsWith('.json'));
       for (const jsonFile of jsonFiles) {
         const filePath = path.join(apiFolderPath, jsonFile);
-        const outputDir = path.join(OUTPUT_DIR, apiFolder);
-        const configFile = await prepareConfig(apiFolder, outputDir, CONFIG_TEMPLATE);
+        const outputDir = path.join(ENV.outputDir, apiFolder);
+        const configFile = await prepareConfig(apiFolder, outputDir);
 
-        await generateSdk(apiFolder, filePath, configFile, outputDir, LANGUAGE, versionFilePath);
+        await generateSdk(apiFolder, filePath, configFile, outputDir, ENV.language, ENV.versionFilePath);
         await organizeGeneratedFiles(apiFolder, outputDir);
         changedApis.push(apiFolder);
       }
@@ -116,8 +77,8 @@ async function main(): Promise<void> {
       core.info('No APIs were updated.');
     }
 
-    if (!DRY_RUN) {
-      await commitChanges('automated/sdk-update', changedApis, submodulePath, versionFilePath);;
+    if (!ENV.dryRun) {
+      await commitChanges('automated/sdk-update', changedApis, ENV.modelsDir, ENV.versionFilePath);
       await createPullRequest('automated/sdk-update');
     } else {
       core.info('Dry run mode enabled. Skipping commit and pull request creation.');
