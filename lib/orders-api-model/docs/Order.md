@@ -19,7 +19,7 @@ Name | Type | Description | Notes
 **payment_method** | **String** | The payment method for the order. This property is limited to Cash On Delivery (COD) and Convenience Store (CVS) payment methods. Unless you need the specific COD payment information provided by the PaymentExecutionDetailItem object, we recommend using the PaymentMethodDetails property to get payment method information. | [optional] 
 **payment_method_details** | [**PaymentMethodDetailItemList**](PaymentMethodDetailItemList.md) |  | [optional] 
 **marketplace_id** | **String** | The identifier for the marketplace where the order was placed. | [optional] 
-**shipment_service_level_category** | **String** | The shipment service level category of the order.  Possible values: Expedited, FreeEconomy, NextDay, SameDay, SecondDay, Scheduled, Standard. | [optional] 
+**shipment_service_level_category** | **String** | The shipment service level category of the order.  Possible values: Expedited, FreeEconomy, NextDay, Priority, SameDay, SecondDay, Scheduled, Standard. | [optional] 
 **easy_ship_shipment_status** | [**EasyShipShipmentStatus**](EasyShipShipmentStatus.md) |  | [optional] 
 **cba_displayable_shipping_label** | **String** | Custom ship label for Checkout by Amazon (CBA). | [optional] 
 **order_type** | **String** | The type of the order. | [optional] 

@@ -90,6 +90,17 @@ rescue AmzSpApi::FulfillmentOutboundApiModel::ApiError => e
 end
 
 api_instance = AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi.new
+body = AmzSpApi::FulfillmentOutboundApiModel::GetDeliveryOfferingsResponse.new # GetDeliveryOfferingsResponse | 
+
+
+begin
+  result = api_instance.get_delivery_offerings(body)
+  p result
+rescue AmzSpApi::FulfillmentOutboundApiModel::ApiError => e
+  puts "Exception when calling FbaOutboundApi->get_delivery_offerings: #{e}"
+end
+
+api_instance = AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi.new
 marketplace_id = 'marketplace_id_example' # String | The marketplace for which to return a list of the inventory that is eligible for the specified feature.
 feature_name = 'feature_name_example' # String | The name of the feature for which to return a list of eligible inventory.
 opts = { 
@@ -189,6 +200,18 @@ rescue AmzSpApi::FulfillmentOutboundApiModel::ApiError => e
 end
 
 api_instance = AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi.new
+body = AmzSpApi::FulfillmentOutboundApiModel::SubmitFulfillmentOrderStatusUpdateRequest.new # SubmitFulfillmentOrderStatusUpdateRequest | 
+seller_fulfillment_order_id = 'seller_fulfillment_order_id_example' # String | The identifier assigned to the item by the seller when the fulfillment order was created.
+
+
+begin
+  result = api_instance.submit_fulfillment_order_status_update(body, seller_fulfillment_order_id)
+  p result
+rescue AmzSpApi::FulfillmentOutboundApiModel::ApiError => e
+  puts "Exception when calling FbaOutboundApi->submit_fulfillment_order_status_update: #{e}"
+end
+
+api_instance = AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi.new
 body = AmzSpApi::FulfillmentOutboundApiModel::UpdateFulfillmentOrderRequest.new # UpdateFulfillmentOrderRequest | 
 seller_fulfillment_order_id = 'seller_fulfillment_order_id_example' # String | The identifier assigned to the item by the seller when the fulfillment order was created.
 
@@ -210,6 +233,7 @@ Class | Method | HTTP request | Description
 *AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi* | [**cancel_fulfillment_order**](docs/FbaOutboundApi.md#cancel_fulfillment_order) | **PUT** /fba/outbound/2020-07-01/fulfillmentOrders/{sellerFulfillmentOrderId}/cancel | 
 *AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi* | [**create_fulfillment_order**](docs/FbaOutboundApi.md#create_fulfillment_order) | **POST** /fba/outbound/2020-07-01/fulfillmentOrders | 
 *AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi* | [**create_fulfillment_return**](docs/FbaOutboundApi.md#create_fulfillment_return) | **PUT** /fba/outbound/2020-07-01/fulfillmentOrders/{sellerFulfillmentOrderId}/return | 
+*AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi* | [**get_delivery_offerings**](docs/FbaOutboundApi.md#get_delivery_offerings) | **POST** /fba/outbound/2020-07-01/deliveryOfferings | 
 *AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi* | [**get_feature_inventory**](docs/FbaOutboundApi.md#get_feature_inventory) | **GET** /fba/outbound/2020-07-01/features/inventory/{featureName} | 
 *AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi* | [**get_feature_sku**](docs/FbaOutboundApi.md#get_feature_sku) | **GET** /fba/outbound/2020-07-01/features/inventory/{featureName}/{sellerSku} | 
 *AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi* | [**get_features**](docs/FbaOutboundApi.md#get_features) | **GET** /fba/outbound/2020-07-01/features | 
@@ -218,6 +242,7 @@ Class | Method | HTTP request | Description
 *AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi* | [**get_package_tracking_details**](docs/FbaOutboundApi.md#get_package_tracking_details) | **GET** /fba/outbound/2020-07-01/tracking | 
 *AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi* | [**list_all_fulfillment_orders**](docs/FbaOutboundApi.md#list_all_fulfillment_orders) | **GET** /fba/outbound/2020-07-01/fulfillmentOrders | 
 *AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi* | [**list_return_reason_codes**](docs/FbaOutboundApi.md#list_return_reason_codes) | **GET** /fba/outbound/2020-07-01/returnReasonCodes | 
+*AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi* | [**submit_fulfillment_order_status_update**](docs/FbaOutboundApi.md#submit_fulfillment_order_status_update) | **PUT** /fba/outbound/2020-07-01/fulfillmentOrders/{sellerFulfillmentOrderId}/status | 
 *AmzSpApi::FulfillmentOutboundApiModel::FbaOutboundApi* | [**update_fulfillment_order**](docs/FbaOutboundApi.md#update_fulfillment_order) | **PUT** /fba/outbound/2020-07-01/fulfillmentOrders/{sellerFulfillmentOrderId} | 
 
 ## Documentation for Models
@@ -236,7 +261,12 @@ Class | Method | HTTP request | Description
  - [AmzSpApi::FulfillmentOutboundApiModel::CreateReturnItem](docs/CreateReturnItem.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::CreateReturnItemList](docs/CreateReturnItemList.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::CurrentStatus](docs/CurrentStatus.md)
+ - [AmzSpApi::FulfillmentOutboundApiModel::DateRange](docs/DateRange.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::Decimal](docs/Decimal.md)
+ - [AmzSpApi::FulfillmentOutboundApiModel::DeliveryMessage](docs/DeliveryMessage.md)
+ - [AmzSpApi::FulfillmentOutboundApiModel::DeliveryOffering](docs/DeliveryOffering.md)
+ - [AmzSpApi::FulfillmentOutboundApiModel::DeliveryOfferingList](docs/DeliveryOfferingList.md)
+ - [AmzSpApi::FulfillmentOutboundApiModel::DeliveryPolicy](docs/DeliveryPolicy.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::DeliveryWindow](docs/DeliveryWindow.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::DeliveryWindowList](docs/DeliveryWindowList.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::Error](docs/Error.md)
@@ -267,6 +297,9 @@ Class | Method | HTTP request | Description
  - [AmzSpApi::FulfillmentOutboundApiModel::FulfillmentShipmentList](docs/FulfillmentShipmentList.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::FulfillmentShipmentPackage](docs/FulfillmentShipmentPackage.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::FulfillmentShipmentPackageList](docs/FulfillmentShipmentPackageList.md)
+ - [AmzSpApi::FulfillmentOutboundApiModel::GetDeliveryOfferingResult](docs/GetDeliveryOfferingResult.md)
+ - [AmzSpApi::FulfillmentOutboundApiModel::GetDeliveryOfferingsRequest](docs/GetDeliveryOfferingsRequest.md)
+ - [AmzSpApi::FulfillmentOutboundApiModel::GetDeliveryOfferingsResponse](docs/GetDeliveryOfferingsResponse.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::GetFeatureInventoryResponse](docs/GetFeatureInventoryResponse.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::GetFeatureInventoryResult](docs/GetFeatureInventoryResult.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::GetFeatureSkuResponse](docs/GetFeatureSkuResponse.md)
@@ -304,6 +337,8 @@ Class | Method | HTTP request | Description
  - [AmzSpApi::FulfillmentOutboundApiModel::ShippingSpeedCategory](docs/ShippingSpeedCategory.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::ShippingSpeedCategoryList](docs/ShippingSpeedCategoryList.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::StringList](docs/StringList.md)
+ - [AmzSpApi::FulfillmentOutboundApiModel::SubmitFulfillmentOrderStatusUpdateRequest](docs/SubmitFulfillmentOrderStatusUpdateRequest.md)
+ - [AmzSpApi::FulfillmentOutboundApiModel::SubmitFulfillmentOrderStatusUpdateResponse](docs/SubmitFulfillmentOrderStatusUpdateResponse.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::Timestamp](docs/Timestamp.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::TrackingAddress](docs/TrackingAddress.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::TrackingEvent](docs/TrackingEvent.md)
@@ -314,6 +349,7 @@ Class | Method | HTTP request | Description
  - [AmzSpApi::FulfillmentOutboundApiModel::UpdateFulfillmentOrderItemList](docs/UpdateFulfillmentOrderItemList.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::UpdateFulfillmentOrderRequest](docs/UpdateFulfillmentOrderRequest.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::UpdateFulfillmentOrderResponse](docs/UpdateFulfillmentOrderResponse.md)
+ - [AmzSpApi::FulfillmentOutboundApiModel::VariablePrecisionAddress](docs/VariablePrecisionAddress.md)
  - [AmzSpApi::FulfillmentOutboundApiModel::Weight](docs/Weight.md)
 
 ## Documentation for Authorization

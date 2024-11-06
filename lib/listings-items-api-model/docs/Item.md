@@ -9,5 +9,5 @@ Name | Type | Description | Notes
 **issues** | [**ItemIssues**](ItemIssues.md) |  | [optional] 
 **offers** | [**ItemOffers**](ItemOffers.md) |  | [optional] 
 **fulfillment_availability** | [**Array&lt;FulfillmentAvailability&gt;**](FulfillmentAvailability.md) | Fulfillment availability for the listings item. | [optional] 
-**procurement** | [**ItemProcurement**](ItemProcurement.md) |  | [optional] 
+**procurement** | [**Array&lt;ItemProcurement&gt;**](ItemProcurement.md) | Vendor procurement information for the listings item. | [optional] 
 

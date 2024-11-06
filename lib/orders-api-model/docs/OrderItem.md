@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 **asin** | **String** | The Amazon Standard Identification Number (ASIN) of the item. | 
 **seller_sku** | **String** | The seller stock keeping unit (SKU) of the item. | [optional] 
 **order_item_id** | **String** | An Amazon-defined order item identifier. | 
+**associated_items** | [**Array&lt;AssociatedItem&gt;**](AssociatedItem.md) | A list of associated items that a customer has purchased with a product. For example, a tire installation service purchased with tires. | [optional] 
 **title** | **String** | The name of the item. | [optional] 
 **quantity_ordered** | **Integer** | The number of items in the order.  | 
 **quantity_shipped** | **Integer** | The number of items shipped. | [optional] 
@@ -31,10 +32,13 @@ Name | Type | Description | Notes
 **price_designation** | **String** | Indicates that the selling price is a special price that is available only for Amazon Business orders. For more information about the Amazon Business Seller Program, see the [Amazon Business website](https://www.amazon.com/b2b/info/amazon-business).   Possible values: BusinessPrice - A special price that is available only for Amazon Business orders. | [optional] 
 **tax_collection** | [**TaxCollection**](TaxCollection.md) |  | [optional] 
 **serial_number_required** | **BOOLEAN** | When true, the product type for this item has a serial number.  Returned only for Amazon Easy Ship orders. | [optional] 
-**is_transparency** | **BOOLEAN** | When true, transparency codes are required. | [optional] 
+**is_transparency** | **BOOLEAN** | When true, the ASIN is enrolled in Transparency and the Transparency serial number that needs to be submitted can be determined by the following:  **1D or 2D Barcode:** This has a **T** logo. Submit either the 29-character alpha-numeric identifier beginning with **AZ** or **ZA**, or the 38-character Serialized Global Trade Item Number (SGTIN). **2D Barcode SN:** Submit the 7- to 20-character serial number barcode, which likely has the prefix **SN**. The serial number will be applied to the same side of the packaging as the GTIN (UPC/EAN/ISBN) barcode. **QR code SN:** Submit the URL that the QR code generates. | [optional] 
 **ioss_number** | **String** | The IOSS number for the marketplace. Sellers shipping to the European Union (EU) from outside of the EU must provide this IOSS number to their carrier when Amazon has collected the VAT on the sale. | [optional] 
 **store_chain_store_id** | **String** | The store chain store identifier. Linked to a specific store in a store chain. | [optional] 
 **deemed_reseller_category** | **String** | The category of deemed reseller. This applies to selling partners that are not based in the EU and is used to help them meet the VAT Deemed Reseller tax laws in the EU and UK. | [optional] 
 **buyer_info** | [**ItemBuyerInfo**](ItemBuyerInfo.md) |  | [optional] 
 **buyer_requested_cancel** | [**BuyerRequestedCancel**](BuyerRequestedCancel.md) |  | [optional] 
+**serial_numbers** | **Array&lt;String&gt;** | A list of serial numbers for electronic products that are shipped to customers. Returned for FBA orders only. | [optional] 
+**substitution_preferences** | [**SubstitutionPreferences**](SubstitutionPreferences.md) |  | [optional] 
+**measurement** | [**Measurement**](Measurement.md) |  | [optional] 
 

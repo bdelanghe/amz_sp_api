@@ -4,6 +4,7 @@ All URIs are relative to *https://sellingpartnerapi-na.amazon.com/*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**confirm_shipment**](OrdersV0Api.md#confirm_shipment) | **POST** /orders/v0/orders/{orderId}/shipmentConfirmation | 
 [**get_order**](OrdersV0Api.md#get_order) | **GET** /orders/v0/orders/{orderId} | 
 [**get_order_address**](OrdersV0Api.md#get_order_address) | **GET** /orders/v0/orders/{orderId}/address | 
 [**get_order_buyer_info**](OrdersV0Api.md#get_order_buyer_info) | **GET** /orders/v0/orders/{orderId}/buyerInfo | 
@@ -12,6 +13,52 @@ Method | HTTP request | Description
 [**get_order_regulated_info**](OrdersV0Api.md#get_order_regulated_info) | **GET** /orders/v0/orders/{orderId}/regulatedInfo | 
 [**get_orders**](OrdersV0Api.md#get_orders) | **GET** /orders/v0/orders | 
 [**update_verification_status**](OrdersV0Api.md#update_verification_status) | **PATCH** /orders/v0/orders/{orderId}/regulatedInfo | 
+
+# **confirm_shipment**
+> confirm_shipment(bodyorder_id)
+
+
+
+Updates the shipment confirmation status for a specified order.  **Usage Plan:**  | Rate (requests per second) | Burst | | ---- | ---- | | 2 | 10 |  The `x-amzn-RateLimit-Limit` response header returns the usage plan rate limits that were applied to the requested operation, when available. The table above indicates the default rate and burst values for this operation. Selling partners whose business demands require higher throughput may see higher rate and burst values then those shown here. For more information, see [Usage Plans and Rate Limits in the Selling Partner API](doc:usage-plans-and-rate-limits-in-the-sp-api).
+
+### Example
+```ruby
+# load the gem
+require 'orders-api-model'
+
+api_instance = AmzSpApi::OrdersApiModel::OrdersV0Api.new
+body = AmzSpApi::OrdersApiModel::ConfirmShipmentRequest.new # ConfirmShipmentRequest | Request body of confirmShipment.
+order_id = 'order_id_example' # String | An Amazon-defined order identifier, in 3-7-7 format.
+
+
+begin
+  api_instance.confirm_shipment(bodyorder_id)
+rescue AmzSpApi::OrdersApiModel::ApiError => e
+  puts "Exception when calling OrdersV0Api->confirm_shipment: #{e}"
+end
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **body** | [**ConfirmShipmentRequest**](ConfirmShipmentRequest.md)| Request body of confirmShipment. | 
+ **order_id** | **String**| An Amazon-defined order identifier, in 3-7-7 format. | 
+
+### Return type
+
+nil (empty response body)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
 
 # **get_order**
 > GetOrderResponse get_order(order_id)
@@ -302,7 +349,7 @@ Returns orders created or updated during the time frame indicated by the specifi
 require 'orders-api-model'
 
 api_instance = AmzSpApi::OrdersApiModel::OrdersV0Api.new
-marketplace_ids = ['marketplace_ids_example'] # Array<String> | A list of MarketplaceId values. Used to select orders that were placed in the specified marketplaces.  See the [Selling Partner API Developer Guide](doc:marketplace-ids) for a complete list of marketplaceId values.
+marketplace_ids = ['marketplace_ids_example'] # Array<String> | A list of MarketplaceId values. Used to select orders that were placed in the specified marketplaces.  Refer to [Marketplace IDs](https://developer-docs.amazon.com/sp-api/docs/marketplace-ids) for a complete list of marketplaceId values.
 opts = { 
   created_after: 'created_after_example', # String | A date used for selecting orders created after (or at) a specified time. Only orders placed after the specified time are returned. Either the CreatedAfter parameter or the LastUpdatedAfter parameter is required. Both cannot be empty. The date must be in ISO 8601 format.
   created_before: 'created_before_example', # String | A date used for selecting orders created before (or at) a specified time. Only orders placed before the specified time are returned. The date must be in ISO 8601 format.
@@ -320,7 +367,11 @@ opts = {
   amazon_order_ids: ['amazon_order_ids_example'], # Array<String> | A list of AmazonOrderId values. An AmazonOrderId is an Amazon-defined order identifier, in 3-7-7 format.
   actual_fulfillment_supply_source_id: 'actual_fulfillment_supply_source_id_example', # String | Denotes the recommended sourceId where the order should be fulfilled from.
   is_ispu: true, # BOOLEAN | When true, this order is marked to be picked up from a store rather than delivered.
-  store_chain_store_id: 'store_chain_store_id_example' # String | The store chain store identifier. Linked to a specific store in a store chain.
+  store_chain_store_id: 'store_chain_store_id_example', # String | The store chain store identifier. Linked to a specific store in a store chain.
+  earliest_delivery_date_before: 'earliest_delivery_date_before_example', # String | A date used for selecting orders with a earliest delivery date before (or at) a specified time. The date must be in ISO 8601 format.
+  earliest_delivery_date_after: 'earliest_delivery_date_after_example', # String | A date used for selecting orders with a earliest delivery date after (or at) a specified time. The date must be in ISO 8601 format.
+  latest_delivery_date_before: 'latest_delivery_date_before_example', # String | A date used for selecting orders with a latest delivery date before (or at) a specified time. The date must be in ISO 8601 format.
+  latest_delivery_date_after: 'latest_delivery_date_after_example' # String | A date used for selecting orders with a latest delivery date after (or at) a specified time. The date must be in ISO 8601 format.
 }
 
 begin
@@ -335,7 +386,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **marketplace_ids** | [**Array&lt;String&gt;**](String.md)| A list of MarketplaceId values. Used to select orders that were placed in the specified marketplaces.  See the [Selling Partner API Developer Guide](doc:marketplace-ids) for a complete list of marketplaceId values. | 
+ **marketplace_ids** | [**Array&lt;String&gt;**](String.md)| A list of MarketplaceId values. Used to select orders that were placed in the specified marketplaces.  Refer to [Marketplace IDs](https://developer-docs.amazon.com/sp-api/docs/marketplace-ids) for a complete list of marketplaceId values. | 
  **created_after** | **String**| A date used for selecting orders created after (or at) a specified time. Only orders placed after the specified time are returned. Either the CreatedAfter parameter or the LastUpdatedAfter parameter is required. Both cannot be empty. The date must be in ISO 8601 format. | [optional] 
  **created_before** | **String**| A date used for selecting orders created before (or at) a specified time. Only orders placed before the specified time are returned. The date must be in ISO 8601 format. | [optional] 
  **last_updated_after** | **String**| A date used for selecting orders that were last updated after (or at) a specified time. An update is defined as any change in order status, including the creation of a new order. Includes updates made by Amazon and by the seller. The date must be in ISO 8601 format. | [optional] 
@@ -353,6 +404,10 @@ Name | Type | Description  | Notes
  **actual_fulfillment_supply_source_id** | **String**| Denotes the recommended sourceId where the order should be fulfilled from. | [optional] 
  **is_ispu** | **BOOLEAN**| When true, this order is marked to be picked up from a store rather than delivered. | [optional] 
  **store_chain_store_id** | **String**| The store chain store identifier. Linked to a specific store in a store chain. | [optional] 
+ **earliest_delivery_date_before** | **String**| A date used for selecting orders with a earliest delivery date before (or at) a specified time. The date must be in ISO 8601 format. | [optional] 
+ **earliest_delivery_date_after** | **String**| A date used for selecting orders with a earliest delivery date after (or at) a specified time. The date must be in ISO 8601 format. | [optional] 
+ **latest_delivery_date_before** | **String**| A date used for selecting orders with a latest delivery date before (or at) a specified time. The date must be in ISO 8601 format. | [optional] 
+ **latest_delivery_date_after** | **String**| A date used for selecting orders with a latest delivery date after (or at) a specified time. The date must be in ISO 8601 format. | [optional] 
 
 ### Return type
 
