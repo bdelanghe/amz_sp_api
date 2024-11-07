@@ -14,6 +14,7 @@ require 'date'
 module AmzSpApi::VendorDirectFulfillmentPaymentsApiModel
   # The request schema for the submitInvoice operation.
   class SubmitInvoiceRequest
+    # An array of invoice details to be submitted.
     attr_accessor :invoices
 
     # Attribute mapping from ruby-style variable name to JSON key.

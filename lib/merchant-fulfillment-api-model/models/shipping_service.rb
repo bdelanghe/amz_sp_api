@@ -1,7 +1,7 @@
 =begin
 #Selling Partner API for Merchant Fulfillment
 
-#The Selling Partner API for Merchant Fulfillment helps you build applications that let sellers purchase shipping for non-Prime and Prime orders using Amazon’s Buy Shipping Services.
+#With the Selling Partner API for Merchant Fulfillment, you can build applications that sellers can use to purchase shipping for non-Prime and Prime orders using Amazon's Buy Shipping Services.
 
 OpenAPI spec version: v0
 
@@ -44,6 +44,8 @@ module AmzSpApi::MerchantFulfillmentApiModel
     # When true, additional seller inputs are required.
     attr_accessor :requires_additional_seller_inputs
 
+    attr_accessor :benefits
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
@@ -59,7 +61,8 @@ module AmzSpApi::MerchantFulfillmentApiModel
         :'available_shipping_service_options' => :'AvailableShippingServiceOptions',
         :'available_label_formats' => :'AvailableLabelFormats',
         :'available_format_options_for_label' => :'AvailableFormatOptionsForLabel',
-        :'requires_additional_seller_inputs' => :'RequiresAdditionalSellerInputs'
+        :'requires_additional_seller_inputs' => :'RequiresAdditionalSellerInputs',
+        :'benefits' => :'Benefits'
       }
     end
 
@@ -78,7 +81,8 @@ module AmzSpApi::MerchantFulfillmentApiModel
         :'available_shipping_service_options' => :'Object',
         :'available_label_formats' => :'Object',
         :'available_format_options_for_label' => :'Object',
-        :'requires_additional_seller_inputs' => :'Object'
+        :'requires_additional_seller_inputs' => :'Object',
+        :'benefits' => :'Object'
       }
     end
 
@@ -154,6 +158,10 @@ module AmzSpApi::MerchantFulfillmentApiModel
       if attributes.key?(:'requires_additional_seller_inputs')
         self.requires_additional_seller_inputs = attributes[:'requires_additional_seller_inputs']
       end
+
+      if attributes.key?(:'benefits')
+        self.benefits = attributes[:'benefits']
+      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -226,7 +234,8 @@ module AmzSpApi::MerchantFulfillmentApiModel
           available_shipping_service_options == o.available_shipping_service_options &&
           available_label_formats == o.available_label_formats &&
           available_format_options_for_label == o.available_format_options_for_label &&
-          requires_additional_seller_inputs == o.requires_additional_seller_inputs
+          requires_additional_seller_inputs == o.requires_additional_seller_inputs &&
+          benefits == o.benefits
     end
 
     # @see the `==` method
@@ -238,7 +247,7 @@ module AmzSpApi::MerchantFulfillmentApiModel
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [shipping_service_name, carrier_name, shipping_service_id, shipping_service_offer_id, ship_date, earliest_estimated_delivery_date, latest_estimated_delivery_date, rate, shipping_service_options, available_shipping_service_options, available_label_formats, available_format_options_for_label, requires_additional_seller_inputs].hash
+      [shipping_service_name, carrier_name, shipping_service_id, shipping_service_offer_id, ship_date, earliest_estimated_delivery_date, latest_estimated_delivery_date, rate, shipping_service_options, available_shipping_service_options, available_label_formats, available_format_options_for_label, requires_additional_seller_inputs, benefits].hash
     end
 
     # Builds the object from hash

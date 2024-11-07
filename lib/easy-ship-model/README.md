@@ -56,7 +56,7 @@ Please follow the [installation](#installation) procedure and then run the follo
 require 'easy-ship-model'
 
 api_instance = AmzSpApi::EasyShipModel::EasyShipApi.new
-body = AmzSpApi::EasyShipModel::CreateScheduledPackageRequest.new # CreateScheduledPackageRequest | 
+body = AmzSpApi::EasyShipModel::CreateScheduledPackageRequest.new # CreateScheduledPackageRequest | The request schema for the `createScheduledPackage` operation.
 
 
 begin
@@ -67,7 +67,7 @@ rescue AmzSpApi::EasyShipModel::ApiError => e
 end
 
 api_instance = AmzSpApi::EasyShipModel::EasyShipApi.new
-body = AmzSpApi::EasyShipModel::CreateScheduledPackagesRequest.new # CreateScheduledPackagesRequest | 
+body = AmzSpApi::EasyShipModel::CreateScheduledPackagesRequest.new # CreateScheduledPackagesRequest | The request schema for the `createScheduledPackageBulk` operation.
 
 
 begin
@@ -91,7 +91,7 @@ end
 
 api_instance = AmzSpApi::EasyShipModel::EasyShipApi.new
 opts = { 
-  body: AmzSpApi::EasyShipModel::ListHandoverSlotsRequest.new # ListHandoverSlotsRequest | 
+  body: AmzSpApi::EasyShipModel::ListHandoverSlotsRequest.new # ListHandoverSlotsRequest | The request schema for the `listHandoverSlots` operation.
 }
 
 begin
@@ -103,7 +103,7 @@ end
 
 api_instance = AmzSpApi::EasyShipModel::EasyShipApi.new
 opts = { 
-  body: AmzSpApi::EasyShipModel::UpdateScheduledPackagesRequest.new # UpdateScheduledPackagesRequest | 
+  body: AmzSpApi::EasyShipModel::UpdateScheduledPackagesRequest.new # UpdateScheduledPackagesRequest | The request schema for the `updateScheduledPackages` operation.
 }
 
 begin

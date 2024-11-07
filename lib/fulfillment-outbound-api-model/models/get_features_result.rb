@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentOutboundApiModel
-  # The payload for the getFeatures operation.
+  # The payload for the `getFeatures` operation.
   class GetFeaturesResult
     attr_accessor :features
 

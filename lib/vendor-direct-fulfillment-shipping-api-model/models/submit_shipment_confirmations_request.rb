@@ -12,7 +12,9 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorDirectFulfillmentShippingApiModel
+  # The request schema for the submitShipmentConfirmations operation.
   class SubmitShipmentConfirmationsRequest
+    # Array of ShipmentConfirmation objects, each representing confirmation details for a specific shipment.
     attr_accessor :shipment_confirmations
 
     # Attribute mapping from ruby-style variable name to JSON key.

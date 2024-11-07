@@ -14,7 +14,7 @@ require 'date'
 module AmzSpApi::ProductPricingApiModel
   # Describes the segment in which the offer is featured.
   class FeaturedOfferSegment
-    # The customer membership type that make up this segment
+    # The customer membership type that makes up this segment
     attr_accessor :customer_membership
 
     attr_accessor :segment_details

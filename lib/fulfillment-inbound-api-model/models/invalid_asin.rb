@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentInboundApiModel
+  # Contains details about an invalid ASIN
   class InvalidASIN
     # The Amazon Standard Identification Number (ASIN) of the item.
     attr_accessor :asin

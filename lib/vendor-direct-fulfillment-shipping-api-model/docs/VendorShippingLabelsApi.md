@@ -122,7 +122,7 @@ Creates a shipping label for a purchase order and returns a transactionId for re
 require 'vendor-direct-fulfillment-shipping-api-model'
 
 api_instance = AmzSpApi::VendorDirectFulfillmentShippingApiModel::VendorShippingLabelsApi.new
-body = AmzSpApi::VendorDirectFulfillmentShippingApiModel::SubmitShippingLabelsRequest.new # SubmitShippingLabelsRequest | 
+body = AmzSpApi::VendorDirectFulfillmentShippingApiModel::SubmitShippingLabelsRequest.new # SubmitShippingLabelsRequest | Request body containing one or more shipping labels data.
 
 
 begin
@@ -137,7 +137,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**SubmitShippingLabelsRequest**](SubmitShippingLabelsRequest.md)|  | 
+ **body** | [**SubmitShippingLabelsRequest**](SubmitShippingLabelsRequest.md)| Request body containing one or more shipping labels data. | 
 
 ### Return type
 

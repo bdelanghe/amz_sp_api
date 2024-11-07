@@ -36,7 +36,7 @@ module AmzSpApi::FulfillmentOutboundApiModel
 
     attr_accessor :status_changed_date
 
-    # Identifies the return authorization used to return this item. See ReturnAuthorization.
+    # Identifies the return authorization used to return this item. Refer to `ReturnAuthorization`.
     attr_accessor :return_authorization_id
 
     attr_accessor :return_received_condition

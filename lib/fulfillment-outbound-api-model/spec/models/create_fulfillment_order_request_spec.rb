@@ -79,6 +79,12 @@ describe 'CreateFulfillmentOrderRequest' do
     end
   end
 
+  describe 'test attribute "delivery_preferences"' do
+    it 'should work' do
+      # assertion here. ref: https://www.relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
+    end
+  end
+
   describe 'test attribute "fulfillment_action"' do
     it 'should work' do
       # assertion here. ref: https://www.relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
@@ -116,6 +122,12 @@ describe 'CreateFulfillmentOrderRequest' do
   end
 
   describe 'test attribute "items"' do
+    it 'should work' do
+      # assertion here. ref: https://www.relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
+    end
+  end
+
+  describe 'test attribute "payment_information"' do
     it 'should work' do
       # assertion here. ref: https://www.relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
     end

@@ -12,9 +12,11 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorDirectFulfillmentShippingApiModel
+  # Represents a list of customer invoices, potentially paginated.
   class CustomerInvoiceList
     attr_accessor :pagination
 
+    # Represents a customer invoice within the CustomerInvoiceList.
     attr_accessor :customer_invoices
 
     # Attribute mapping from ruby-style variable name to JSON key.

@@ -1,7 +1,7 @@
 =begin
 #Selling Partner API for Merchant Fulfillment
 
-#The Selling Partner API for Merchant Fulfillment helps you build applications that let sellers purchase shipping for non-Prime and Prime orders using Amazon’s Buy Shipping Services.
+#With the Selling Partner API for Merchant Fulfillment, you can build applications that sellers can use to purchase shipping for non-Prime and Prime orders using Amazon's Buy Shipping Services.
 
 OpenAPI spec version: v0
 
@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::MerchantFulfillmentApiModel
-  # The payload for the getEligibleShipmentServices operation.
+  # The payload for the `getEligibleShipmentServices` operation.
   class GetEligibleShipmentServicesResult
     attr_accessor :shipping_service_list
 

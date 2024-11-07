@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::ProductPricingApiModel
-  # The response list of the `competitiveSummaryBatch` operation.
+  # The response list for the `competitiveSummaryBatch` operation.
   class CompetitiveSummaryResponseList
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map

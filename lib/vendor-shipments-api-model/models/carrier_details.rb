@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Retail Procurement Shipments
+#Vendor Shipments v1
 
 #The Selling Partner API for Retail Procurement Shipments provides programmatic access to retail shipping data for vendors.
 
@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorShipmentsApiModel
+  # Indicates the carrier details and their contact informations
   class CarrierDetails
     # The field is used to represent the carrier used for performing the shipment.
     attr_accessor :name

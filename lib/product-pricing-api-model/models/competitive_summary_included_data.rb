@@ -14,6 +14,8 @@ require 'date'
 module AmzSpApi::ProductPricingApiModel
   class CompetitiveSummaryIncludedData
     FEATURED_BUYING_OPTIONS = 'featuredBuyingOptions'.freeze
+    REFERENCE_PRICES = 'referencePrices'.freeze
+    LOWEST_PRICED_OFFERS = 'lowestPricedOffers'.freeze
 
     # Builds the enum from string
     # @param [String] The enum value in the form of the string

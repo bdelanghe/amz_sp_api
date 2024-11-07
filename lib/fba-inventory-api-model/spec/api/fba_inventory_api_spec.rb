@@ -31,8 +31,43 @@ describe 'FbaInventoryApi' do
     end
   end
 
+  # unit tests for add_inventory
+  # Requests that Amazon add items to the Sandbox Inventory with desired amount of quantity in the sandbox environment. This is a sandbox-only operation and must be directed to a sandbox endpoint. Refer to [Selling Partner API sandbox](https://developer-docs.amazon.com/sp-api/docs/the-selling-partner-api-sandbox) for more information.
+  # @param body List of items to add to Sandbox inventory.
+  # @param x_amzn_idempotency_token A unique token/requestId provided with each call to ensure idempotency.
+  # @param [Hash] opts the optional parameters
+  # @return [AddInventoryResponse]
+  describe 'add_inventory test' do
+    it 'should work' do
+      # assertion here. ref: https://www.relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
+    end
+  end
+
+  # unit tests for create_inventory_item
+  # Requests that Amazon create product-details in the Sandbox Inventory in the sandbox environment. This is a sandbox-only operation and must be directed to a sandbox endpoint. Refer to [Selling Partner API sandbox](https://developer-docs.amazon.com/sp-api/docs/the-selling-partner-api-sandbox) for more information.
+  # @param body CreateInventoryItem Request Body Parameter.
+  # @param [Hash] opts the optional parameters
+  # @return [CreateInventoryItemResponse]
+  describe 'create_inventory_item test' do
+    it 'should work' do
+      # assertion here. ref: https://www.relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
+    end
+  end
+
+  # unit tests for delete_inventory_item
+  # Requests that Amazon Deletes an item from the Sandbox Inventory in the sandbox environment. This is a sandbox-only operation and must be directed to a sandbox endpoint. Refer to [Selling Partner API sandbox](https://developer-docs.amazon.com/sp-api/docs/the-selling-partner-api-sandbox) for more information.
+  # @param seller_sku A single seller SKU used for querying the specified seller SKU inventory summaries.
+  # @param marketplace_id The marketplace ID for the marketplace for which the sellerSku is to be deleted.
+  # @param [Hash] opts the optional parameters
+  # @return [DeleteInventoryItemResponse]
+  describe 'delete_inventory_item test' do
+    it 'should work' do
+      # assertion here. ref: https://www.relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
+    end
+  end
+
   # unit tests for get_inventory_summaries
-  # Returns a list of inventory summaries. The summaries returned depend on the presence or absence of the &#x60;startDateTime&#x60;, &#x60;sellerSkus&#x60; and &#x60;sellerSku&#x60; parameters:  - All inventory summaries with available details are returned when the &#x60;startDateTime&#x60;, &#x60;sellerSkus&#x60; and &#x60;sellerSku&#x60; parameters are omitted. - When &#x60;startDateTime&#x60; is provided, the operation returns inventory summaries that have had changes after the date and time specified. The &#x60;sellerSkus&#x60; and &#x60;sellerSku&#x60; parameters are ignored. **Important:** To avoid errors, use both &#x60;startDateTime&#x60; and &#x60;nextToken&#x60; to get the next page of inventory summaries that have changed after the date and time specified. - When the &#x60;sellerSkus&#x60; parameter is provided, the operation returns inventory summaries for only the specified &#x60;sellerSkus&#x60;. The &#x60;sellerSku&#x60; parameter is ignored. - When the &#x60;sellerSku&#x60; parameter is provided, the operation returns inventory summaries for only the specified &#x60;sellerSku&#x60;.  **Note:** The parameters associated with this operation may contain special characters that must be encoded to successfully call the API. To avoid errors with SKUs when encoding URLs, refer to [URL Encoding](https://developer-docs.amazon.com/sp-api/docs/url-encoding).  **Usage Plan:**  | Rate (requests per second) | Burst | | ---- | ---- | | 2 | 2 |  The &#x60;x-amzn-RateLimit-Limit&#x60; response header returns the usage plan rate limits that were applied to the requested operation, when available. The table above indicates the default rate and burst values for this operation. Selling partners whose business demands require higher throughput may see higher rate and burst values than those shown here. For more information, see [Usage Plans and Rate Limits in the Selling Partner API](doc:usage-plans-and-rate-limits-in-the-sp-api).
+  # Returns a list of inventory summaries. The summaries returned depend on the presence or absence of the startDateTime, sellerSkus and sellerSku parameters:  - All inventory summaries with available details are returned when the startDateTime, sellerSkus and sellerSku parameters are omitted. - When startDateTime is provided, the operation returns inventory summaries that have had changes after the date and time specified. The sellerSkus and sellerSku parameters are ignored. Important: To avoid errors, use both startDateTime and nextToken to get the next page of inventory summaries that have changed after the date and time specified. - When the sellerSkus parameter is provided, the operation returns inventory summaries for only the specified sellerSkus. The sellerSku parameter is ignored. - When the sellerSku parameter is provided, the operation returns inventory summaries for only the specified sellerSku.  Note: The parameters associated with this operation may contain special characters that must be encoded to successfully call the API. To avoid errors with SKUs when encoding URLs, refer to [URL Encoding](https://developer-docs.amazon.com/sp-api/docs/url-encoding).  Usage Plan:  | Rate (requests per second) | Burst | | ---- | ---- | | 2 | 2 |  The x-amzn-RateLimit-Limit response header returns the usage plan rate limits that were applied to the requested operation, when available. The table above indicates the default rate and burst values for this operation. Selling partners whose business demands require higher throughput may see higher rate and burst values than those shown here. For more information, see [Usage Plans and Rate Limits in the Selling Partner API](https://developer-docs.amazon.com/sp-api/docs/usage-plans-and-rate-limits).
   # @param granularity_type The granularity type for the inventory aggregation level.
   # @param granularity_id The granularity ID for the inventory aggregation level.
   # @param marketplace_ids The marketplace ID for the marketplace for which to return inventory summaries.

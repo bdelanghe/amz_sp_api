@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::ProductPricingApiModel
+  # Schema for `currentFeaturedOffer` or `competingFeaturedOffer`.
   class FeaturedOffer
     attr_accessor :offer_identifier
 

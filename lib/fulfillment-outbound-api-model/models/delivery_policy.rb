@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentOutboundApiModel
-  # A delivery policy.
+  # The policy for a delivery offering.
   class DeliveryPolicy
     attr_accessor :message
 
@@ -60,17 +60,12 @@ module AmzSpApi::FulfillmentOutboundApiModel
     # @return Array for valid properties with the reasons
     def list_invalid_properties
       invalid_properties = Array.new
-      if @message.nil?
-        invalid_properties.push('invalid value for "message", message cannot be nil.')
-      end
-
       invalid_properties
     end
 
     # Check to see if the all the properties in the model are valid
     # @return true if the model is valid
     def valid?
-      return false if @message.nil?
       true
     end
 

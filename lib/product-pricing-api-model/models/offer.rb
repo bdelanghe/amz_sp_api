@@ -19,6 +19,9 @@ module AmzSpApi::ProductPricingApiModel
 
     attr_accessor :condition
 
+    # The item subcondition of the offer.
+    attr_accessor :sub_condition
+
     attr_accessor :fulfillment_type
 
     attr_accessor :listing_price
@@ -28,15 +31,41 @@ module AmzSpApi::ProductPricingApiModel
 
     attr_accessor :points
 
+    attr_accessor :prime_details
+
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'seller_id' => :'sellerId',
         :'condition' => :'condition',
+        :'sub_condition' => :'subCondition',
         :'fulfillment_type' => :'fulfillmentType',
         :'listing_price' => :'listingPrice',
         :'shipping_options' => :'shippingOptions',
-        :'points' => :'points'
+        :'points' => :'points',
+        :'prime_details' => :'primeDetails'
       }
     end
 
@@ -45,10 +74,12 @@ module AmzSpApi::ProductPricingApiModel
       {
         :'seller_id' => :'Object',
         :'condition' => :'Object',
+        :'sub_condition' => :'Object',
         :'fulfillment_type' => :'Object',
         :'listing_price' => :'Object',
         :'shipping_options' => :'Object',
-        :'points' => :'Object'
+        :'points' => :'Object',
+        :'prime_details' => :'Object'
       }
     end
 
@@ -81,6 +112,10 @@ module AmzSpApi::ProductPricingApiModel
         self.condition = attributes[:'condition']
       end
 
+      if attributes.key?(:'sub_condition')
+        self.sub_condition = attributes[:'sub_condition']
+      end
+
       if attributes.key?(:'fulfillment_type')
         self.fulfillment_type = attributes[:'fulfillment_type']
       end
@@ -97,6 +132,10 @@ module AmzSpApi::ProductPricingApiModel
 
       if attributes.key?(:'points')
         self.points = attributes[:'points']
+      end
+
+      if attributes.key?(:'prime_details')
+        self.prime_details = attributes[:'prime_details']
       end
     end
 
@@ -128,9 +167,21 @@ module AmzSpApi::ProductPricingApiModel
     def valid?
       return false if @seller_id.nil?
       return false if @condition.nil?
+      sub_condition_validator = EnumAttributeValidator.new('Object', ['New', 'Mint', 'VeryGood', 'Good', 'Acceptable', 'Poor', 'Club', 'OEM', 'Warranty', 'RefurbishedWarranty', 'Refurbished', 'OpenBox', 'Other'])
+      return false unless sub_condition_validator.valid?(@sub_condition)
       return false if @fulfillment_type.nil?
       return false if @listing_price.nil?
       true
+    end
+
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] sub_condition Object to be assigned
+    def sub_condition=(sub_condition)
+      validator = EnumAttributeValidator.new('Object', ['New', 'Mint', 'VeryGood', 'Good', 'Acceptable', 'Poor', 'Club', 'OEM', 'Warranty', 'RefurbishedWarranty', 'Refurbished', 'OpenBox', 'Other'])
+      unless validator.valid?(sub_condition)
+        fail ArgumentError, "invalid value for \"sub_condition\", must be one of #{validator.allowable_values}."
+      end
+      @sub_condition = sub_condition
     end
 
     # Checks equality by comparing each attribute.
@@ -140,10 +191,12 @@ module AmzSpApi::ProductPricingApiModel
       self.class == o.class &&
           seller_id == o.seller_id &&
           condition == o.condition &&
+          sub_condition == o.sub_condition &&
           fulfillment_type == o.fulfillment_type &&
           listing_price == o.listing_price &&
           shipping_options == o.shipping_options &&
-          points == o.points
+          points == o.points &&
+          prime_details == o.prime_details
     end
 
     # @see the `==` method
@@ -155,7 +208,7 @@ module AmzSpApi::ProductPricingApiModel
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [seller_id, condition, fulfillment_type, listing_price, shipping_options, points].hash
+      [seller_id, condition, sub_condition, fulfillment_type, listing_price, shipping_options, points, prime_details].hash
     end
 
     # Builds the object from hash

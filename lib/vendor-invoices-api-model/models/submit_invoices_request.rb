@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Retail Procurement Payments
+#Vendor Invoices v1
 
 #The Selling Partner API for Retail Procurement Payments provides programmatic access to vendors payments data.
 
@@ -14,6 +14,7 @@ require 'date'
 module AmzSpApi::VendorInvoicesApiModel
   # The request schema for the submitInvoices operation.
   class SubmitInvoicesRequest
+    # An array of Invoice objects representing the invoices or credit notes to be submitted.
     attr_accessor :invoices
 
     # Attribute mapping from ruby-style variable name to JSON key.

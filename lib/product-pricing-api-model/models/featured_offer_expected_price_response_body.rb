@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::ProductPricingApiModel
-  # The featured offer expected price response data for a requested SKU.
+  # The FOEP response data for a requested SKU.
   class FeaturedOfferExpectedPriceResponseBody
     attr_accessor :offer_identifier
 
@@ -76,17 +76,12 @@ module AmzSpApi::ProductPricingApiModel
     # @return Array for valid properties with the reasons
     def list_invalid_properties
       invalid_properties = Array.new
-      if @offer_identifier.nil?
-        invalid_properties.push('invalid value for "offer_identifier", offer_identifier cannot be nil.')
-      end
-
       invalid_properties
     end
 
     # Check to see if the all the properties in the model are valid
     # @return true if the model is valid
     def valid?
-      return false if @offer_identifier.nil?
       true
     end
 

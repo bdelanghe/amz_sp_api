@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Retail Procurement Shipments
+#Vendor Shipments v1
 
 #The Selling Partner API for Retail Procurement Shipments provides programmatic access to retail shipping data for vendors.
 
@@ -12,8 +12,9 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorShipmentsApiModel
+  # The pagination elements required to retrieve the remaining data.
   class Pagination
-    # A generated string used to pass information to your next request. If NextToken is returned, pass the value of NextToken to the next request. If NextToken is not returned, there are no more order items to return.
+    # A generated string used to pass information to your next request. If NextToken is returned, pass the value of NextToken to the next request. If NextToken is not returned, there are no more shipment items to return.
     attr_accessor :next_token
 
     # Attribute mapping from ruby-style variable name to JSON key.

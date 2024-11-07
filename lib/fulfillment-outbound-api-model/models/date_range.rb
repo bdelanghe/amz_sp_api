@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentOutboundApiModel
-  # The earliest and latest dates that an order will be delivered.
+  # The time range within which something (for example, a delivery) will occur.
   class DateRange
     attr_accessor :earliest
 

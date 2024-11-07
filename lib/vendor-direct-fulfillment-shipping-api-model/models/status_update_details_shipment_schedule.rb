@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorDirectFulfillmentShippingApiModel
+  # Details for the scheduled delivery timeline for a shipment, including the estimated delivery date and time, as well as the start and end times of the appointment window for delivery.
   class StatusUpdateDetailsShipmentSchedule
     # Date on which the shipment is expected to reach the customer delivery location. This field is expected to be in ISO-8601 date/time format, with UTC time zone or UTC offset. For example, 2020-07-16T23:00:00Z or 2020-07-16T23:00:00+01:00.
     attr_accessor :estimated_delivery_date_time

@@ -67,7 +67,7 @@ Creates a Data Kiosk query request.  **Note:** The retention of a query varies b
 require 'data-kiosk-api-model'
 
 api_instance = AmzSpApi::DataKioskApiModel::QueriesApi.new
-body = AmzSpApi::DataKioskApiModel::CreateQuerySpecification.new # CreateQuerySpecification | 
+body = AmzSpApi::DataKioskApiModel::CreateQuerySpecification.new # CreateQuerySpecification | The body of the request.
 
 
 begin
@@ -82,7 +82,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**CreateQuerySpecification**](CreateQuerySpecification.md)|  | 
+ **body** | [**CreateQuerySpecification**](CreateQuerySpecification.md)| The body of the request. | 
 
 ### Return type
 

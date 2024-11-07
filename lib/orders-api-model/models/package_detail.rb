@@ -1,7 +1,7 @@
 =begin
-#Selling Partner API for Orders
+#Orders v0
 
-#The Selling Partner API for Orders helps you programmatically retrieve order information. These APIs let you develop fast, flexible, custom applications in areas like order synchronization, order research, and demand-based decision support tools. The Orders API supports orders that are two years old or less. Orders more than two years old will not show in the API response.  _Note:_ The Orders API supports orders from 2016 and after for the JP, AU, and SG marketplaces.
+#Use the Orders Selling Partner API to programmatically retrieve order information. With this API, you can develop fast, flexible, and custom applications to manage order synchronization, perform order research, and create demand-based decision support tools.   _Note:_ For the JP, AU, and SG marketplaces, the Orders API supports orders from 2016 onward. For all other marketplaces, the Orders API supports orders for the last two years (orders older than this don't show up in the response).
 
 OpenAPI spec version: v0
 
@@ -16,10 +16,10 @@ module AmzSpApi::OrdersApiModel
   class PackageDetail
     attr_accessor :package_reference_id
 
-    # Identifies the carrier that will deliver the package. This field is required for all marketplaces, see [reference](https://developer-docs.amazon.com/sp-api/changelog/carriercode-value-required-in-shipment-confirmations-for-br-mx-ca-sg-au-in-jp-marketplaces).
+    # Identifies the carrier that will deliver the package. This field is required for all marketplaces. For more information, refer to the [`CarrierCode` announcement](https://developer-docs.amazon.com/sp-api/changelog/carriercode-value-required-in-shipment-confirmations-for-br-mx-ca-sg-au-in-jp-marketplaces).
     attr_accessor :carrier_code
 
-    # Carrier Name that will deliver the package. Required when carrierCode is \"Others\" 
+    # Carrier Name that will deliver the package. Required when `carrierCode` is \"Others\" 
     attr_accessor :carrier_name
 
     # Ship method to be used for shipping the order.
@@ -28,10 +28,10 @@ module AmzSpApi::OrdersApiModel
     # The tracking number used to obtain tracking and delivery information.
     attr_accessor :tracking_number
 
-    # The shipping date for the package. Must be in ISO-8601 date/time format.
+    # The shipping date for the package. Must be in <a href='https://developer-docs.amazon.com/sp-api/docs/iso-8601'>ISO 8601</a> date/time format.
     attr_accessor :ship_date
 
-    # The unique identifier of the supply source.
+    # The unique identifier for the supply source.
     attr_accessor :ship_from_supply_source_id
 
     attr_accessor :order_items

@@ -14,7 +14,7 @@ require 'date'
 module AmzSpApi::VendorDirectFulfillmentSandboxTestDataApiModel
   # Error response returned when the request is unsuccessful.
   class Error
-    # An error code that identifies the type of error that occured.
+    # An error code that identifies the type of error that occurred.
     attr_accessor :code
 
     # A message that describes the error condition.

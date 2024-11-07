@@ -19,7 +19,7 @@ Submits one or more invoices for a vendor's direct fulfillment orders.  **Usage 
 require 'vendor-direct-fulfillment-payments-api-model'
 
 api_instance = AmzSpApi::VendorDirectFulfillmentPaymentsApiModel::VendorInvoiceApi.new
-body = AmzSpApi::VendorDirectFulfillmentPaymentsApiModel::SubmitInvoiceRequest.new # SubmitInvoiceRequest | 
+body = AmzSpApi::VendorDirectFulfillmentPaymentsApiModel::SubmitInvoiceRequest.new # SubmitInvoiceRequest | The request body containing one or more invoices for vendor orders.
 
 
 begin
@@ -34,7 +34,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**SubmitInvoiceRequest**](SubmitInvoiceRequest.md)|  | 
+ **body** | [**SubmitInvoiceRequest**](SubmitInvoiceRequest.md)| The request body containing one or more invoices for vendor orders. | 
 
 ### Return type
 

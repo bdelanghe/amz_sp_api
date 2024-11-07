@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentInboundApiModel
+  # Result for confirm preorder operation
   class ConfirmPreorderResult
     attr_accessor :confirmed_need_by_date
 

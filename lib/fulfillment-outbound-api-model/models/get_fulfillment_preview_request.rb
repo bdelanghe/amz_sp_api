@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentOutboundApiModel
-  # The request body schema for the getFulfillmentPreview operation.
+  # The request body schema for the `getFulfillmentPreview` operation.
   class GetFulfillmentPreviewRequest
     # The marketplace the fulfillment order is placed against.
     attr_accessor :marketplace_id
@@ -26,7 +26,7 @@ module AmzSpApi::FulfillmentOutboundApiModel
     # When true, returns all fulfillment order previews both for COD and not for COD. Otherwise, returns only fulfillment order previews that are not for COD.
     attr_accessor :include_cod_fulfillment_preview
 
-    # When true, returns the ScheduledDeliveryInfo response object, which contains the available delivery windows for a Scheduled Delivery. The ScheduledDeliveryInfo response object can only be returned for fulfillment order previews with ShippingSpeedCategories = ScheduledDelivery.
+    # When true, returns the `ScheduledDeliveryInfo` response object, which contains the available delivery windows for a Scheduled Delivery. The `ScheduledDeliveryInfo` response object can only be returned for fulfillment order previews with `ShippingSpeedCategories` = `ScheduledDelivery`.
     attr_accessor :include_delivery_windows
 
     # A list of features and their fulfillment policies to apply to the order.

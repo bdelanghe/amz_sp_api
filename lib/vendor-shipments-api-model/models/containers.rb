@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Retail Procurement Shipments
+#Vendor Shipments v1
 
 #The Selling Partner API for Retail Procurement Shipments provides programmatic access to retail shipping data for vendors.
 
@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorShipmentsApiModel
+  # A list of the items in this transportation and their associated inner container details. If any of the item detail fields are common at a carton or a pallet level, provide them at the corresponding carton or pallet level.
   class Containers
     # The type of container.
     attr_accessor :container_type

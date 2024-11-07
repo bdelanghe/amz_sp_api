@@ -19,7 +19,7 @@ Submits inventory updates for the specified warehouse for either a partial or fu
 require 'vendor-direct-fulfillment-inventory-api-model'
 
 api_instance = AmzSpApi::VendorDirectFulfillmentInventoryApiModel::UpdateInventoryApi.new
-body = AmzSpApi::VendorDirectFulfillmentInventoryApiModel::SubmitInventoryUpdateRequest.new # SubmitInventoryUpdateRequest | 
+body = AmzSpApi::VendorDirectFulfillmentInventoryApiModel::SubmitInventoryUpdateRequest.new # SubmitInventoryUpdateRequest | The request body containing the inventory update data to submit.
 warehouse_id = 'warehouse_id_example' # String | Identifier for the warehouse for which to update inventory.
 
 
@@ -35,7 +35,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**SubmitInventoryUpdateRequest**](SubmitInventoryUpdateRequest.md)|  | 
+ **body** | [**SubmitInventoryUpdateRequest**](SubmitInventoryUpdateRequest.md)| The request body containing the inventory update data to submit. | 
  **warehouse_id** | **String**| Identifier for the warehouse for which to update inventory. | 
 
 ### Return type

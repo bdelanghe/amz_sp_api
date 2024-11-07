@@ -123,7 +123,7 @@ Submits one or more shipment confirmations for vendor orders.  **Usage Plan:**  
 require 'vendor-direct-fulfillment-shipping-api-model'
 
 api_instance = AmzSpApi::VendorDirectFulfillmentShippingApiModel::VendorShippingApi.new
-body = AmzSpApi::VendorDirectFulfillmentShippingApiModel::SubmitShipmentConfirmationsRequest.new # SubmitShipmentConfirmationsRequest | 
+body = AmzSpApi::VendorDirectFulfillmentShippingApiModel::SubmitShipmentConfirmationsRequest.new # SubmitShipmentConfirmationsRequest | Request body containing the shipment confirmations data.
 
 
 begin
@@ -138,7 +138,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**SubmitShipmentConfirmationsRequest**](SubmitShipmentConfirmationsRequest.md)|  | 
+ **body** | [**SubmitShipmentConfirmationsRequest**](SubmitShipmentConfirmationsRequest.md)| Request body containing the shipment confirmations data. | 
 
 ### Return type
 
@@ -168,7 +168,7 @@ This API call is only to be used by Vendor-Own-Carrier (VOC) vendors. Calling th
 require 'vendor-direct-fulfillment-shipping-api-model'
 
 api_instance = AmzSpApi::VendorDirectFulfillmentShippingApiModel::VendorShippingApi.new
-body = AmzSpApi::VendorDirectFulfillmentShippingApiModel::SubmitShipmentStatusUpdatesRequest.new # SubmitShipmentStatusUpdatesRequest | 
+body = AmzSpApi::VendorDirectFulfillmentShippingApiModel::SubmitShipmentStatusUpdatesRequest.new # SubmitShipmentStatusUpdatesRequest | Request body containing the shipment status update data.
 
 
 begin
@@ -183,7 +183,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**SubmitShipmentStatusUpdatesRequest**](SubmitShipmentStatusUpdatesRequest.md)|  | 
+ **body** | [**SubmitShipmentStatusUpdatesRequest**](SubmitShipmentStatusUpdatesRequest.md)| Request body containing the shipment status update data. | 
 
 ### Return type
 

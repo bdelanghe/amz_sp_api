@@ -1,6 +1,6 @@
 # vendor-invoices-api-model
 
-AmzSpApi::VendorInvoicesApiModel - the Ruby gem for the Selling Partner API for Retail Procurement Payments
+AmzSpApi::VendorInvoicesApiModel - the Ruby gem for the Vendor Invoices v1
 
 The Selling Partner API for Retail Procurement Payments provides programmatic access to vendors payments data.
 
@@ -55,15 +55,16 @@ Please follow the [installation](#installation) procedure and then run the follo
 # Load the gem
 require 'vendor-invoices-api-model'
 
-api_instance = AmzSpApi::VendorInvoicesApiModel::VendorPaymentsApi.new
-body = AmzSpApi::VendorInvoicesApiModel::SubmitInvoicesRequest.new # SubmitInvoicesRequest | 
+api_instance = AmzSpApi::VendorInvoicesApiModel::VendorInvoicesApi.new
+body = AmzSpApi::VendorInvoicesApiModel::SubmitInvoicesRequest.new # SubmitInvoicesRequest | The request body containing the invoice data to submit.
 
 
 begin
+  #submitInvoices
   result = api_instance.submit_invoices(body)
   p result
 rescue AmzSpApi::VendorInvoicesApiModel::ApiError => e
-  puts "Exception when calling VendorPaymentsApi->submit_invoices: #{e}"
+  puts "Exception when calling VendorInvoicesApi->submit_invoices: #{e}"
 end
 ```
 
@@ -73,7 +74,7 @@ All URIs are relative to *https://sellingpartnerapi-na.amazon.com/*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*AmzSpApi::VendorInvoicesApiModel::VendorPaymentsApi* | [**submit_invoices**](docs/VendorPaymentsApi.md#submit_invoices) | **POST** /vendor/payments/v1/invoices | 
+*AmzSpApi::VendorInvoicesApiModel::VendorInvoicesApi* | [**submit_invoices**](docs/VendorInvoicesApi.md#submit_invoices) | **POST** /vendor/payments/v1/invoices | submitInvoices
 
 ## Documentation for Models
 
@@ -90,12 +91,14 @@ Class | Method | HTTP request | Description
  - [AmzSpApi::VendorInvoicesApiModel::InvoiceItem](docs/InvoiceItem.md)
  - [AmzSpApi::VendorInvoicesApiModel::ItemQuantity](docs/ItemQuantity.md)
  - [AmzSpApi::VendorInvoicesApiModel::Money](docs/Money.md)
+ - [AmzSpApi::VendorInvoicesApiModel::NetCostUnitOfMeasure](docs/NetCostUnitOfMeasure.md)
  - [AmzSpApi::VendorInvoicesApiModel::PartyIdentification](docs/PartyIdentification.md)
  - [AmzSpApi::VendorInvoicesApiModel::PaymentTerms](docs/PaymentTerms.md)
  - [AmzSpApi::VendorInvoicesApiModel::SubmitInvoicesRequest](docs/SubmitInvoicesRequest.md)
  - [AmzSpApi::VendorInvoicesApiModel::SubmitInvoicesResponse](docs/SubmitInvoicesResponse.md)
  - [AmzSpApi::VendorInvoicesApiModel::TaxDetails](docs/TaxDetails.md)
  - [AmzSpApi::VendorInvoicesApiModel::TaxRegistrationDetails](docs/TaxRegistrationDetails.md)
+ - [AmzSpApi::VendorInvoicesApiModel::TotalWeight](docs/TotalWeight.md)
  - [AmzSpApi::VendorInvoicesApiModel::TransactionId](docs/TransactionId.md)
 
 ## Documentation for Authorization

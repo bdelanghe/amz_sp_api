@@ -14,6 +14,7 @@ require 'date'
 module AmzSpApi::VendorOrdersApiModel
   # The request schema for the submitAcknowledgment operation.
   class SubmitAcknowledgementRequest
+    # An array of order acknowledgements to be submitted.
     attr_accessor :acknowledgements
 
     # Attribute mapping from ruby-style variable name to JSON key.

@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::ProductPricingApiModel
-  # Additional HTTP body information associated with an individual request within a batch.
+  # Additional HTTP body information that is associated with an individual request within a batch.
   class HttpBody
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map

@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Retail Procurement Payments
+#Vendor Invoices v1
 
 #The Selling Partner API for Retail Procurement Payments provides programmatic access to vendors payments data.
 
@@ -29,16 +29,18 @@ require 'vendor-invoices-api-model/models/invoice'
 require 'vendor-invoices-api-model/models/invoice_item'
 require 'vendor-invoices-api-model/models/item_quantity'
 require 'vendor-invoices-api-model/models/money'
+require 'vendor-invoices-api-model/models/net_cost_unit_of_measure'
 require 'vendor-invoices-api-model/models/party_identification'
 require 'vendor-invoices-api-model/models/payment_terms'
 require 'vendor-invoices-api-model/models/submit_invoices_request'
 require 'vendor-invoices-api-model/models/submit_invoices_response'
 require 'vendor-invoices-api-model/models/tax_details'
 require 'vendor-invoices-api-model/models/tax_registration_details'
+require 'vendor-invoices-api-model/models/total_weight'
 require 'vendor-invoices-api-model/models/transaction_id'
 
 # APIs
-require 'vendor-invoices-api-model/api/vendor_payments_api'
+require 'vendor-invoices-api-model/api/vendor_invoices_api'
 
 module AmzSpApi::VendorInvoicesApiModel
   class << self

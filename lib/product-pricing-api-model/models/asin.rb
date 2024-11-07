@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::ProductPricingApiModel
-  # The Amazon Standard Identification Number (ASIN) of the item.
+  # The ASIN of the item.
   class Asin
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map

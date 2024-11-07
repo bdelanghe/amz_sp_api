@@ -12,12 +12,12 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::ProductPricingApiModel
-  # Describes a featured buying option which includes a list of segmented featured offers for a particular item condition.
+  # Describes a featured buying option, which includes a list of segmented featured offers for a particular item condition.
   class FeaturedBuyingOption
-    # The buying option type of the featured offer. This field represents the buying options that a customer sees on the detail page. For example, B2B, Fresh, and Subscribe n Save. Currently supports `NEW`
+    # The buying option type for the featured offer. `buyingOptionType` represents the buying options that a customer receives on the detail page, such as `B2B`, `Fresh`, and `Subscribe n Save`. `buyingOptionType` currently supports `NEW` as a value.
     attr_accessor :buying_option_type
 
-    # A list of segmented featured offers for the current buying option type. A segment can be considered as a group of regional contexts that all have the same featured offer. A regional context is a combination of factors such as customer type, region or postal code and buying option.
+    # A list of segmented featured offers for the current buying option type. A segment can be considered as a group of regional contexts that all have the same featured offer. A regional context is a combination of factors such as customer type, region, or postal code and buying option.
     attr_accessor :segmented_featured_offers
 
     class EnumAttributeValidator

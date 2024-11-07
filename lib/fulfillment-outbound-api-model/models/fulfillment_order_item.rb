@@ -17,7 +17,7 @@ module AmzSpApi::FulfillmentOutboundApiModel
     # The seller SKU of the item.
     attr_accessor :seller_sku
 
-    # A fulfillment order item identifier submitted with a call to the createFulfillmentOrder operation.
+    # A fulfillment order item identifier submitted with a call to the `createFulfillmentOrder` operation.
     attr_accessor :seller_fulfillment_order_item_id
 
     attr_accessor :quantity

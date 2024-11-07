@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorDirectFulfillmentShippingApiModel
+  # Response payload with the list of Packing Slips.
   class GetPackingSlipListResponse
     attr_accessor :payload
 

@@ -9,5 +9,5 @@ Name | Type | Description | Notes
 **estimated_delivery_date** | **DateTime** | Estimated Date on which shipment will be delivered from Vendor to Buyer | [optional] 
 **shipment_delivery_date** | **DateTime** | Date on which shipment will be delivered from Vendor to Buyer | [optional] 
 **carrier_details** | [**CarrierDetails**](CarrierDetails.md) |  | [optional] 
-**bill_of_lading_number** | **String** | Bill Of Lading (BOL) number is the unique number assigned by the vendor. The BOL present in the Shipment Confirmation message ideally matches the paper BOL provided with the shipment, but that is no must. Instead of BOL, an alternative reference number (like Delivery Note Number) for the shipment can also be sent in this field. | [optional] 
+**bill_of_lading_number** | **String** | The Bill of Lading (BOL) number is a unique number assigned to each shipment of goods by the vendor or shipper during the creation of the Bill of Lading. This number must be unique for every shipment and cannot be a date/time or single character. The BOL numer is mandatory in Shipment Confirmation message for FTL and LTL shipments, and must match the paper BOL provided with the shipment. Instead of BOL, an alternative reference number (like Delivery Note Number) for the shipment can also be sent in this field. | [optional] 
 

@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorDirectFulfillmentShippingApiModel
+  # A container used for shipping and packing items.
   class Container
     # The type of container.
     attr_accessor :container_type

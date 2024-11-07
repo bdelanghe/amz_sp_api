@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentInboundApiModel
+  # Result for the get preorder info operation
   class GetPreorderInfoResult
     # Indicates whether the shipment contains items that have been enabled for pre-order. For more information about enabling items for pre-order, see the Seller Central Help.
     attr_accessor :shipment_contains_preorderable_items

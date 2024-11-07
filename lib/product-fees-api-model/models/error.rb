@@ -19,7 +19,7 @@ module AmzSpApi::ProductFeesApiModel
     # A message that describes the error condition.
     attr_accessor :message
 
-    # Additional information that can help the caller understand or fix the issue.
+    # Additional details that can help the caller understand or fix the issue.
     attr_accessor :details
 
     # Attribute mapping from ruby-style variable name to JSON key.

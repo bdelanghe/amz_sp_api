@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentOutboundApiModel
-  # The response schema for the getFulfillmentOrder operation.
+  # The response schema for the `getFulfillmentOrder` operation.
   class GetFulfillmentOrderResponse
     attr_accessor :payload
 

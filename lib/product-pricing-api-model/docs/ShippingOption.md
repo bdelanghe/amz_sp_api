@@ -3,6 +3,6 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**shipping_option_type** | **String** | The type of the shipping option. | 
+**shipping_option_type** | **String** | The type of shipping option. | 
 **price** | [**MoneyType**](MoneyType.md) |  | 
 

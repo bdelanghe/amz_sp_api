@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentOutboundApiModel
+  # Tracking details of package
   class PackageTrackingDetails
     # The package identifier.
     attr_accessor :package_number
@@ -39,7 +40,7 @@ module AmzSpApi::FulfillmentOutboundApiModel
 
     attr_accessor :current_status
 
-    # Description corresponding to the CurrentStatus value.
+    # Description corresponding to the `CurrentStatus` value.
     attr_accessor :current_status_description
 
     # The name of the person who signed for the package.

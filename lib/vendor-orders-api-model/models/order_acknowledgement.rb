@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorOrdersApiModel
+  # Represents an acknowledgement for an order, including the purchase order number, selling party details, acknowledgement date, and a list of acknowledged items.
   class OrderAcknowledgement
     # The purchase order number. Formatting Notes: 8-character alpha-numeric code.
     attr_accessor :purchase_order_number

@@ -1,7 +1,7 @@
 =begin
 #Selling Partner API for Notifications
 
-#The Selling Partner API for Notifications lets you subscribe to notifications that are relevant to a selling partner's business. Using this API you can create a destination to receive notifications, subscribe to notifications, delete notification subscriptions, and more.  For more information, see the [Notifications Use Case Guide](doc:notifications-api-v1-use-case-guide).
+#The Selling Partner API for Notifications lets you subscribe to notifications that are relevant to a selling partner's business. Using this API you can create a destination to receive notifications, subscribe to notifications, delete notification subscriptions, and more.  For more information, refer to the [Notifications Use Case Guide](https://developer-docs.amazon.com/sp-api/docs/notifications-api-v1-use-case-guide).
 
 OpenAPI spec version: v1
 
@@ -12,13 +12,13 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::NotificationsApiModel
-  # A notificationType specific filter. This object contains all of the currently available filters and properties that you can use to define a notificationType specific filter.
+  # A `notificationType` specific filter. This object contains all of the currently available filters and properties that you can use to define a `notificationType` specific filter.
   class EventFilter
     attr_accessor :marketplace_ids
 
     attr_accessor :order_change_types
 
-    # An eventFilterType value that is supported by the specific notificationType. This is used by the subscription service to determine the type of event filter. Refer to the section of the [Notifications Use Case Guide](doc:notifications-api-v1-use-case-guide) that describes the specific notificationType to determine if an eventFilterType is supported.
+    # An `eventFilterType` value that is supported by the specific `notificationType`. This is used by the subscription service to determine the type of event filter. Refer to [Notification Type Values](https://developer-docs.amazon.com/sp-api/docs/notification-type-values) to determine if an `eventFilterType` is supported.
     attr_accessor :event_filter_type
 
     attr_accessor :aggregation_settings

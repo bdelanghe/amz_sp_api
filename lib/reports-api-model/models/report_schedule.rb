@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Reports
+#Report v2021-06-30
 
 #The Selling Partner API for Reports lets you retrieve and manage a variety of reports that can help selling partners manage their businesses.
 
@@ -25,10 +25,10 @@ module AmzSpApi::ReportsApiModel
 
     attr_accessor :report_options
 
-    # An ISO 8601 period value that indicates how often a report should be created.
+    # An <a href='https://developer-docs.amazon.com/sp-api/docs/iso-8601'>ISO 8601</a> period value that indicates how often a report should be created.
     attr_accessor :period
 
-    # The date and time when the schedule will create its next report, in ISO 8601 date time format.
+    # The date and time when the schedule will create its next report, in <a href='https://developer-docs.amazon.com/sp-api/docs/iso-8601'>ISO 8601</a> date time format.
     attr_accessor :next_report_creation_time
 
     # Attribute mapping from ruby-style variable name to JSON key.

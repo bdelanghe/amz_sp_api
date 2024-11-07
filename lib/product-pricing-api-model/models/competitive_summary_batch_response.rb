@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::ProductPricingApiModel
-  # The response schema of the `competitiveSummaryBatch` operation.
+  # The response schema for the `competitiveSummaryBatch` operation.
   class CompetitiveSummaryBatchResponse
     attr_accessor :responses
 

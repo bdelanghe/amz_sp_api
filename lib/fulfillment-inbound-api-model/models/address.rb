@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentInboundApiModel
+  # Specific details to identify a place.
   class Address
     # Name of the individual or business.
     attr_accessor :name

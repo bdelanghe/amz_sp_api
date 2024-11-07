@@ -12,9 +12,11 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorOrdersApiModel
+  # A list of order statuses.
   class OrderListStatus
     attr_accessor :pagination
 
+    # Represents an order status within the OrderListStatus.
     attr_accessor :orders_status
 
     # Attribute mapping from ruby-style variable name to JSON key.

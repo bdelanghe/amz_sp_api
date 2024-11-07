@@ -16,7 +16,187 @@ module AmzSpApi::FbaInventoryApiModel
     def initialize(api_client = ApiClient.default)
       @api_client = api_client
     end
-    # Returns a list of inventory summaries. The summaries returned depend on the presence or absence of the `startDateTime`, `sellerSkus` and `sellerSku` parameters:  - All inventory summaries with available details are returned when the `startDateTime`, `sellerSkus` and `sellerSku` parameters are omitted. - When `startDateTime` is provided, the operation returns inventory summaries that have had changes after the date and time specified. The `sellerSkus` and `sellerSku` parameters are ignored. **Important:** To avoid errors, use both `startDateTime` and `nextToken` to get the next page of inventory summaries that have changed after the date and time specified. - When the `sellerSkus` parameter is provided, the operation returns inventory summaries for only the specified `sellerSkus`. The `sellerSku` parameter is ignored. - When the `sellerSku` parameter is provided, the operation returns inventory summaries for only the specified `sellerSku`.  **Note:** The parameters associated with this operation may contain special characters that must be encoded to successfully call the API. To avoid errors with SKUs when encoding URLs, refer to [URL Encoding](https://developer-docs.amazon.com/sp-api/docs/url-encoding).  **Usage Plan:**  | Rate (requests per second) | Burst | | ---- | ---- | | 2 | 2 |  The `x-amzn-RateLimit-Limit` response header returns the usage plan rate limits that were applied to the requested operation, when available. The table above indicates the default rate and burst values for this operation. Selling partners whose business demands require higher throughput may see higher rate and burst values than those shown here. For more information, see [Usage Plans and Rate Limits in the Selling Partner API](doc:usage-plans-and-rate-limits-in-the-sp-api).
+    # Requests that Amazon add items to the Sandbox Inventory with desired amount of quantity in the sandbox environment. This is a sandbox-only operation and must be directed to a sandbox endpoint. Refer to [Selling Partner API sandbox](https://developer-docs.amazon.com/sp-api/docs/the-selling-partner-api-sandbox) for more information.
+    # @param body List of items to add to Sandbox inventory.
+    # @param x_amzn_idempotency_token A unique token/requestId provided with each call to ensure idempotency.
+    # @param [Hash] opts the optional parameters
+    # @return [AddInventoryResponse]
+    def add_inventory(body, x_amzn_idempotency_token, opts = {})
+      data, _status_code, _headers = add_inventory_with_http_info(body, x_amzn_idempotency_token, opts)
+      data
+    end
+
+    # Requests that Amazon add items to the Sandbox Inventory with desired amount of quantity in the sandbox environment. This is a sandbox-only operation and must be directed to a sandbox endpoint. Refer to [Selling Partner API sandbox](https://developer-docs.amazon.com/sp-api/docs/the-selling-partner-api-sandbox) for more information.
+    # @param body List of items to add to Sandbox inventory.
+    # @param x_amzn_idempotency_token A unique token/requestId provided with each call to ensure idempotency.
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(AddInventoryResponse, Integer, Hash)>] AddInventoryResponse data, response status code and response headers
+    def add_inventory_with_http_info(body, x_amzn_idempotency_token, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: FbaInventoryApi.add_inventory ...'
+      end
+      # verify the required parameter 'body' is set
+      if @api_client.config.client_side_validation && body.nil?
+        fail ArgumentError, "Missing the required parameter 'body' when calling FbaInventoryApi.add_inventory"
+      end
+      # verify the required parameter 'x_amzn_idempotency_token' is set
+      if @api_client.config.client_side_validation && x_amzn_idempotency_token.nil?
+        fail ArgumentError, "Missing the required parameter 'x_amzn_idempotency_token' when calling FbaInventoryApi.add_inventory"
+      end
+      # resource path
+      local_var_path = '/fba/inventory/v1/items/inventory'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json'])
+      # HTTP header 'Content-Type'
+      header_params['Content-Type'] = @api_client.select_header_content_type(['application/json'])
+      header_params[:'x-amzn-idempotency-token'] = x_amzn_idempotency_token
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:body] || @api_client.object_to_http_body(body) 
+
+      return_type = opts[:return_type] || 'AddInventoryResponse' 
+
+      auth_names = opts[:auth_names] || []
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path,
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type)
+
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: FbaInventoryApi#add_inventory\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+    # Requests that Amazon create product-details in the Sandbox Inventory in the sandbox environment. This is a sandbox-only operation and must be directed to a sandbox endpoint. Refer to [Selling Partner API sandbox](https://developer-docs.amazon.com/sp-api/docs/the-selling-partner-api-sandbox) for more information.
+    # @param body CreateInventoryItem Request Body Parameter.
+    # @param [Hash] opts the optional parameters
+    # @return [CreateInventoryItemResponse]
+    def create_inventory_item(body, opts = {})
+      data, _status_code, _headers = create_inventory_item_with_http_info(body, opts)
+      data
+    end
+
+    # Requests that Amazon create product-details in the Sandbox Inventory in the sandbox environment. This is a sandbox-only operation and must be directed to a sandbox endpoint. Refer to [Selling Partner API sandbox](https://developer-docs.amazon.com/sp-api/docs/the-selling-partner-api-sandbox) for more information.
+    # @param body CreateInventoryItem Request Body Parameter.
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(CreateInventoryItemResponse, Integer, Hash)>] CreateInventoryItemResponse data, response status code and response headers
+    def create_inventory_item_with_http_info(body, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: FbaInventoryApi.create_inventory_item ...'
+      end
+      # verify the required parameter 'body' is set
+      if @api_client.config.client_side_validation && body.nil?
+        fail ArgumentError, "Missing the required parameter 'body' when calling FbaInventoryApi.create_inventory_item"
+      end
+      # resource path
+      local_var_path = '/fba/inventory/v1/items'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json'])
+      # HTTP header 'Content-Type'
+      header_params['Content-Type'] = @api_client.select_header_content_type(['application/json'])
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:body] || @api_client.object_to_http_body(body) 
+
+      return_type = opts[:return_type] || 'CreateInventoryItemResponse' 
+
+      auth_names = opts[:auth_names] || []
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path,
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type)
+
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: FbaInventoryApi#create_inventory_item\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+    # Requests that Amazon Deletes an item from the Sandbox Inventory in the sandbox environment. This is a sandbox-only operation and must be directed to a sandbox endpoint. Refer to [Selling Partner API sandbox](https://developer-docs.amazon.com/sp-api/docs/the-selling-partner-api-sandbox) for more information.
+    # @param seller_sku A single seller SKU used for querying the specified seller SKU inventory summaries.
+    # @param marketplace_id The marketplace ID for the marketplace for which the sellerSku is to be deleted.
+    # @param [Hash] opts the optional parameters
+    # @return [DeleteInventoryItemResponse]
+    def delete_inventory_item(seller_sku, marketplace_id, opts = {})
+      data, _status_code, _headers = delete_inventory_item_with_http_info(seller_sku, marketplace_id, opts)
+      data
+    end
+
+    # Requests that Amazon Deletes an item from the Sandbox Inventory in the sandbox environment. This is a sandbox-only operation and must be directed to a sandbox endpoint. Refer to [Selling Partner API sandbox](https://developer-docs.amazon.com/sp-api/docs/the-selling-partner-api-sandbox) for more information.
+    # @param seller_sku A single seller SKU used for querying the specified seller SKU inventory summaries.
+    # @param marketplace_id The marketplace ID for the marketplace for which the sellerSku is to be deleted.
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(DeleteInventoryItemResponse, Integer, Hash)>] DeleteInventoryItemResponse data, response status code and response headers
+    def delete_inventory_item_with_http_info(seller_sku, marketplace_id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: FbaInventoryApi.delete_inventory_item ...'
+      end
+      # verify the required parameter 'seller_sku' is set
+      if @api_client.config.client_side_validation && seller_sku.nil?
+        fail ArgumentError, "Missing the required parameter 'seller_sku' when calling FbaInventoryApi.delete_inventory_item"
+      end
+      # verify the required parameter 'marketplace_id' is set
+      if @api_client.config.client_side_validation && marketplace_id.nil?
+        fail ArgumentError, "Missing the required parameter 'marketplace_id' when calling FbaInventoryApi.delete_inventory_item"
+      end
+      # resource path
+      local_var_path = '/fba/inventory/v1/items/{sellerSku}'.sub('{' + 'sellerSku' + '}', seller_sku.to_s)
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+      query_params[:'marketplaceId'] = marketplace_id
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json'])
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:body] 
+
+      return_type = opts[:return_type] || 'DeleteInventoryItemResponse' 
+
+      auth_names = opts[:auth_names] || []
+      data, status_code, headers = @api_client.call_api(:DELETE, local_var_path,
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type)
+
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: FbaInventoryApi#delete_inventory_item\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+    # Returns a list of inventory summaries. The summaries returned depend on the presence or absence of the startDateTime, sellerSkus and sellerSku parameters:  - All inventory summaries with available details are returned when the startDateTime, sellerSkus and sellerSku parameters are omitted. - When startDateTime is provided, the operation returns inventory summaries that have had changes after the date and time specified. The sellerSkus and sellerSku parameters are ignored. Important: To avoid errors, use both startDateTime and nextToken to get the next page of inventory summaries that have changed after the date and time specified. - When the sellerSkus parameter is provided, the operation returns inventory summaries for only the specified sellerSkus. The sellerSku parameter is ignored. - When the sellerSku parameter is provided, the operation returns inventory summaries for only the specified sellerSku.  Note: The parameters associated with this operation may contain special characters that must be encoded to successfully call the API. To avoid errors with SKUs when encoding URLs, refer to [URL Encoding](https://developer-docs.amazon.com/sp-api/docs/url-encoding).  Usage Plan:  | Rate (requests per second) | Burst | | ---- | ---- | | 2 | 2 |  The x-amzn-RateLimit-Limit response header returns the usage plan rate limits that were applied to the requested operation, when available. The table above indicates the default rate and burst values for this operation. Selling partners whose business demands require higher throughput may see higher rate and burst values than those shown here. For more information, see [Usage Plans and Rate Limits in the Selling Partner API](https://developer-docs.amazon.com/sp-api/docs/usage-plans-and-rate-limits).
     # @param granularity_type The granularity type for the inventory aggregation level.
     # @param granularity_id The granularity ID for the inventory aggregation level.
     # @param marketplace_ids The marketplace ID for the marketplace for which to return inventory summaries.
@@ -32,7 +212,7 @@ module AmzSpApi::FbaInventoryApiModel
       data
     end
 
-    # Returns a list of inventory summaries. The summaries returned depend on the presence or absence of the &#x60;startDateTime&#x60;, &#x60;sellerSkus&#x60; and &#x60;sellerSku&#x60; parameters:  - All inventory summaries with available details are returned when the &#x60;startDateTime&#x60;, &#x60;sellerSkus&#x60; and &#x60;sellerSku&#x60; parameters are omitted. - When &#x60;startDateTime&#x60; is provided, the operation returns inventory summaries that have had changes after the date and time specified. The &#x60;sellerSkus&#x60; and &#x60;sellerSku&#x60; parameters are ignored. **Important:** To avoid errors, use both &#x60;startDateTime&#x60; and &#x60;nextToken&#x60; to get the next page of inventory summaries that have changed after the date and time specified. - When the &#x60;sellerSkus&#x60; parameter is provided, the operation returns inventory summaries for only the specified &#x60;sellerSkus&#x60;. The &#x60;sellerSku&#x60; parameter is ignored. - When the &#x60;sellerSku&#x60; parameter is provided, the operation returns inventory summaries for only the specified &#x60;sellerSku&#x60;.  **Note:** The parameters associated with this operation may contain special characters that must be encoded to successfully call the API. To avoid errors with SKUs when encoding URLs, refer to [URL Encoding](https://developer-docs.amazon.com/sp-api/docs/url-encoding).  **Usage Plan:**  | Rate (requests per second) | Burst | | ---- | ---- | | 2 | 2 |  The &#x60;x-amzn-RateLimit-Limit&#x60; response header returns the usage plan rate limits that were applied to the requested operation, when available. The table above indicates the default rate and burst values for this operation. Selling partners whose business demands require higher throughput may see higher rate and burst values than those shown here. For more information, see [Usage Plans and Rate Limits in the Selling Partner API](doc:usage-plans-and-rate-limits-in-the-sp-api).
+    # Returns a list of inventory summaries. The summaries returned depend on the presence or absence of the startDateTime, sellerSkus and sellerSku parameters:  - All inventory summaries with available details are returned when the startDateTime, sellerSkus and sellerSku parameters are omitted. - When startDateTime is provided, the operation returns inventory summaries that have had changes after the date and time specified. The sellerSkus and sellerSku parameters are ignored. Important: To avoid errors, use both startDateTime and nextToken to get the next page of inventory summaries that have changed after the date and time specified. - When the sellerSkus parameter is provided, the operation returns inventory summaries for only the specified sellerSkus. The sellerSku parameter is ignored. - When the sellerSku parameter is provided, the operation returns inventory summaries for only the specified sellerSku.  Note: The parameters associated with this operation may contain special characters that must be encoded to successfully call the API. To avoid errors with SKUs when encoding URLs, refer to [URL Encoding](https://developer-docs.amazon.com/sp-api/docs/url-encoding).  Usage Plan:  | Rate (requests per second) | Burst | | ---- | ---- | | 2 | 2 |  The x-amzn-RateLimit-Limit response header returns the usage plan rate limits that were applied to the requested operation, when available. The table above indicates the default rate and burst values for this operation. Selling partners whose business demands require higher throughput may see higher rate and burst values than those shown here. For more information, see [Usage Plans and Rate Limits in the Selling Partner API](https://developer-docs.amazon.com/sp-api/docs/usage-plans-and-rate-limits).
     # @param granularity_type The granularity type for the inventory aggregation level.
     # @param granularity_id The granularity ID for the inventory aggregation level.
     # @param marketplace_ids The marketplace ID for the marketplace for which to return inventory summaries.

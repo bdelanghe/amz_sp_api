@@ -10,7 +10,6 @@ Method | HTTP request | Description
 [**create_inbound_shipment_plan**](FbaInboundApi.md#create_inbound_shipment_plan) | **POST** /fba/inbound/v0/plans | 
 [**estimate_transport**](FbaInboundApi.md#estimate_transport) | **POST** /fba/inbound/v0/shipments/{shipmentId}/transport/estimate | 
 [**get_bill_of_lading**](FbaInboundApi.md#get_bill_of_lading) | **GET** /fba/inbound/v0/shipments/{shipmentId}/billOfLading | 
-[**get_inbound_guidance**](FbaInboundApi.md#get_inbound_guidance) | **GET** /fba/inbound/v0/itemsGuidance | 
 [**get_labels**](FbaInboundApi.md#get_labels) | **GET** /fba/inbound/v0/shipments/{shipmentId}/labels | 
 [**get_preorder_info**](FbaInboundApi.md#get_preorder_info) | **GET** /fba/inbound/v0/shipments/{shipmentId}/preorder | 
 [**get_prep_instructions**](FbaInboundApi.md#get_prep_instructions) | **GET** /fba/inbound/v0/prepInstructions | 
@@ -129,7 +128,7 @@ Returns a new inbound shipment based on the specified shipmentId that was return
 require 'fulfillment-inbound-api-model'
 
 api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-body = AmzSpApi::FulfillmentInboundApiModel::InboundShipmentRequest.new # InboundShipmentRequest | 
+body = AmzSpApi::FulfillmentInboundApiModel::InboundShipmentRequest.new # InboundShipmentRequest | The request schema for the InboundShipmentRequest operation.
 shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
 
 
@@ -145,7 +144,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**InboundShipmentRequest**](InboundShipmentRequest.md)|  | 
+ **body** | [**InboundShipmentRequest**](InboundShipmentRequest.md)| The request schema for the InboundShipmentRequest operation. | 
  **shipment_id** | **String**| A shipment identifier originally returned by the createInboundShipmentPlan operation. | 
 
 ### Return type
@@ -176,7 +175,7 @@ Returns one or more inbound shipment plans, which provide the information you ne
 require 'fulfillment-inbound-api-model'
 
 api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-body = AmzSpApi::FulfillmentInboundApiModel::CreateInboundShipmentPlanRequest.new # CreateInboundShipmentPlanRequest | 
+body = AmzSpApi::FulfillmentInboundApiModel::CreateInboundShipmentPlanRequest.new # CreateInboundShipmentPlanRequest | The request schema for the CreateInboundShipmentPlanRequest operation.
 
 
 begin
@@ -191,7 +190,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**CreateInboundShipmentPlanRequest**](CreateInboundShipmentPlanRequest.md)|  | 
+ **body** | [**CreateInboundShipmentPlanRequest**](CreateInboundShipmentPlanRequest.md)| The request schema for the CreateInboundShipmentPlanRequest operation. | 
 
 ### Return type
 
@@ -298,56 +297,6 @@ No authorization required
 
 
 
-# **get_inbound_guidance**
-> GetInboundGuidanceResponse get_inbound_guidance(marketplace_id, opts)
-
-
-
-Returns information that lets a seller know if Amazon recommends sending an item to a given marketplace. In some cases, Amazon provides guidance for why a given SellerSKU or ASIN is not recommended for shipment to Amazon's fulfillment network. Sellers may still ship items that are not recommended, at their discretion.  **Usage Plan:**  | Rate (requests per second) | Burst | | ---- | ---- | | 2 | 30 |  The `x-amzn-RateLimit-Limit` response header returns the usage plan rate limits that were applied to the requested operation, when available. The table above indicates the default rate and burst values for this operation. Selling partners whose business demands require higher throughput may see higher rate and burst values than those shown here. For more information, see [Usage Plans and Rate Limits in the Selling Partner API](https://developer-docs.amazon.com/sp-api/docs/usage-plans-and-rate-limits-in-the-sp-api).
-
-### Example
-```ruby
-# load the gem
-require 'fulfillment-inbound-api-model'
-
-api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-marketplace_id = 'marketplace_id_example' # String | A marketplace identifier. Specifies the marketplace where the product would be stored.
-opts = { 
-  seller_sku_list: ['seller_sku_list_example'], # Array<String> | A list of SellerSKU values. Used to identify items for which you want inbound guidance for shipment to Amazon's fulfillment network. Note: SellerSKU is qualified by the SellerId, which is included with every Selling Partner API operation that you submit. If you specify a SellerSKU that identifies a variation parent ASIN, this operation returns an error. A variation parent ASIN represents a generic product that cannot be sold. Variation child ASINs represent products that have specific characteristics (such as size and color) and can be sold. 
-  asin_list: ['asin_list_example'] # Array<String> | A list of ASIN values. Used to identify items for which you want inbound guidance for shipment to Amazon's fulfillment network. Note: If you specify a ASIN that identifies a variation parent ASIN, this operation returns an error. A variation parent ASIN represents a generic product that cannot be sold. Variation child ASINs represent products that have specific characteristics (such as size and color) and can be sold.
-}
-
-begin
-  result = api_instance.get_inbound_guidance(marketplace_id, opts)
-  p result
-rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
-  puts "Exception when calling FbaInboundApi->get_inbound_guidance: #{e}"
-end
-```
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **marketplace_id** | **String**| A marketplace identifier. Specifies the marketplace where the product would be stored. | 
- **seller_sku_list** | [**Array&lt;String&gt;**](String.md)| A list of SellerSKU values. Used to identify items for which you want inbound guidance for shipment to Amazon&#x27;s fulfillment network. Note: SellerSKU is qualified by the SellerId, which is included with every Selling Partner API operation that you submit. If you specify a SellerSKU that identifies a variation parent ASIN, this operation returns an error. A variation parent ASIN represents a generic product that cannot be sold. Variation child ASINs represent products that have specific characteristics (such as size and color) and can be sold.  | [optional] 
- **asin_list** | [**Array&lt;String&gt;**](String.md)| A list of ASIN values. Used to identify items for which you want inbound guidance for shipment to Amazon&#x27;s fulfillment network. Note: If you specify a ASIN that identifies a variation parent ASIN, this operation returns an error. A variation parent ASIN represents a generic product that cannot be sold. Variation child ASINs represent products that have specific characteristics (such as size and color) and can be sold. | [optional] 
-
-### Return type
-
-[**GetInboundGuidanceResponse**](GetInboundGuidanceResponse.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-
-
 # **get_labels**
 > GetLabelsResponse get_labels(shipment_id, page_type, label_type, opts)
 
@@ -366,7 +315,7 @@ page_type = 'page_type_example' # String | The page type to use to print the lab
 label_type = 'label_type_example' # String | The type of labels requested. 
 opts = { 
   number_of_packages: 56, # Integer | The number of packages in the shipment.
-  package_labels_to_print: ['package_labels_to_print_example'], # Array<String> | A list of identifiers that specify packages for which you want package labels printed.  Must match CartonId values previously passed using the FBA Inbound Shipment Carton Information Feed. If not, the operation returns the IncorrectPackageIdentifier error code.
+  package_labels_to_print: ['package_labels_to_print_example'], # Array<String> | A list of identifiers that specify packages for which you want package labels printed.  If you provide box content information with the [FBA Inbound Shipment Carton Information Feed](https://developer-docs.amazon.com/sp-api/docs/fulfillment-by-amazon-feed-type-values#fba-inbound-shipment-carton-information-feed), then `PackageLabelsToPrint` must match the `CartonId` values you provide through that feed. If you provide box content information with the Fulfillment Inbound API v2024-03-20, then `PackageLabelsToPrint` must match the `boxID` values from the [`listShipmentBoxes`](https://developer-docs.amazon.com/sp-api/docs/fulfillment-inbound-api-v2024-03-20-reference#listshipmentboxes) response. If these values do not match as required, the operation returns the `IncorrectPackageIdentifier` error code.
   number_of_pallets: 56, # Integer | The number of pallets in the shipment. This returns four identical labels for each pallet.
   page_size: 56, # Integer | The page size for paginating through the total packages' labels. This is a required parameter for Non-Partnered LTL Shipments. Max value:1000.
   page_start_index: 56 # Integer | The page start index for paginating through the total packages' labels. This is a required parameter for Non-Partnered LTL Shipments.
@@ -388,7 +337,7 @@ Name | Type | Description  | Notes
  **page_type** | **String**| The page type to use to print the labels. Submitting a PageType value that is not supported in your marketplace returns an error. | 
  **label_type** | **String**| The type of labels requested.  | 
  **number_of_packages** | **Integer**| The number of packages in the shipment. | [optional] 
- **package_labels_to_print** | [**Array&lt;String&gt;**](String.md)| A list of identifiers that specify packages for which you want package labels printed.  Must match CartonId values previously passed using the FBA Inbound Shipment Carton Information Feed. If not, the operation returns the IncorrectPackageIdentifier error code. | [optional] 
+ **package_labels_to_print** | [**Array&lt;String&gt;**](String.md)| A list of identifiers that specify packages for which you want package labels printed.  If you provide box content information with the [FBA Inbound Shipment Carton Information Feed](https://developer-docs.amazon.com/sp-api/docs/fulfillment-by-amazon-feed-type-values#fba-inbound-shipment-carton-information-feed), then &#x60;PackageLabelsToPrint&#x60; must match the &#x60;CartonId&#x60; values you provide through that feed. If you provide box content information with the Fulfillment Inbound API v2024-03-20, then &#x60;PackageLabelsToPrint&#x60; must match the &#x60;boxID&#x60; values from the [&#x60;listShipmentBoxes&#x60;](https://developer-docs.amazon.com/sp-api/docs/fulfillment-inbound-api-v2024-03-20-reference#listshipmentboxes) response. If these values do not match as required, the operation returns the &#x60;IncorrectPackageIdentifier&#x60; error code. | [optional] 
  **number_of_pallets** | **Integer**| The number of pallets in the shipment. This returns four identical labels for each pallet. | [optional] 
  **page_size** | **Integer**| The page size for paginating through the total packages&#x27; labels. This is a required parameter for Non-Partnered LTL Shipments. Max value:1000. | [optional] 
  **page_start_index** | **Integer**| The page start index for paginating through the total packages&#x27; labels. This is a required parameter for Non-Partnered LTL Shipments. | [optional] 
@@ -722,7 +671,7 @@ Sends transportation information to Amazon about an inbound shipment.  **Usage P
 require 'fulfillment-inbound-api-model'
 
 api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-body = AmzSpApi::FulfillmentInboundApiModel::PutTransportDetailsRequest.new # PutTransportDetailsRequest | 
+body = AmzSpApi::FulfillmentInboundApiModel::PutTransportDetailsRequest.new # PutTransportDetailsRequest | The request schema for the PutTransportDetailsRequest operation.
 shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
 
 
@@ -738,7 +687,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**PutTransportDetailsRequest**](PutTransportDetailsRequest.md)|  | 
+ **body** | [**PutTransportDetailsRequest**](PutTransportDetailsRequest.md)| The request schema for the PutTransportDetailsRequest operation. | 
  **shipment_id** | **String**| A shipment identifier originally returned by the createInboundShipmentPlan operation. | 
 
 ### Return type
@@ -769,7 +718,7 @@ Updates or removes items from the inbound shipment identified by the specified s
 require 'fulfillment-inbound-api-model'
 
 api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-body = AmzSpApi::FulfillmentInboundApiModel::InboundShipmentRequest.new # InboundShipmentRequest | 
+body = AmzSpApi::FulfillmentInboundApiModel::InboundShipmentRequest.new # InboundShipmentRequest | The request schema for the InboundShipmentRequest operation.
 shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
 
 
@@ -785,7 +734,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**InboundShipmentRequest**](InboundShipmentRequest.md)|  | 
+ **body** | [**InboundShipmentRequest**](InboundShipmentRequest.md)| The request schema for the InboundShipmentRequest operation. | 
  **shipment_id** | **String**| A shipment identifier originally returned by the createInboundShipmentPlan operation. | 
 
 ### Return type

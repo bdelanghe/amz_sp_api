@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Retail Procurement Shipments
+#Vendor Shipments v1
 
 #The Selling Partner API for Retail Procurement Shipments provides programmatic access to retail shipping data for vendors.
 
@@ -62,17 +62,19 @@ require 'vendor-shipments-api-model/models/submit_shipment_confirmations_request
 require 'vendor-shipments-api-model/models/submit_shipment_confirmations_response'
 require 'vendor-shipments-api-model/models/submit_shipments'
 require 'vendor-shipments-api-model/models/tax_registration_details'
+require 'vendor-shipments-api-model/models/total_weight'
 require 'vendor-shipments-api-model/models/transaction_reference'
 require 'vendor-shipments-api-model/models/transport_label'
 require 'vendor-shipments-api-model/models/transport_shipment_measurements'
 require 'vendor-shipments-api-model/models/transportation_details'
+require 'vendor-shipments-api-model/models/transportation_details_for_shipment_confirmation'
 require 'vendor-shipments-api-model/models/transportation_labels'
 require 'vendor-shipments-api-model/models/vendor_details'
 require 'vendor-shipments-api-model/models/volume'
 require 'vendor-shipments-api-model/models/weight'
 
 # APIs
-require 'vendor-shipments-api-model/api/vendor_shipping_api'
+require 'vendor-shipments-api-model/api/vendor_shipments_api'
 
 module AmzSpApi::VendorShipmentsApiModel
   class << self

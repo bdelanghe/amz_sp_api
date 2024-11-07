@@ -12,14 +12,14 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::ProductPricingApiModel
-  # Identifies an offer from a particular seller on an ASIN.
+  # Identifies an offer from a particular seller for a specified ASIN.
   class OfferIdentifier
     attr_accessor :marketplace_id
 
     # The seller identifier for the offer.
     attr_accessor :seller_id
 
-    # The seller stock keeping unit (SKU) of the item. This will only be present for the target offer, which belongs to the requesting seller.
+    # The seller SKU of the item. This will only be present for the target offer, which belongs to the requesting seller.
     attr_accessor :sku
 
     attr_accessor :asin

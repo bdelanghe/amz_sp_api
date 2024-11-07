@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentInboundApiModel
+  # Result for the get inbound guidance operation
   class GetInboundGuidanceResult
     attr_accessor :sku_inbound_guidance_list
 

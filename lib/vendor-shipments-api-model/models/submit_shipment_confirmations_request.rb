@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Retail Procurement Shipments
+#Vendor Shipments v1
 
 #The Selling Partner API for Retail Procurement Shipments provides programmatic access to retail shipping data for vendors.
 
@@ -14,6 +14,7 @@ require 'date'
 module AmzSpApi::VendorShipmentsApiModel
   # The request schema for the SubmitShipmentConfirmations operation.
   class SubmitShipmentConfirmationsRequest
+    # A list of one or more shipment confirmations.
     attr_accessor :shipment_confirmations
 
     # Attribute mapping from ruby-style variable name to JSON key.

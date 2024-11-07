@@ -60,7 +60,7 @@ describe 'VendorShippingLabelsApi' do
 
   # unit tests for submit_shipping_label_request
   # Creates a shipping label for a purchase order and returns a transactionId for reference.  **Usage Plan:**  | Rate (requests per second) | Burst | | ---- | ---- | | 10 | 10 |  The &#x60;x-amzn-RateLimit-Limit&#x60; response header returns the usage plan rate limits that were applied to the requested operation, when available. The table above indicates the default rate and burst values for this operation. Selling partners whose business demands require higher throughput may see higher rate and burst values than those shown here. For more information, see [Usage Plans and Rate Limits in the Selling Partner API](https://developer-docs.amazon.com/sp-api/docs/usage-plans-and-rate-limits-in-the-sp-api).
-  # @param body 
+  # @param body Request body containing one or more shipping labels data.
   # @param [Hash] opts the optional parameters
   # @return [SubmitShippingLabelsResponse]
   describe 'submit_shipping_label_request test' do

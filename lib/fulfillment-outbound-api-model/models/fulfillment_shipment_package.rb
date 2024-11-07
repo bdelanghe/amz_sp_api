@@ -25,13 +25,19 @@ module AmzSpApi::FulfillmentOutboundApiModel
 
     attr_accessor :estimated_arrival_date
 
+    attr_accessor :locker_details
+
+    attr_accessor :delivery_information
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'package_number' => :'packageNumber',
         :'carrier_code' => :'carrierCode',
         :'tracking_number' => :'trackingNumber',
-        :'estimated_arrival_date' => :'estimatedArrivalDate'
+        :'estimated_arrival_date' => :'estimatedArrivalDate',
+        :'locker_details' => :'lockerDetails',
+        :'delivery_information' => :'deliveryInformation'
       }
     end
 
@@ -41,7 +47,9 @@ module AmzSpApi::FulfillmentOutboundApiModel
         :'package_number' => :'Object',
         :'carrier_code' => :'Object',
         :'tracking_number' => :'Object',
-        :'estimated_arrival_date' => :'Object'
+        :'estimated_arrival_date' => :'Object',
+        :'locker_details' => :'Object',
+        :'delivery_information' => :'Object'
       }
     end
 
@@ -81,6 +89,14 @@ module AmzSpApi::FulfillmentOutboundApiModel
       if attributes.key?(:'estimated_arrival_date')
         self.estimated_arrival_date = attributes[:'estimated_arrival_date']
       end
+
+      if attributes.key?(:'locker_details')
+        self.locker_details = attributes[:'locker_details']
+      end
+
+      if attributes.key?(:'delivery_information')
+        self.delivery_information = attributes[:'delivery_information']
+      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -114,7 +130,9 @@ module AmzSpApi::FulfillmentOutboundApiModel
           package_number == o.package_number &&
           carrier_code == o.carrier_code &&
           tracking_number == o.tracking_number &&
-          estimated_arrival_date == o.estimated_arrival_date
+          estimated_arrival_date == o.estimated_arrival_date &&
+          locker_details == o.locker_details &&
+          delivery_information == o.delivery_information
     end
 
     # @see the `==` method
@@ -126,7 +144,7 @@ module AmzSpApi::FulfillmentOutboundApiModel
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [package_number, carrier_code, tracking_number, estimated_arrival_date].hash
+      [package_number, carrier_code, tracking_number, estimated_arrival_date, locker_details, delivery_information].hash
     end
 
     # Builds the object from hash

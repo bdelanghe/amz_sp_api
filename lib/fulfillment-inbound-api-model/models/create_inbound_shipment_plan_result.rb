@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentInboundApiModel
+  # Result for the create inbound shipment operation
   class CreateInboundShipmentPlanResult
     attr_accessor :inbound_shipment_plans
 

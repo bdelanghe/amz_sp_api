@@ -69,7 +69,7 @@ end
 
 api_instance = AmzSpApi::ReplenishmentApiModel::OffersApi.new
 opts = { 
-  body: AmzSpApi::ReplenishmentApiModel::ListOffersRequest.new # ListOffersRequest | 
+  body: AmzSpApi::ReplenishmentApiModel::ListOffersRequest.new # ListOffersRequest | The request body for the `listOffers` operation.
 }
 
 begin
@@ -81,7 +81,7 @@ end
 
 api_instance = AmzSpApi::ReplenishmentApiModel::SellingpartnersApi.new
 opts = { 
-  body: AmzSpApi::ReplenishmentApiModel::GetSellingPartnerMetricsRequest.new # GetSellingPartnerMetricsRequest | 
+  body: AmzSpApi::ReplenishmentApiModel::GetSellingPartnerMetricsRequest.new # GetSellingPartnerMetricsRequest | The request body for the `getSellingPartnerMetrics` operation.
 }
 
 begin

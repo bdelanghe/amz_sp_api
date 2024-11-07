@@ -18,8 +18,14 @@ module AmzSpApi::ProductPricingApiModel
 
     attr_accessor :marketplace_id
 
-    # A list of featured buying options for the given ASIN `marketplaceId` combination.
+    # A list of featured buying options for the specified ASIN `marketplaceId` combination.
     attr_accessor :featured_buying_options
+
+    # A list of lowest priced offers for the specified ASIN `marketplaceId` combination.
+    attr_accessor :lowest_priced_offers
+
+    # A list of reference prices for the specified ASIN `marketplaceId` combination.
+    attr_accessor :reference_prices
 
     attr_accessor :errors
 
@@ -29,6 +35,8 @@ module AmzSpApi::ProductPricingApiModel
         :'asin' => :'asin',
         :'marketplace_id' => :'marketplaceId',
         :'featured_buying_options' => :'featuredBuyingOptions',
+        :'lowest_priced_offers' => :'lowestPricedOffers',
+        :'reference_prices' => :'referencePrices',
         :'errors' => :'errors'
       }
     end
@@ -39,6 +47,8 @@ module AmzSpApi::ProductPricingApiModel
         :'asin' => :'Object',
         :'marketplace_id' => :'Object',
         :'featured_buying_options' => :'Object',
+        :'lowest_priced_offers' => :'Object',
+        :'reference_prices' => :'Object',
         :'errors' => :'Object'
       }
     end
@@ -78,6 +88,18 @@ module AmzSpApi::ProductPricingApiModel
         end
       end
 
+      if attributes.key?(:'lowest_priced_offers')
+        if (value = attributes[:'lowest_priced_offers']).is_a?(Array)
+          self.lowest_priced_offers = value
+        end
+      end
+
+      if attributes.key?(:'reference_prices')
+        if (value = attributes[:'reference_prices']).is_a?(Array)
+          self.reference_prices = value
+        end
+      end
+
       if attributes.key?(:'errors')
         self.errors = attributes[:'errors']
       end
@@ -114,6 +136,8 @@ module AmzSpApi::ProductPricingApiModel
           asin == o.asin &&
           marketplace_id == o.marketplace_id &&
           featured_buying_options == o.featured_buying_options &&
+          lowest_priced_offers == o.lowest_priced_offers &&
+          reference_prices == o.reference_prices &&
           errors == o.errors
     end
 
@@ -126,7 +150,7 @@ module AmzSpApi::ProductPricingApiModel
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [asin, marketplace_id, featured_buying_options, errors].hash
+      [asin, marketplace_id, featured_buying_options, lowest_priced_offers, reference_prices, errors].hash
     end
 
     # Builds the object from hash

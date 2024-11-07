@@ -19,7 +19,7 @@ module AmzSpApi::FulfillmentOutboundApiModel
 
     attr_accessor :quantity
 
-    # A fulfillment order item identifier created with a call to the getFulfillmentPreview operation.
+    # A fulfillment order item identifier created with a call to the `getFulfillmentPreview` operation.
     attr_accessor :seller_fulfillment_order_item_id
 
     attr_accessor :item_unfulfillable_reasons

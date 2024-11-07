@@ -67,7 +67,7 @@ rescue AmzSpApi::ProductPricingApiModel::ApiError => e
 end
 
 api_instance = AmzSpApi::ProductPricingApiModel::ProductPricingApi.new
-body = AmzSpApi::ProductPricingApiModel::GetFeaturedOfferExpectedPriceBatchRequest.new # GetFeaturedOfferExpectedPriceBatchRequest | 
+body = AmzSpApi::ProductPricingApiModel::GetFeaturedOfferExpectedPriceBatchRequest.new # GetFeaturedOfferExpectedPriceBatchRequest | The batch of `getFeaturedOfferExpectedPrice` requests.
 
 
 begin
@@ -124,12 +124,16 @@ Class | Method | HTTP request | Description
  - [AmzSpApi::ProductPricingApiModel::HttpMethod](docs/HttpMethod.md)
  - [AmzSpApi::ProductPricingApiModel::HttpStatusLine](docs/HttpStatusLine.md)
  - [AmzSpApi::ProductPricingApiModel::HttpUri](docs/HttpUri.md)
+ - [AmzSpApi::ProductPricingApiModel::LowestPricedOffer](docs/LowestPricedOffer.md)
+ - [AmzSpApi::ProductPricingApiModel::LowestPricedOffersInput](docs/LowestPricedOffersInput.md)
  - [AmzSpApi::ProductPricingApiModel::MarketplaceId](docs/MarketplaceId.md)
  - [AmzSpApi::ProductPricingApiModel::MoneyType](docs/MoneyType.md)
  - [AmzSpApi::ProductPricingApiModel::Offer](docs/Offer.md)
  - [AmzSpApi::ProductPricingApiModel::OfferIdentifier](docs/OfferIdentifier.md)
  - [AmzSpApi::ProductPricingApiModel::Points](docs/Points.md)
  - [AmzSpApi::ProductPricingApiModel::Price](docs/Price.md)
+ - [AmzSpApi::ProductPricingApiModel::PrimeDetails](docs/PrimeDetails.md)
+ - [AmzSpApi::ProductPricingApiModel::ReferencePrice](docs/ReferencePrice.md)
  - [AmzSpApi::ProductPricingApiModel::SegmentDetails](docs/SegmentDetails.md)
  - [AmzSpApi::ProductPricingApiModel::SegmentedFeaturedOffer](docs/SegmentedFeaturedOffer.md)
  - [AmzSpApi::ProductPricingApiModel::ShippingOption](docs/ShippingOption.md)

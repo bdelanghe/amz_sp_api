@@ -43,6 +43,16 @@ describe 'Offer' do
     end
   end
 
+  describe 'test attribute "sub_condition"' do
+    it 'should work' do
+      # assertion here. ref: https://www.relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
+      # validator = Petstore::EnumTest::EnumAttributeValidator.new('String', ["New", "Mint", "VeryGood", "Good", "Acceptable", "Poor", "Club", "OEM", "Warranty", "RefurbishedWarranty", "Refurbished", "OpenBox", "Other"])
+      # validator.allowable_values.each do |value|
+      #   expect { @instance.sub_condition = value }.not_to raise_error
+      # end
+    end
+  end
+
   describe 'test attribute "fulfillment_type"' do
     it 'should work' do
       # assertion here. ref: https://www.relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
@@ -62,6 +72,12 @@ describe 'Offer' do
   end
 
   describe 'test attribute "points"' do
+    it 'should work' do
+      # assertion here. ref: https://www.relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
+    end
+  end
+
+  describe 'test attribute "prime_details"' do
     it 'should work' do
       # assertion here. ref: https://www.relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
     end

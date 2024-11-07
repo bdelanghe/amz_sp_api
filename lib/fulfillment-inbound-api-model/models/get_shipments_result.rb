@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentInboundApiModel
+  # Result for the get shipments operation
   class GetShipmentsResult
     attr_accessor :shipment_data
 

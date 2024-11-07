@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentInboundApiModel
+  # Common container for transport result
   class CommonTransportResult
     attr_accessor :transport_result
 

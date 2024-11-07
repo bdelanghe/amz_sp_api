@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentOutboundApiModel
-  # The payload for the getEligibileInventory operation.
+  # The payload for the `getEligibileInventory` operation.
   class GetFeatureInventoryResult
     # The requested marketplace.
     attr_accessor :marketplace_id

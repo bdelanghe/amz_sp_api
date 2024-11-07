@@ -66,7 +66,7 @@ rescue AmzSpApi::DataKioskApiModel::ApiError => e
 end
 
 api_instance = AmzSpApi::DataKioskApiModel::QueriesApi.new
-body = AmzSpApi::DataKioskApiModel::CreateQuerySpecification.new # CreateQuerySpecification | 
+body = AmzSpApi::DataKioskApiModel::CreateQuerySpecification.new # CreateQuerySpecification | The body of the request.
 
 
 begin

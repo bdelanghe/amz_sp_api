@@ -16,6 +16,7 @@ module AmzSpApi::ProductTypeDefinitionsApiModel
   class ProductTypeList
     attr_accessor :product_types
 
+    # Amazon product type version identifier.
     attr_accessor :product_type_version
 
     # Attribute mapping from ruby-style variable name to JSON key.

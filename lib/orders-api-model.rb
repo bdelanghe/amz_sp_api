@@ -1,7 +1,7 @@
 =begin
-#Selling Partner API for Orders
+#Orders v0
 
-#The Selling Partner API for Orders helps you programmatically retrieve order information. These APIs let you develop fast, flexible, custom applications in areas like order synchronization, order research, and demand-based decision support tools. The Orders API supports orders that are two years old or less. Orders more than two years old will not show in the API response.  _Note:_ The Orders API supports orders from 2016 and after for the JP, AU, and SG marketplaces.
+#Use the Orders Selling Partner API to programmatically retrieve order information. With this API, you can develop fast, flexible, and custom applications to manage order synchronization, perform order research, and create demand-based decision support tools.   _Note:_ For the JP, AU, and SG marketplaces, the Orders API supports orders from 2016 onward. For all other marketplaces, the Orders API supports orders for the last two years (orders older than this don't show up in the response).
 
 OpenAPI spec version: v0
 
@@ -17,6 +17,8 @@ require 'orders-api-model/configuration'
 
 # Models
 require 'orders-api-model/models/address'
+require 'orders-api-model/models/address_extended_fields'
+require 'orders-api-model/models/amazon_programs'
 require 'orders-api-model/models/associated_item'
 require 'orders-api-model/models/association_type'
 require 'orders-api-model/models/automated_shipping_settings'
@@ -30,6 +32,7 @@ require 'orders-api-model/models/confirm_shipment_error_response'
 require 'orders-api-model/models/confirm_shipment_order_item'
 require 'orders-api-model/models/confirm_shipment_order_items_list'
 require 'orders-api-model/models/confirm_shipment_request'
+require 'orders-api-model/models/constraint_type'
 require 'orders-api-model/models/delivery_preferences'
 require 'orders-api-model/models/easy_ship_shipment_status'
 require 'orders-api-model/models/electronic_invoice_status'
@@ -73,6 +76,7 @@ require 'orders-api-model/models/payment_execution_detail_item_list'
 require 'orders-api-model/models/payment_method_detail_item_list'
 require 'orders-api-model/models/points_granted_detail'
 require 'orders-api-model/models/preferred_delivery_time'
+require 'orders-api-model/models/prescription_detail'
 require 'orders-api-model/models/product_info_detail'
 require 'orders-api-model/models/promotion_id_list'
 require 'orders-api-model/models/regulated_information'
@@ -80,6 +84,7 @@ require 'orders-api-model/models/regulated_information_field'
 require 'orders-api-model/models/regulated_order_verification_status'
 require 'orders-api-model/models/rejection_reason'
 require 'orders-api-model/models/shipment_status'
+require 'orders-api-model/models/shipping_constraints'
 require 'orders-api-model/models/substitution_option'
 require 'orders-api-model/models/substitution_option_list'
 require 'orders-api-model/models/substitution_preferences'
@@ -92,11 +97,12 @@ require 'orders-api-model/models/update_shipment_status_request'
 require 'orders-api-model/models/update_verification_status_error_response'
 require 'orders-api-model/models/update_verification_status_request'
 require 'orders-api-model/models/update_verification_status_request_body'
+require 'orders-api-model/models/valid_verification_detail'
+require 'orders-api-model/models/verification_details'
 require 'orders-api-model/models/verification_status'
 
 # APIs
-require 'orders-api-model/api/orders_v0_api'
-require 'orders-api-model/api/shipment_api'
+require 'orders-api-model/api/orders_api'
 
 module AmzSpApi::OrdersApiModel
   class << self

@@ -23,7 +23,7 @@ Schedules an Easy Ship order and returns the scheduled package information.  Thi
 require 'easy-ship-model'
 
 api_instance = AmzSpApi::EasyShipModel::EasyShipApi.new
-body = AmzSpApi::EasyShipModel::CreateScheduledPackageRequest.new # CreateScheduledPackageRequest | 
+body = AmzSpApi::EasyShipModel::CreateScheduledPackageRequest.new # CreateScheduledPackageRequest | The request schema for the `createScheduledPackage` operation.
 
 
 begin
@@ -38,7 +38,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**CreateScheduledPackageRequest**](CreateScheduledPackageRequest.md)|  | 
+ **body** | [**CreateScheduledPackageRequest**](CreateScheduledPackageRequest.md)| The request schema for the &#x60;createScheduledPackage&#x60; operation. | 
 
 ### Return type
 
@@ -68,7 +68,7 @@ This operation automatically schedules a time slot for all the `amazonOrderId`s 
 require 'easy-ship-model'
 
 api_instance = AmzSpApi::EasyShipModel::EasyShipApi.new
-body = AmzSpApi::EasyShipModel::CreateScheduledPackagesRequest.new # CreateScheduledPackagesRequest | 
+body = AmzSpApi::EasyShipModel::CreateScheduledPackagesRequest.new # CreateScheduledPackagesRequest | The request schema for the `createScheduledPackageBulk` operation.
 
 
 begin
@@ -83,7 +83,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**CreateScheduledPackagesRequest**](CreateScheduledPackagesRequest.md)|  | 
+ **body** | [**CreateScheduledPackagesRequest**](CreateScheduledPackagesRequest.md)| The request schema for the &#x60;createScheduledPackageBulk&#x60; operation. | 
 
 ### Return type
 
@@ -161,7 +161,7 @@ require 'easy-ship-model'
 
 api_instance = AmzSpApi::EasyShipModel::EasyShipApi.new
 opts = { 
-  body: AmzSpApi::EasyShipModel::ListHandoverSlotsRequest.new # ListHandoverSlotsRequest | 
+  body: AmzSpApi::EasyShipModel::ListHandoverSlotsRequest.new # ListHandoverSlotsRequest | The request schema for the `listHandoverSlots` operation.
 }
 
 begin
@@ -176,7 +176,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**ListHandoverSlotsRequest**](ListHandoverSlotsRequest.md)|  | [optional] 
+ **body** | [**ListHandoverSlotsRequest**](ListHandoverSlotsRequest.md)| The request schema for the &#x60;listHandoverSlots&#x60; operation. | [optional] 
 
 ### Return type
 
@@ -207,7 +207,7 @@ require 'easy-ship-model'
 
 api_instance = AmzSpApi::EasyShipModel::EasyShipApi.new
 opts = { 
-  body: AmzSpApi::EasyShipModel::UpdateScheduledPackagesRequest.new # UpdateScheduledPackagesRequest | 
+  body: AmzSpApi::EasyShipModel::UpdateScheduledPackagesRequest.new # UpdateScheduledPackagesRequest | The request schema for the `updateScheduledPackages` operation.
 }
 
 begin
@@ -222,7 +222,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**UpdateScheduledPackagesRequest**](UpdateScheduledPackagesRequest.md)|  | [optional] 
+ **body** | [**UpdateScheduledPackagesRequest**](UpdateScheduledPackagesRequest.md)| The request schema for the &#x60;updateScheduledPackages&#x60; operation. | [optional] 
 
 ### Return type
 

@@ -21,6 +21,9 @@ module AmzSpApi::ProductPricingApiModel
     # The list of requested competitive pricing data for the product.
     attr_accessor :included_data
 
+    # The list of `lowestPricedOffersInput` parameters that are used to build `lowestPricedOffers` in the response. This attribute is only valid if `lowestPricedOffers` is requested in `includedData`
+    attr_accessor :lowest_priced_offers_inputs
+
     attr_accessor :method
 
     attr_accessor :uri
@@ -31,6 +34,7 @@ module AmzSpApi::ProductPricingApiModel
         :'asin' => :'asin',
         :'marketplace_id' => :'marketplaceId',
         :'included_data' => :'includedData',
+        :'lowest_priced_offers_inputs' => :'lowestPricedOffersInputs',
         :'method' => :'method',
         :'uri' => :'uri'
       }
@@ -42,6 +46,7 @@ module AmzSpApi::ProductPricingApiModel
         :'asin' => :'Object',
         :'marketplace_id' => :'Object',
         :'included_data' => :'Object',
+        :'lowest_priced_offers_inputs' => :'Object',
         :'method' => :'Object',
         :'uri' => :'Object'
       }
@@ -79,6 +84,12 @@ module AmzSpApi::ProductPricingApiModel
       if attributes.key?(:'included_data')
         if (value = attributes[:'included_data']).is_a?(Array)
           self.included_data = value
+        end
+      end
+
+      if attributes.key?(:'lowest_priced_offers_inputs')
+        if (value = attributes[:'lowest_priced_offers_inputs']).is_a?(Array)
+          self.lowest_priced_offers_inputs = value
         end
       end
 
@@ -137,6 +148,7 @@ module AmzSpApi::ProductPricingApiModel
           asin == o.asin &&
           marketplace_id == o.marketplace_id &&
           included_data == o.included_data &&
+          lowest_priced_offers_inputs == o.lowest_priced_offers_inputs &&
           method == o.method &&
           uri == o.uri
     end
@@ -150,7 +162,7 @@ module AmzSpApi::ProductPricingApiModel
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [asin, marketplace_id, included_data, method, uri].hash
+      [asin, marketplace_id, included_data, lowest_priced_offers_inputs, method, uri].hash
     end
 
     # Builds the object from hash

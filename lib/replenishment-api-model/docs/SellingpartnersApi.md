@@ -20,7 +20,7 @@ require 'replenishment-api-model'
 
 api_instance = AmzSpApi::ReplenishmentApiModel::SellingpartnersApi.new
 opts = { 
-  body: AmzSpApi::ReplenishmentApiModel::GetSellingPartnerMetricsRequest.new # GetSellingPartnerMetricsRequest | 
+  body: AmzSpApi::ReplenishmentApiModel::GetSellingPartnerMetricsRequest.new # GetSellingPartnerMetricsRequest | The request body for the `getSellingPartnerMetrics` operation.
 }
 
 begin
@@ -35,7 +35,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**GetSellingPartnerMetricsRequest**](GetSellingPartnerMetricsRequest.md)|  | [optional] 
+ **body** | [**GetSellingPartnerMetricsRequest**](GetSellingPartnerMetricsRequest.md)| The request body for the &#x60;getSellingPartnerMetrics&#x60; operation. | [optional] 
 
 ### Return type
 

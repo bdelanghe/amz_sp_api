@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorOrdersApiModel
-  # Details of item quantity ordered
+  # Details of item quantity ordered.
   class OrderedQuantityDetails
     # The date when the line item quantity was updated by buyer. Must be in ISO-8601 date/time format.
     attr_accessor :updated_date

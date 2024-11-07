@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorDirectFulfillmentShippingApiModel
+  # Represents a customer invoice associated with a purchase order.
   class CustomerInvoice
     # The purchase order number for this order.
     attr_accessor :purchase_order_number

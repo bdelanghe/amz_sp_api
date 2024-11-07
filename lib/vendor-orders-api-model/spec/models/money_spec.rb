@@ -43,4 +43,14 @@ describe 'Money' do
     end
   end
 
+  describe 'test attribute "unit_of_measure"' do
+    it 'should work' do
+      # assertion here. ref: https://www.relishapp.com/rspec/rspec-expectations/docs/built-in-matchers
+      # validator = Petstore::EnumTest::EnumAttributeValidator.new('String', ["POUNDS", "OUNCES", "GRAMS", "KILOGRAMS"])
+      # validator.allowable_values.each do |value|
+      #   expect { @instance.unit_of_measure = value }.not_to raise_error
+      # end
+    end
+  end
+
 end

@@ -12,9 +12,11 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorDirectFulfillmentOrdersApiModel
+  # A list of purchase orders returned as response.
   class OrderList
     attr_accessor :pagination
 
+    # Represents a purchase order within the OrderList.
     attr_accessor :orders
 
     # Attribute mapping from ruby-style variable name to JSON key.

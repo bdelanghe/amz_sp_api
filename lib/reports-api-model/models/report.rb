@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Reports
+#Report v2021-06-30
 
 #The Selling Partner API for Reports lets you retrieve and manage a variety of reports that can help selling partners manage their businesses.
 
@@ -38,13 +38,13 @@ module AmzSpApi::ReportsApiModel
     # The processing status of the report.
     attr_accessor :processing_status
 
-    # The date and time when the report processing started, in ISO 8601 date time format.
+    # The date and time when the report processing started, in <a href='https://developer-docs.amazon.com/sp-api/docs/iso-8601'>ISO 8601</a> date time format.
     attr_accessor :processing_start_time
 
-    # The date and time when the report processing completed, in ISO 8601 date time format.
+    # The date and time when the report processing completed, in <a href='https://developer-docs.amazon.com/sp-api/docs/iso-8601'>ISO 8601</a> date time format.
     attr_accessor :processing_end_time
 
-    # The identifier for the report document. Pass this into the getReportDocument operation to get the information you will need to retrieve the report document's contents.
+    # The identifier for the report document. Pass this into the `getReportDocument` operation to get the information you will need to retrieve the report document's contents.
     attr_accessor :report_document_id
 
     class EnumAttributeValidator

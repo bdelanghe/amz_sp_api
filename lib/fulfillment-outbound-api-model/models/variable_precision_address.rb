@@ -23,7 +23,7 @@ module AmzSpApi::FulfillmentOutboundApiModel
     # Additional address information, if required.
     attr_accessor :address_line3
 
-    # The city where the person, business, or institution is located. This property is required in all countries except Japan. It should not be used in Japan.
+    # The city where the person, business, or institution is located. This property should not be used in Japan.
     attr_accessor :city
 
     # The district or county where the person, business, or institution is located.

@@ -12,12 +12,12 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::ProductPricingApiModel
-  # The HTTP status line associated with the response to an individual request within a batch. For more information, consult [RFC 2616](https://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html).
+  # The HTTP status line associated with the response for an individual request within a batch. For more information, refer to [RFC 2616](https://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html).
   class HttpStatusLine
-    # The HTTP response Status-Code.
+    # The HTTP response status code.
     attr_accessor :status_code
 
-    # The HTTP response Reason-Phase.
+    # The HTTP response reason phrase.
     attr_accessor :reason_phrase
 
     # Attribute mapping from ruby-style variable name to JSON key.

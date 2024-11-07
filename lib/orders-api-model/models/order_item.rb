@@ -1,7 +1,7 @@
 =begin
-#Selling Partner API for Orders
+#Orders v0
 
-#The Selling Partner API for Orders helps you programmatically retrieve order information. These APIs let you develop fast, flexible, custom applications in areas like order synchronization, order research, and demand-based decision support tools. The Orders API supports orders that are two years old or less. Orders more than two years old will not show in the API response.  _Note:_ The Orders API supports orders from 2016 and after for the JP, AU, and SG marketplaces.
+#Use the Orders Selling Partner API to programmatically retrieve order information. With this API, you can develop fast, flexible, and custom applications to manage order synchronization, perform order research, and create demand-based decision support tools.   _Note:_ For the JP, AU, and SG marketplaces, the Orders API supports orders from 2016 onward. For all other marketplaces, the Orders API supports orders for the last two years (orders older than this don't show up in the response).
 
 OpenAPI spec version: v0
 
@@ -14,10 +14,10 @@ require 'date'
 module AmzSpApi::OrdersApiModel
   # A single order item.
   class OrderItem
-    # The Amazon Standard Identification Number (ASIN) of the item.
+    # The item's Amazon Standard Identification Number (ASIN).
     attr_accessor :asin
 
-    # The seller stock keeping unit (SKU) of the item.
+    # The item's seller stock keeping unit (SKU).
     attr_accessor :seller_sku
 
     # An Amazon-defined order item identifier.
@@ -26,7 +26,7 @@ module AmzSpApi::OrdersApiModel
     # A list of associated items that a customer has purchased with a product. For example, a tire installation service purchased with tires.
     attr_accessor :associated_items
 
-    # The name of the item.
+    # The item's name.
     attr_accessor :title
 
     # The number of items in the order. 
@@ -61,36 +61,36 @@ module AmzSpApi::OrdersApiModel
 
     attr_accessor :cod_fee_discount
 
-    # When true, the item is a gift.
+    # Indicates whether the item is a gift.  **Possible values**: `true` and `false`.
     attr_accessor :is_gift
 
-    # The condition of the item as described by the seller.
+    # The condition of the item, as described by the seller.
     attr_accessor :condition_note
 
-    # The condition of the item.  Possible values: New, Used, Collectible, Refurbished, Preorder, Club.
+    # The condition of the item.  **Possible values**: `New`, `Used`, `Collectible`, `Refurbished`, `Preorder`, and `Club`.
     attr_accessor :condition_id
 
-    # The subcondition of the item.  Possible values: New, Mint, Very Good, Good, Acceptable, Poor, Club, OEM, Warranty, Refurbished Warranty, Refurbished, Open Box, Any, Other.
+    # The subcondition of the item.  **Possible values**: `New`, `Mint`, `Very Good`, `Good`, `Acceptable`, `Poor`, `Club`, `OEM`, `Warranty`, `Refurbished Warranty`, `Refurbished`, `Open Box`, `Any`, and `Other`.
     attr_accessor :condition_subtype_id
 
-    # The start date of the scheduled delivery window in the time zone of the order destination. In ISO 8601 date time format.
+    # The start date of the scheduled delivery window in the time zone for the order destination. In [ISO 8601](https://developer-docs.amazon.com/sp-api/docs/iso-8601) date time format.
     attr_accessor :scheduled_delivery_start_date
 
-    # The end date of the scheduled delivery window in the time zone of the order destination. In ISO 8601 date time format.
+    # The end date of the scheduled delivery window in the time zone for the order destination. In [ISO 8601](https://developer-docs.amazon.com/sp-api/docs/iso-8601) date time format.
     attr_accessor :scheduled_delivery_end_date
 
-    # Indicates that the selling price is a special price that is available only for Amazon Business orders. For more information about the Amazon Business Seller Program, see the [Amazon Business website](https://www.amazon.com/b2b/info/amazon-business).   Possible values: BusinessPrice - A special price that is available only for Amazon Business orders.
+    # Indicates that the selling price is a special price that is only available for Amazon Business orders. For more information about the Amazon Business Seller Program, refer to the [Amazon Business website](https://www.amazon.com/b2b/info/amazon-business).   **Possible values**: `BusinessPrice`
     attr_accessor :price_designation
 
     attr_accessor :tax_collection
 
-    # When true, the product type for this item has a serial number.  Returned only for Amazon Easy Ship orders.
+    # When true, the product type for this item has a serial number.   Only returned for Amazon Easy Ship orders.
     attr_accessor :serial_number_required
 
-    # When true, the ASIN is enrolled in Transparency and the Transparency serial number that needs to be submitted can be determined by the following:  **1D or 2D Barcode:** This has a **T** logo. Submit either the 29-character alpha-numeric identifier beginning with **AZ** or **ZA**, or the 38-character Serialized Global Trade Item Number (SGTIN). **2D Barcode SN:** Submit the 7- to 20-character serial number barcode, which likely has the prefix **SN**. The serial number will be applied to the same side of the packaging as the GTIN (UPC/EAN/ISBN) barcode. **QR code SN:** Submit the URL that the QR code generates.
+    # When true, the ASIN is enrolled in Transparency. The Transparency serial number that you must submit is determined by:  **1D or 2D Barcode:** This has a **T** logo. Submit either the 29-character alpha-numeric identifier beginning with **AZ** or **ZA**, or the 38-character Serialized Global Trade Item Number (SGTIN). **2D Barcode SN:** Submit the 7- to 20-character serial number barcode, which likely has the prefix **SN**. The serial number is applied to the same side of the packaging as the GTIN (UPC/EAN/ISBN) barcode. **QR code SN:** Submit the URL that the QR code generates.
     attr_accessor :is_transparency
 
-    # The IOSS number for the marketplace. Sellers shipping to the European Union (EU) from outside of the EU must provide this IOSS number to their carrier when Amazon has collected the VAT on the sale.
+    # The IOSS number of the marketplace. Sellers shipping to the EU from outside the EU must provide this IOSS number to their carrier when Amazon has collected the VAT on the sale.
     attr_accessor :ioss_number
 
     # The store chain store identifier. Linked to a specific store in a store chain.
@@ -109,6 +109,10 @@ module AmzSpApi::OrdersApiModel
     attr_accessor :substitution_preferences
 
     attr_accessor :measurement
+
+    attr_accessor :shipping_constraints
+
+    attr_accessor :amazon_programs
 
     class EnumAttributeValidator
       attr_reader :datatype
@@ -172,7 +176,9 @@ module AmzSpApi::OrdersApiModel
         :'buyer_requested_cancel' => :'BuyerRequestedCancel',
         :'serial_numbers' => :'SerialNumbers',
         :'substitution_preferences' => :'SubstitutionPreferences',
-        :'measurement' => :'Measurement'
+        :'measurement' => :'Measurement',
+        :'shipping_constraints' => :'ShippingConstraints',
+        :'amazon_programs' => :'AmazonPrograms'
       }
     end
 
@@ -216,7 +222,9 @@ module AmzSpApi::OrdersApiModel
         :'buyer_requested_cancel' => :'Object',
         :'serial_numbers' => :'Object',
         :'substitution_preferences' => :'Object',
-        :'measurement' => :'Object'
+        :'measurement' => :'Object',
+        :'shipping_constraints' => :'Object',
+        :'amazon_programs' => :'Object'
       }
     end
 
@@ -396,6 +404,14 @@ module AmzSpApi::OrdersApiModel
       if attributes.key?(:'measurement')
         self.measurement = attributes[:'measurement']
       end
+
+      if attributes.key?(:'shipping_constraints')
+        self.shipping_constraints = attributes[:'shipping_constraints']
+      end
+
+      if attributes.key?(:'amazon_programs')
+        self.amazon_programs = attributes[:'amazon_programs']
+      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -480,7 +496,9 @@ module AmzSpApi::OrdersApiModel
           buyer_requested_cancel == o.buyer_requested_cancel &&
           serial_numbers == o.serial_numbers &&
           substitution_preferences == o.substitution_preferences &&
-          measurement == o.measurement
+          measurement == o.measurement &&
+          shipping_constraints == o.shipping_constraints &&
+          amazon_programs == o.amazon_programs
     end
 
     # @see the `==` method
@@ -492,7 +510,7 @@ module AmzSpApi::OrdersApiModel
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [asin, seller_sku, order_item_id, associated_items, title, quantity_ordered, quantity_shipped, product_info, points_granted, item_price, shipping_price, item_tax, shipping_tax, shipping_discount, shipping_discount_tax, promotion_discount, promotion_discount_tax, promotion_ids, cod_fee, cod_fee_discount, is_gift, condition_note, condition_id, condition_subtype_id, scheduled_delivery_start_date, scheduled_delivery_end_date, price_designation, tax_collection, serial_number_required, is_transparency, ioss_number, store_chain_store_id, deemed_reseller_category, buyer_info, buyer_requested_cancel, serial_numbers, substitution_preferences, measurement].hash
+      [asin, seller_sku, order_item_id, associated_items, title, quantity_ordered, quantity_shipped, product_info, points_granted, item_price, shipping_price, item_tax, shipping_tax, shipping_discount, shipping_discount_tax, promotion_discount, promotion_discount_tax, promotion_ids, cod_fee, cod_fee_discount, is_gift, condition_note, condition_id, condition_subtype_id, scheduled_delivery_start_date, scheduled_delivery_end_date, price_designation, tax_collection, serial_number_required, is_transparency, ioss_number, store_chain_store_id, deemed_reseller_category, buyer_info, buyer_requested_cancel, serial_numbers, substitution_preferences, measurement, shipping_constraints, amazon_programs].hash
     end
 
     # Builds the object from hash

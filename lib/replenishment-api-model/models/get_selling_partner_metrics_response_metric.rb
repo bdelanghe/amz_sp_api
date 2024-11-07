@@ -14,23 +14,35 @@ require 'date'
 module AmzSpApi::ReplenishmentApiModel
   # An object which contains metric data for a selling partner.
   class GetSellingPartnerMetricsResponseMetric
-    # The percentage of items that were not shipped out of the total shipped units over a period of time due to being out of stock. Applicable only for the PERFORMANCE timePeriodType.
+    # The percentage of items that were not shipped out of the total shipped units over a period of time due to being out of stock. Applicable only for the `PERFORMANCE` `timePeriodType`.
     attr_accessor :not_delivered_due_to_oos
 
-    # The revenue generated from subscriptions over a period of time. Applicable for both the PERFORMANCE and FORECAST timePeriodType.
+    # The revenue generated from subscriptions over a period of time. Applicable for both the `PERFORMANCE` and `FORECAST` `timePeriodType`.
     attr_accessor :total_subscriptions_revenue
 
-    # The number of units shipped to the subscribers over a period of time. Applicable for both the PERFORMANCE and FORECAST timePeriodType.
+    # The number of units shipped to the subscribers over a period of time. Applicable for both the `PERFORMANCE` and `FORECAST` `timePeriodType`.
     attr_accessor :shipped_subscription_units
 
-    # The number of active subscriptions present at the end of the period. Applicable only for the PERFORMANCE timePeriodType.
+    # The number of active subscriptions present at the end of the period. Applicable only for the `PERFORMANCE` `timePeriodType`.
     attr_accessor :active_subscriptions
 
-    # The average revenue per subscriber of the program over a period of past 12 months for sellers and 6 months for vendors. Applicable only for the PERFORMANCE timePeriodType.
+    # The average revenue per subscriber of the program over a period of past 12 months for sellers and 6 months for vendors. Applicable only for the `PERFORMANCE` `timePeriodType`.
     attr_accessor :subscriber_average_revenue
 
-    # The average revenue per non-subscriber of the program over a period of past 12 months for sellers and 6 months for vendors. Applicable only for the PERFORMANCE timePeriodType.
+    # The average revenue per non-subscriber of the program over a period of past 12 months for sellers and 6 months for vendors. Applicable only for the `PERFORMANCE` `timePeriodType`.
     attr_accessor :non_subscriber_average_revenue
+
+    # The revenue that would have been generated had there not been out of stock. Applicable only for the PERFORMANCE timePeriodType.
+    attr_accessor :lost_revenue_due_to_oos
+
+    # The average reorders per subscriber of the program over a period of 12 months. Applicable only for the PERFORMANCE timePeriodType.
+    attr_accessor :subscriber_average_reorders
+
+    # The average reorders per non-subscriber of the program over a period of past 12 months. Applicable only for the PERFORMANCE timePeriodType.
+    attr_accessor :non_subscriber_average_reorders
+
+    # The percentage of revenue from ASINs with coupons out of total revenue from all ASINs. Applicable only for the PERFORMANCE timePeriodType.
+    attr_accessor :coupons_revenue_penetration
 
     attr_accessor :time_interval
 
@@ -46,6 +58,10 @@ module AmzSpApi::ReplenishmentApiModel
         :'active_subscriptions' => :'activeSubscriptions',
         :'subscriber_average_revenue' => :'subscriberAverageRevenue',
         :'non_subscriber_average_revenue' => :'nonSubscriberAverageRevenue',
+        :'lost_revenue_due_to_oos' => :'lostRevenueDueToOOS',
+        :'subscriber_average_reorders' => :'subscriberAverageReorders',
+        :'non_subscriber_average_reorders' => :'nonSubscriberAverageReorders',
+        :'coupons_revenue_penetration' => :'couponsRevenuePenetration',
         :'time_interval' => :'timeInterval',
         :'currency_code' => :'currencyCode'
       }
@@ -60,6 +76,10 @@ module AmzSpApi::ReplenishmentApiModel
         :'active_subscriptions' => :'Object',
         :'subscriber_average_revenue' => :'Object',
         :'non_subscriber_average_revenue' => :'Object',
+        :'lost_revenue_due_to_oos' => :'Object',
+        :'subscriber_average_reorders' => :'Object',
+        :'non_subscriber_average_reorders' => :'Object',
+        :'coupons_revenue_penetration' => :'Object',
         :'time_interval' => :'Object',
         :'currency_code' => :'Object'
       }
@@ -110,6 +130,22 @@ module AmzSpApi::ReplenishmentApiModel
         self.non_subscriber_average_revenue = attributes[:'non_subscriber_average_revenue']
       end
 
+      if attributes.key?(:'lost_revenue_due_to_oos')
+        self.lost_revenue_due_to_oos = attributes[:'lost_revenue_due_to_oos']
+      end
+
+      if attributes.key?(:'subscriber_average_reorders')
+        self.subscriber_average_reorders = attributes[:'subscriber_average_reorders']
+      end
+
+      if attributes.key?(:'non_subscriber_average_reorders')
+        self.non_subscriber_average_reorders = attributes[:'non_subscriber_average_reorders']
+      end
+
+      if attributes.key?(:'coupons_revenue_penetration')
+        self.coupons_revenue_penetration = attributes[:'coupons_revenue_penetration']
+      end
+
       if attributes.key?(:'time_interval')
         self.time_interval = attributes[:'time_interval']
       end
@@ -143,6 +179,10 @@ module AmzSpApi::ReplenishmentApiModel
           active_subscriptions == o.active_subscriptions &&
           subscriber_average_revenue == o.subscriber_average_revenue &&
           non_subscriber_average_revenue == o.non_subscriber_average_revenue &&
+          lost_revenue_due_to_oos == o.lost_revenue_due_to_oos &&
+          subscriber_average_reorders == o.subscriber_average_reorders &&
+          non_subscriber_average_reorders == o.non_subscriber_average_reorders &&
+          coupons_revenue_penetration == o.coupons_revenue_penetration &&
           time_interval == o.time_interval &&
           currency_code == o.currency_code
     end
@@ -156,7 +196,7 @@ module AmzSpApi::ReplenishmentApiModel
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [not_delivered_due_to_oos, total_subscriptions_revenue, shipped_subscription_units, active_subscriptions, subscriber_average_revenue, non_subscriber_average_revenue, time_interval, currency_code].hash
+      [not_delivered_due_to_oos, total_subscriptions_revenue, shipped_subscription_units, active_subscriptions, subscriber_average_revenue, non_subscriber_average_revenue, lost_revenue_due_to_oos, subscriber_average_reorders, non_subscriber_average_reorders, coupons_revenue_penetration, time_interval, currency_code].hash
     end
 
     # Builds the object from hash

@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Retail Procurement Shipments
+#Vendor Shipments v1
 
 #The Selling Partner API for Retail Procurement Shipments provides programmatic access to retail shipping data for vendors.
 
@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorShipmentsApiModel
+  # The response payload for the SubmitShipmentConfirmations operation.
   class TransactionReference
     # GUID assigned by Buyer to identify this transaction. This value can be used with the Transaction Status API to return the status of this transaction.
     attr_accessor :transaction_id

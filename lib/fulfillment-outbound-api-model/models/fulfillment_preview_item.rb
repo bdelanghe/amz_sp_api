@@ -19,7 +19,7 @@ module AmzSpApi::FulfillmentOutboundApiModel
 
     attr_accessor :quantity
 
-    # A fulfillment order item identifier that the seller created with a call to the createFulfillmentOrder operation.
+    # A fulfillment order item identifier that the seller created with a call to the `createFulfillmentOrder` operation.
     attr_accessor :seller_fulfillment_order_item_id
 
     attr_accessor :estimated_shipping_weight

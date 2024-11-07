@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorOrdersApiModel
+  # Represents the acknowledgement details for an individual order item, including the acknowledgement code, acknowledged quantity, scheduled ship and delivery dates, and rejection reason (if applicable).
   class OrderItemAcknowledgement
     # This indicates the acknowledgement code.
     attr_accessor :acknowledgement_code

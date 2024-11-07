@@ -14,6 +14,7 @@ require 'date'
 module AmzSpApi::EasyShipModel
   # A list of error responses returned when a request is unsuccessful.
   class ErrorList
+    # A list of error responses returned when a request is unsuccessful.
     attr_accessor :errors
 
     # Attribute mapping from ruby-style variable name to JSON key.

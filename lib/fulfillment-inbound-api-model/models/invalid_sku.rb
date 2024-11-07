@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentInboundApiModel
+  # Contains detail about an invalid SKU
   class InvalidSKU
     # The seller SKU of the item.
     attr_accessor :seller_sku

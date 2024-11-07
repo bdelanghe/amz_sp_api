@@ -1,7 +1,7 @@
 =begin
 #Selling Partner API for Merchant Fulfillment
 
-#The Selling Partner API for Merchant Fulfillment helps you build applications that let sellers purchase shipping for non-Prime and Prime orders using Amazon’s Buy Shipping Services.
+#With the Selling Partner API for Merchant Fulfillment, you can build applications that sellers can use to purchase shipping for non-Prime and Prime orders using Amazon's Buy Shipping Services.
 
 OpenAPI spec version: v0
 
@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::MerchantFulfillmentApiModel
-  # The state or province code. **Note.** Required in the Canada, US, and UK marketplaces. Also required for shipments originating from China.
+  # The state or province code. This is a required field in Canada, US, and UK marketplaces, and for shipments that originate in China.
   class StateOrProvinceCode
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map

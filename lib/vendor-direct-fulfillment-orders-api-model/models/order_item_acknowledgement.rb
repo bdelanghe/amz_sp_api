@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorDirectFulfillmentOrdersApiModel
+  # Details of an individual item within the order being acknowledged.
   class OrderItemAcknowledgement
     # Line item sequence number for the item.
     attr_accessor :item_sequence_number

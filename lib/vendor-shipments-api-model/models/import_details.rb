@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Retail Procurement Shipments
+#Vendor Shipments v1
 
 #The Selling Partner API for Retail Procurement Shipments provides programmatic access to retail shipping data for vendors.
 
@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorShipmentsApiModel
+  # Provide these fields only if this shipment is a direct import.
   class ImportDetails
     # This is used for import purchase orders only. If the recipient requests, this field will contain the shipment method of payment.
     attr_accessor :method_of_payment

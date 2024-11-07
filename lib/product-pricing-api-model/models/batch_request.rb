@@ -14,7 +14,7 @@ require 'date'
 module AmzSpApi::ProductPricingApiModel
   # The common properties for individual requests within a batch.
   class BatchRequest
-    # The URI associated with an individual request within a batch. For `FeaturedOfferExpectedPrice`, this should be `/products/pricing/2022-05-01/offer/featuredOfferExpectedPrice`.
+    # The URI associated with an individual request within a batch. For `FeaturedOfferExpectedPrice`, this is `/products/pricing/2022-05-01/offer/featuredOfferExpectedPrice`.
     attr_accessor :uri
 
     attr_accessor :method

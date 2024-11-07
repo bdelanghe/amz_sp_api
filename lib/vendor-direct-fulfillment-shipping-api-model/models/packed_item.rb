@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorDirectFulfillmentShippingApiModel
+  # Represents an item that has been packed into a container for shipping.
   class PackedItem
     # Item Sequence Number for the item. This must be the same value as sent in the order for a given item.
     attr_accessor :item_sequence_number

@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Retail Procurement Payments
+#Vendor Invoices v1
 
 #The Selling Partner API for Retail Procurement Payments provides programmatic access to vendors payments data.
 
@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorInvoicesApiModel
+  # Response containing the transaction ID.
   class TransactionId
     # GUID to identify this transaction. This value can be used with the Transaction Status API to return the status of this transaction.
     attr_accessor :transaction_id

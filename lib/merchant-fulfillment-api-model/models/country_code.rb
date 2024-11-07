@@ -1,7 +1,7 @@
 =begin
 #Selling Partner API for Merchant Fulfillment
 
-#The Selling Partner API for Merchant Fulfillment helps you build applications that let sellers purchase shipping for non-Prime and Prime orders using Amazon’s Buy Shipping Services.
+#With the Selling Partner API for Merchant Fulfillment, you can build applications that sellers can use to purchase shipping for non-Prime and Prime orders using Amazon's Buy Shipping Services.
 
 OpenAPI spec version: v0
 
@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::MerchantFulfillmentApiModel
-  # The country code. A two-character country code, in ISO 3166-1 alpha-2 format.
+  # The two-letter country code in [ISO 3166-1 alpha-2](https://www.iban.com/country-codes) format.
   class CountryCode
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map

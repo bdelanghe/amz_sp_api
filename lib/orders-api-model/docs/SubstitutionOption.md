@@ -3,9 +3,9 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**asin** | **String** | The Amazon Standard Identification Number (ASIN) of the item. | [optional] 
+**asin** | **String** | The item&#x27;s Amazon Standard Identification Number (ASIN). | [optional] 
 **quantity_ordered** | **Integer** | The number of items to be picked for this substitution option.  | [optional] 
-**seller_sku** | **String** | The seller stock keeping unit (SKU) of the item. | [optional] 
-**title** | **String** | The title of the item. | [optional] 
+**seller_sku** | **String** | The item&#x27;s seller stock keeping unit (SKU). | [optional] 
+**title** | **String** | The item&#x27;s title. | [optional] 
 **measurement** | [**Measurement**](Measurement.md) |  | [optional] 
 

@@ -27,6 +27,7 @@ module AmzSpApi::FulfillmentInboundApiModel
     CAP_SEALING = 'CapSealing'.freeze
     SET_STICKERING = 'SetStickering'.freeze
     BLANK_STICKERING = 'BlankStickering'.freeze
+    SHIPS_IN_PRODUCT_PACKAGING = 'ShipsInProductPackaging'.freeze
     NO_PREP = 'NoPrep'.freeze
 
     # Builds the enum from string

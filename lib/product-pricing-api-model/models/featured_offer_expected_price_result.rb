@@ -12,11 +12,11 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::ProductPricingApiModel
-  # The featured offer expected price result data for the requested offer.
+  # The FOEP result data for the requested offer.
   class FeaturedOfferExpectedPriceResult
     attr_accessor :featured_offer_expected_price
 
-    # The status of the featured offer expected price computation. Possible values include `VALID_FOEP`, `NO_COMPETING_OFFER`, `OFFER_NOT_ELIGIBLE`, `OFFER_NOT_FOUND`, `ASIN_NOT_ELIGIBLE`. Additional values may be added in the future.
+    # The status of the FOEP computation. Possible values include `VALID_FOEP`, `NO_COMPETING_OFFER`, `OFFER_NOT_ELIGIBLE`, `OFFER_NOT_FOUND`, and `ASIN_NOT_ELIGIBLE`. Additional values might be added in the future.
     attr_accessor :result_status
 
     attr_accessor :competing_featured_offer

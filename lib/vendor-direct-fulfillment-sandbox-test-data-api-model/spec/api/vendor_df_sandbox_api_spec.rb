@@ -33,7 +33,7 @@ describe 'VendorDFSandboxApi' do
 
   # unit tests for generate_order_scenarios
   # Submits a request to generate test order data for Vendor Direct Fulfillment API entities.
-  # @param body 
+  # @param body The request payload containing parameters for generating test order data scenarios.
   # @param [Hash] opts the optional parameters
   # @return [TransactionReference]
   describe 'generate_order_scenarios test' do

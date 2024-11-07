@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Reports
+#Report v2021-06-30
 
 #The Selling Partner API for Reports lets you retrieve and manage a variety of reports that can help selling partners manage their businesses.
 
@@ -12,11 +12,11 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::ReportsApiModel
-  # The response for the getReports operation.
+  # The response for the `getReports` operation.
   class GetReportsResponse
     attr_accessor :reports
 
-    # Returned when the number of results exceeds pageSize. To get the next page of results, call getReports with this token as the only parameter.
+    # Returned when the number of results exceeds `pageSize`. To get the next page of results, call `getReports` with this token as the only parameter.
     attr_accessor :next_token
 
     # Attribute mapping from ruby-style variable name to JSON key.

@@ -16,4 +16,5 @@ Name | Type | Description | Notes
 **available_label_formats** | [**LabelFormatList**](LabelFormatList.md) |  | [optional] 
 **available_format_options_for_label** | [**AvailableFormatOptionsForLabelList**](AvailableFormatOptionsForLabelList.md) |  | [optional] 
 **requires_additional_seller_inputs** | **BOOLEAN** | When true, additional seller inputs are required. | 
+**benefits** | [**Benefits**](Benefits.md) |  | [optional] 
 

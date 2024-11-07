@@ -14,6 +14,7 @@ require 'date'
 module AmzSpApi::EasyShipModel
   # A list of packages.
   class Packages
+    # A list of packages.
     attr_accessor :packages
 
     # Attribute mapping from ruby-style variable name to JSON key.

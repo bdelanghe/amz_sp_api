@@ -1,6 +1,6 @@
 # reports-api-model
 
-AmzSpApi::ReportsApiModel - the Ruby gem for the Selling Partner API for Reports
+AmzSpApi::ReportsApiModel - the Ruby gem for the Report v2021-06-30
 
 The Selling Partner API for Reports lets you retrieve and manage a variety of reports that can help selling partners manage their businesses.
 
@@ -60,6 +60,7 @@ report_id = 'report_id_example' # String | The identifier for the report. This i
 
 
 begin
+  #cancelReport
   api_instance.cancel_report(report_id)
 rescue AmzSpApi::ReportsApiModel::ApiError => e
   puts "Exception when calling ReportsApi->cancel_report: #{e}"
@@ -70,16 +71,18 @@ report_schedule_id = 'report_schedule_id_example' # String | The identifier for 
 
 
 begin
+  #cancelReportSchedule
   api_instance.cancel_report_schedule(report_schedule_id)
 rescue AmzSpApi::ReportsApiModel::ApiError => e
   puts "Exception when calling ReportsApi->cancel_report_schedule: #{e}"
 end
 
 api_instance = AmzSpApi::ReportsApiModel::ReportsApi.new
-body = AmzSpApi::ReportsApiModel::CreateReportSpecification.new # CreateReportSpecification | 
+body = AmzSpApi::ReportsApiModel::CreateReportSpecification.new # CreateReportSpecification | Information required to create the report.
 
 
 begin
+  #createReport
   result = api_instance.create_report(body)
   p result
 rescue AmzSpApi::ReportsApiModel::ApiError => e
@@ -87,10 +90,11 @@ rescue AmzSpApi::ReportsApiModel::ApiError => e
 end
 
 api_instance = AmzSpApi::ReportsApiModel::ReportsApi.new
-body = AmzSpApi::ReportsApiModel::CreateReportScheduleSpecification.new # CreateReportScheduleSpecification | 
+body = AmzSpApi::ReportsApiModel::CreateReportScheduleSpecification.new # CreateReportScheduleSpecification | Information required to create the report schedule.
 
 
 begin
+  #createReportSchedule
   result = api_instance.create_report_schedule(body)
   p result
 rescue AmzSpApi::ReportsApiModel::ApiError => e
@@ -102,6 +106,7 @@ report_id = 'report_id_example' # String | The identifier for the report. This i
 
 
 begin
+  #getReport
   result = api_instance.get_report(report_id)
   p result
 rescue AmzSpApi::ReportsApiModel::ApiError => e
@@ -113,6 +118,7 @@ report_document_id = 'report_document_id_example' # String | The identifier for 
 
 
 begin
+  #getReportDocument
   result = api_instance.get_report_document(report_document_id)
   p result
 rescue AmzSpApi::ReportsApiModel::ApiError => e
@@ -124,6 +130,7 @@ report_schedule_id = 'report_schedule_id_example' # String | The identifier for 
 
 
 begin
+  #getReportSchedule
   result = api_instance.get_report_schedule(report_schedule_id)
   p result
 rescue AmzSpApi::ReportsApiModel::ApiError => e
@@ -135,6 +142,7 @@ report_types = ['report_types_example'] # Array<String> | A list of report types
 
 
 begin
+  #getReportSchedules
   result = api_instance.get_report_schedules(report_types)
   p result
 rescue AmzSpApi::ReportsApiModel::ApiError => e
@@ -147,12 +155,13 @@ opts = {
   processing_statuses: ['processing_statuses_example'], # Array<String> | A list of processing statuses used to filter reports.
   marketplace_ids: ['marketplace_ids_example'], # Array<String> | A list of marketplace identifiers used to filter reports. The reports returned will match at least one of the marketplaces that you specify.
   page_size: 10, # Integer | The maximum number of reports to return in a single call.
-  created_since: DateTime.parse('2013-10-20T19:20:30+01:00'), # DateTime | The earliest report creation date and time for reports to include in the response, in ISO 8601 date time format. The default is 90 days ago. Reports are retained for a maximum of 90 days.
-  created_until: DateTime.parse('2013-10-20T19:20:30+01:00'), # DateTime | The latest report creation date and time for reports to include in the response, in ISO 8601 date time format. The default is now.
-  next_token: 'next_token_example' # String | A string token returned in the response to your previous request. nextToken is returned when the number of results exceeds the specified pageSize value. To get the next page of results, call the getReports operation and include this token as the only parameter. Specifying nextToken with any other parameters will cause the request to fail.
+  created_since: DateTime.parse('2013-10-20T19:20:30+01:00'), # DateTime | The earliest report creation date and time for reports to include in the response, in <a href='https://developer-docs.amazon.com/sp-api/docs/iso-8601'>ISO 8601</a> date time format. The default is 90 days ago. Reports are retained for a maximum of 90 days.
+  created_until: DateTime.parse('2013-10-20T19:20:30+01:00'), # DateTime | The latest report creation date and time for reports to include in the response, in <a href='https://developer-docs.amazon.com/sp-api/docs/iso-8601'>ISO 8601</a> date time format. The default is now.
+  next_token: 'next_token_example' # String | A string token returned in the response to your previous request. `nextToken` is returned when the number of results exceeds the specified `pageSize` value. To get the next page of results, call the `getReports` operation and include this token as the only parameter. Specifying `nextToken` with any other parameters will cause the request to fail.
 }
 
 begin
+  #getReports
   result = api_instance.get_reports(opts)
   p result
 rescue AmzSpApi::ReportsApiModel::ApiError => e
@@ -166,15 +175,15 @@ All URIs are relative to *https://sellingpartnerapi-na.amazon.com/*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*AmzSpApi::ReportsApiModel::ReportsApi* | [**cancel_report**](docs/ReportsApi.md#cancel_report) | **DELETE** /reports/2021-06-30/reports/{reportId} | 
-*AmzSpApi::ReportsApiModel::ReportsApi* | [**cancel_report_schedule**](docs/ReportsApi.md#cancel_report_schedule) | **DELETE** /reports/2021-06-30/schedules/{reportScheduleId} | 
-*AmzSpApi::ReportsApiModel::ReportsApi* | [**create_report**](docs/ReportsApi.md#create_report) | **POST** /reports/2021-06-30/reports | 
-*AmzSpApi::ReportsApiModel::ReportsApi* | [**create_report_schedule**](docs/ReportsApi.md#create_report_schedule) | **POST** /reports/2021-06-30/schedules | 
-*AmzSpApi::ReportsApiModel::ReportsApi* | [**get_report**](docs/ReportsApi.md#get_report) | **GET** /reports/2021-06-30/reports/{reportId} | 
-*AmzSpApi::ReportsApiModel::ReportsApi* | [**get_report_document**](docs/ReportsApi.md#get_report_document) | **GET** /reports/2021-06-30/documents/{reportDocumentId} | 
-*AmzSpApi::ReportsApiModel::ReportsApi* | [**get_report_schedule**](docs/ReportsApi.md#get_report_schedule) | **GET** /reports/2021-06-30/schedules/{reportScheduleId} | 
-*AmzSpApi::ReportsApiModel::ReportsApi* | [**get_report_schedules**](docs/ReportsApi.md#get_report_schedules) | **GET** /reports/2021-06-30/schedules | 
-*AmzSpApi::ReportsApiModel::ReportsApi* | [**get_reports**](docs/ReportsApi.md#get_reports) | **GET** /reports/2021-06-30/reports | 
+*AmzSpApi::ReportsApiModel::ReportsApi* | [**cancel_report**](docs/ReportsApi.md#cancel_report) | **DELETE** /reports/2021-06-30/reports/{reportId} | cancelReport
+*AmzSpApi::ReportsApiModel::ReportsApi* | [**cancel_report_schedule**](docs/ReportsApi.md#cancel_report_schedule) | **DELETE** /reports/2021-06-30/schedules/{reportScheduleId} | cancelReportSchedule
+*AmzSpApi::ReportsApiModel::ReportsApi* | [**create_report**](docs/ReportsApi.md#create_report) | **POST** /reports/2021-06-30/reports | createReport
+*AmzSpApi::ReportsApiModel::ReportsApi* | [**create_report_schedule**](docs/ReportsApi.md#create_report_schedule) | **POST** /reports/2021-06-30/schedules | createReportSchedule
+*AmzSpApi::ReportsApiModel::ReportsApi* | [**get_report**](docs/ReportsApi.md#get_report) | **GET** /reports/2021-06-30/reports/{reportId} | getReport
+*AmzSpApi::ReportsApiModel::ReportsApi* | [**get_report_document**](docs/ReportsApi.md#get_report_document) | **GET** /reports/2021-06-30/documents/{reportDocumentId} | getReportDocument
+*AmzSpApi::ReportsApiModel::ReportsApi* | [**get_report_schedule**](docs/ReportsApi.md#get_report_schedule) | **GET** /reports/2021-06-30/schedules/{reportScheduleId} | getReportSchedule
+*AmzSpApi::ReportsApiModel::ReportsApi* | [**get_report_schedules**](docs/ReportsApi.md#get_report_schedules) | **GET** /reports/2021-06-30/schedules | getReportSchedules
+*AmzSpApi::ReportsApiModel::ReportsApi* | [**get_reports**](docs/ReportsApi.md#get_reports) | **GET** /reports/2021-06-30/reports | getReports
 
 ## Documentation for Models
 

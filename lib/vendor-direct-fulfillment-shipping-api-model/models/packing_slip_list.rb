@@ -16,6 +16,7 @@ module AmzSpApi::VendorDirectFulfillmentShippingApiModel
   class PackingSlipList
     attr_accessor :pagination
 
+    # An array of packing slip objects.
     attr_accessor :packing_slips
 
     # Attribute mapping from ruby-style variable name to JSON key.

@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentInboundApiModel
+  # Result of an inbound shipment operation
   class InboundShipmentResult
     # The shipment identifier submitted in the request.
     attr_accessor :shipment_id

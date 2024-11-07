@@ -12,12 +12,12 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentOutboundApiModel
-  # A message with a locale.
+  # Localized messaging for a delivery offering.
   class DeliveryMessage
-    # The message text.
+    # The message content for a delivery offering.
     attr_accessor :text
 
-    # The message locale.
+    # The locale for the message (for example, en_US).
     attr_accessor :locale
 
     # Attribute mapping from ruby-style variable name to JSON key.
@@ -70,22 +70,12 @@ module AmzSpApi::FulfillmentOutboundApiModel
     # @return Array for valid properties with the reasons
     def list_invalid_properties
       invalid_properties = Array.new
-      if @text.nil?
-        invalid_properties.push('invalid value for "text", text cannot be nil.')
-      end
-
-      if @locale.nil?
-        invalid_properties.push('invalid value for "locale", locale cannot be nil.')
-      end
-
       invalid_properties
     end
 
     # Check to see if the all the properties in the model are valid
     # @return true if the model is valid
     def valid?
-      return false if @text.nil?
-      return false if @locale.nil?
       true
     end
 

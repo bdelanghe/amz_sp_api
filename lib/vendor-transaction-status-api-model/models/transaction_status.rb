@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorTransactionStatusApiModel
+  # Represents the status of a transaction.
   class TransactionStatus
     attr_accessor :transaction_status
 

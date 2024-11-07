@@ -12,7 +12,9 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorDirectFulfillmentShippingApiModel
+  # Represents the request payload for submitting updates to the status of shipments, containing an array of one or more ShipmentStatusUpdate objects.
   class SubmitShipmentStatusUpdatesRequest
+    # Contains a list of one or more ShipmentStatusUpdate objects, each representing an update to the status of a specific shipment.
     attr_accessor :shipment_status_updates
 
     # Attribute mapping from ruby-style variable name to JSON key.

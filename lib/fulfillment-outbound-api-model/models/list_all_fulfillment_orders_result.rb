@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentOutboundApiModel
+  # The request for the listAllFulfillmentOrders operation.
   class ListAllFulfillmentOrdersResult
     # When present and not empty, pass this string token in the next request to return the next response page.
     attr_accessor :next_token

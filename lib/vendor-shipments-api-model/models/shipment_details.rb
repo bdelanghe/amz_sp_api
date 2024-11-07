@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Retail Procurement Shipments
+#Vendor Shipments v1
 
 #The Selling Partner API for Retail Procurement Shipments provides programmatic access to retail shipping data for vendors.
 
@@ -12,9 +12,11 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorShipmentsApiModel
+  # The request schema for the GetShipmentDetails operation.
   class ShipmentDetails
     attr_accessor :pagination
 
+    # A list of one or more shipments with underlying details.
     attr_accessor :shipments
 
     # Attribute mapping from ruby-style variable name to JSON key.

@@ -1,7 +1,7 @@
 =begin
-#Selling Partner API for Listings Items
+#Listings Items v2021-08-01
 
-#The Selling Partner API for Listings Items (Listings Items API) provides programmatic access to selling partner listings on Amazon. Use this API in collaboration with the Selling Partner API for Product Type Definitions, which you use to retrieve the information about Amazon product types needed to use the Listings Items API.  For more information, see the [Listings Items API Use Case Guide](doc:listings-items-api-v2021-08-01-use-case-guide).
+#The Selling Partner API for Listings Items (Listings Items API) provides programmatic access to selling partner listings on Amazon. Use this API in collaboration with the Selling Partner API for Product Type Definitions, which you use to retrieve the information about Amazon product types needed to use the Listings Items API.  For more information, see the [Listings Items API Use Case Guide](https://developer-docs.amazon.com/sp-api/docs/listings-items-api-v2021-08-01-use-case-guide).
 
 OpenAPI spec version: 2021-08-01
 
@@ -25,10 +25,10 @@ module AmzSpApi::ListingsItemsApiModel
 
     attr_accessor :offers
 
-    # Fulfillment availability for the listings item.
+    # The fulfillment availability for the listings item.
     attr_accessor :fulfillment_availability
 
-    # Vendor procurement information for the listings item.
+    # The vendor procurement information for the listings item.
     attr_accessor :procurement
 
     # Attribute mapping from ruby-style variable name to JSON key.

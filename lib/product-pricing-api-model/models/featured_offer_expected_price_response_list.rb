@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::ProductPricingApiModel
-  # A batched list of featured offer expected price responses.
+  # A batched list of FOEP responses.
   class FeaturedOfferExpectedPriceResponseList
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map

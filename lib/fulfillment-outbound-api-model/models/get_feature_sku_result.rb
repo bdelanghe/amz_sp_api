@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentOutboundApiModel
-  # The payload for the getFeatureSKU operation.
+  # The payload for the `getFeatureSKU` operation.
   class GetFeatureSkuResult
     # The requested marketplace.
     attr_accessor :marketplace_id
@@ -23,7 +23,7 @@ module AmzSpApi::FulfillmentOutboundApiModel
     # When true, the seller SKU is eligible for the requested feature.
     attr_accessor :is_eligible
 
-    # A list of one or more reasons that the seller SKU is ineligibile for the feature.  Possible values: * MERCHANT_NOT_ENROLLED - The merchant isn't enrolled for the feature. * SKU_NOT_ELIGIBLE - The SKU doesn't reside in a warehouse that supports the feature. * INVALID_SKU - There is an issue with the SKU provided.
+    # A list of one or more reasons that the seller SKU is ineligibile for the feature.  Possible values: * `MERCHANT_NOT_ENROLLED` - The merchant isn't enrolled for the feature. * `SKU_NOT_ELIGIBLE` - The SKU doesn't reside in a warehouse that supports the feature. * `INVALID_SKU` - There is an issue with the SKU provided.
     attr_accessor :ineligible_reasons
 
     attr_accessor :sku_info

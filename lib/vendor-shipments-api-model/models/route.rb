@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Retail Procurement Shipments
+#Vendor Shipments v1
 
 #The Selling Partner API for Retail Procurement Shipments provides programmatic access to retail shipping data for vendors.
 
@@ -14,6 +14,7 @@ require 'date'
 module AmzSpApi::VendorShipmentsApiModel
   # This is used only for direct import shipment confirmations.
   class Route
+    # The port or location involved in transporting the cargo, as specified in transportation contracts or operational plans.
     attr_accessor :stops
 
     # Attribute mapping from ruby-style variable name to JSON key.

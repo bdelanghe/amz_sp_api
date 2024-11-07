@@ -1,7 +1,7 @@
 =begin
 #Selling Partner API for Merchant Fulfillment
 
-#The Selling Partner API for Merchant Fulfillment helps you build applications that let sellers purchase shipping for non-Prime and Prime orders using Amazon’s Buy Shipping Services.
+#With the Selling Partner API for Merchant Fulfillment, you can build applications that sellers can use to purchase shipping for non-Prime and Prime orders using Amazon's Buy Shipping Services.
 
 OpenAPI spec version: v0
 
@@ -14,7 +14,7 @@ require 'date'
 module AmzSpApi::MerchantFulfillmentApiModel
   # Error response returned when the request is unsuccessful.
   class Error
-    # An error code that identifies the type of error that occured.
+    # An error code that identifies the type of error that occurred.
     attr_accessor :code
 
     # A message that describes the error condition in a human-readable form.

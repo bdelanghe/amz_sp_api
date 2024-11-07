@@ -3,7 +3,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**order_item_id** | **String** | The unique identifier of the order item. | 
-**quantity** | **Integer** | The quantity of the item. | 
+**order_item_id** | **String** | The order item&#x27;s unique identifier. | 
+**quantity** | **Integer** | The item&#x27;s quantity. | 
 **transparency_codes** | [**TransparencyCodeList**](TransparencyCodeList.md) |  | [optional] 
 

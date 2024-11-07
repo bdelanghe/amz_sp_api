@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::FulfillmentOutboundApiModel
+  # The request for the listReturnReasonCodes operation.
   class ListReturnReasonCodesResult
     attr_accessor :reason_code_details
 

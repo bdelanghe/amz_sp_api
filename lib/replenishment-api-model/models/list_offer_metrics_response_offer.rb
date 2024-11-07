@@ -17,37 +17,43 @@ module AmzSpApi::ReplenishmentApiModel
     # The Amazon Standard Identification Number (ASIN).
     attr_accessor :asin
 
-    # The percentage of items that were not shipped out of the total shipped units over a period of time due to being out of stock. Applicable only for the PERFORMANCE timePeriodType.
+    # The percentage of items that were not shipped out of the total shipped units over a period of time due to being out of stock. Applicable only for the `PERFORMANCE` `timePeriodType`.
     attr_accessor :not_delivered_due_to_oos
 
-    # The revenue generated from subscriptions over a period of time. Applicable only for the PERFORMANCE timePeriodType.
+    # The revenue generated from subscriptions over a period of time. Applicable only for the `PERFORMANCE` `timePeriodType`.
     attr_accessor :total_subscriptions_revenue
 
-    # The number of units shipped to the subscribers over a period of time. Applicable only for the PERFORMANCE timePeriodType.
+    # The number of units shipped to the subscribers over a period of time. Applicable only for the `PERFORMANCE` `timePeriodType`.
     attr_accessor :shipped_subscription_units
 
-    # The number of active subscriptions present at the end of the period. Applicable only for the PERFORMANCE timePeriodType.
+    # The number of active subscriptions present at the end of the period. Applicable only for the `PERFORMANCE` `timePeriodType`.
     attr_accessor :active_subscriptions
 
-    # The percentage of total program revenue out of total product revenue. Applicable only for the PERFORMANCE timePeriodType.
+    # The percentage of total program revenue out of total product revenue. Applicable only for the `PERFORMANCE` `timePeriodType`.
     attr_accessor :revenue_penetration
 
-    # The forecasted total subscription revenue for the next 30 days. Applicable only for the FORECAST timePeriodType.
+    # The revenue that would have been generated had there not been out of stock. Applicable only for the PERFORMANCE timePeriodType.
+    attr_accessor :lost_revenue_due_to_oos
+
+    # The percentage of revenue from ASINs with coupons out of total revenue from all ASINs. Applicable only for the PERFORMANCE timePeriodType.
+    attr_accessor :coupons_revenue_penetration
+
+    # The forecasted total subscription revenue for the next 30 days. Applicable only for the `FORECAST` `timePeriodType`.
     attr_accessor :next30_day_total_subscriptions_revenue
 
-    # The forecasted total subscription revenue for the next 60 days. Applicable only for the FORECAST timePeriodType.
+    # The forecasted total subscription revenue for the next 60 days. Applicable only for the `FORECAST` `timePeriodType`.
     attr_accessor :next60_day_total_subscriptions_revenue
 
-    # The forecasted total subscription revenue for the next 90 days. Applicable only for the FORECAST timePeriodType.
+    # The forecasted total subscription revenue for the next 90 days. Applicable only for the `FORECAST` `timePeriodType`.
     attr_accessor :next90_day_total_subscriptions_revenue
 
-    # The forecasted shipped subscription units for the next 30 days. Applicable only for the FORECAST timePeriodType.
+    # The forecasted shipped subscription units for the next 30 days. Applicable only for the `FORECAST` `timePeriodType`.
     attr_accessor :next30_day_shipped_subscription_units
 
-    # The forecasted shipped subscription units for the next 60 days. Applicable only for the FORECAST timePeriodType.
+    # The forecasted shipped subscription units for the next 60 days. Applicable only for the `FORECAST` `timePeriodType`.
     attr_accessor :next60_day_shipped_subscription_units
 
-    # The forecasted shipped subscription units for the next 90 days. Applicable only for the FORECAST timePeriodType.
+    # The forecasted shipped subscription units for the next 90 days. Applicable only for the `FORECAST` `timePeriodType`.
     attr_accessor :next90_day_shipped_subscription_units
 
     attr_accessor :time_interval
@@ -64,6 +70,8 @@ module AmzSpApi::ReplenishmentApiModel
         :'shipped_subscription_units' => :'shippedSubscriptionUnits',
         :'active_subscriptions' => :'activeSubscriptions',
         :'revenue_penetration' => :'revenuePenetration',
+        :'lost_revenue_due_to_oos' => :'lostRevenueDueToOOS',
+        :'coupons_revenue_penetration' => :'couponsRevenuePenetration',
         :'next30_day_total_subscriptions_revenue' => :'next30DayTotalSubscriptionsRevenue',
         :'next60_day_total_subscriptions_revenue' => :'next60DayTotalSubscriptionsRevenue',
         :'next90_day_total_subscriptions_revenue' => :'next90DayTotalSubscriptionsRevenue',
@@ -84,6 +92,8 @@ module AmzSpApi::ReplenishmentApiModel
         :'shipped_subscription_units' => :'Object',
         :'active_subscriptions' => :'Object',
         :'revenue_penetration' => :'Object',
+        :'lost_revenue_due_to_oos' => :'Object',
+        :'coupons_revenue_penetration' => :'Object',
         :'next30_day_total_subscriptions_revenue' => :'Object',
         :'next60_day_total_subscriptions_revenue' => :'Object',
         :'next90_day_total_subscriptions_revenue' => :'Object',
@@ -138,6 +148,14 @@ module AmzSpApi::ReplenishmentApiModel
 
       if attributes.key?(:'revenue_penetration')
         self.revenue_penetration = attributes[:'revenue_penetration']
+      end
+
+      if attributes.key?(:'lost_revenue_due_to_oos')
+        self.lost_revenue_due_to_oos = attributes[:'lost_revenue_due_to_oos']
+      end
+
+      if attributes.key?(:'coupons_revenue_penetration')
+        self.coupons_revenue_penetration = attributes[:'coupons_revenue_penetration']
       end
 
       if attributes.key?(:'next30_day_total_subscriptions_revenue')
@@ -197,6 +215,8 @@ module AmzSpApi::ReplenishmentApiModel
           shipped_subscription_units == o.shipped_subscription_units &&
           active_subscriptions == o.active_subscriptions &&
           revenue_penetration == o.revenue_penetration &&
+          lost_revenue_due_to_oos == o.lost_revenue_due_to_oos &&
+          coupons_revenue_penetration == o.coupons_revenue_penetration &&
           next30_day_total_subscriptions_revenue == o.next30_day_total_subscriptions_revenue &&
           next60_day_total_subscriptions_revenue == o.next60_day_total_subscriptions_revenue &&
           next90_day_total_subscriptions_revenue == o.next90_day_total_subscriptions_revenue &&
@@ -216,7 +236,7 @@ module AmzSpApi::ReplenishmentApiModel
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [asin, not_delivered_due_to_oos, total_subscriptions_revenue, shipped_subscription_units, active_subscriptions, revenue_penetration, next30_day_total_subscriptions_revenue, next60_day_total_subscriptions_revenue, next90_day_total_subscriptions_revenue, next30_day_shipped_subscription_units, next60_day_shipped_subscription_units, next90_day_shipped_subscription_units, time_interval, currency_code].hash
+      [asin, not_delivered_due_to_oos, total_subscriptions_revenue, shipped_subscription_units, active_subscriptions, revenue_penetration, lost_revenue_due_to_oos, coupons_revenue_penetration, next30_day_total_subscriptions_revenue, next60_day_total_subscriptions_revenue, next90_day_total_subscriptions_revenue, next30_day_shipped_subscription_units, next60_day_shipped_subscription_units, next90_day_shipped_subscription_units, time_interval, currency_code].hash
     end
 
     # Builds the object from hash

@@ -14,7 +14,7 @@ require 'date'
 module AmzSpApi::FulfillmentOutboundApiModel
   # Information about an SKU, including the count available, identifiers, and a list of overlapping SKUs that share the same inventory pool.
   class FeatureSku
-    # Used to identify an item in the given marketplace. SellerSKU is qualified by the seller's SellerId, which is included with every operation that you submit.
+    # Used to identify an item in the given marketplace. `SellerSKU` is qualified by the seller's SellerId, which is included with every operation that you submit.
     attr_accessor :seller_sku
 
     # The unique SKU used by Amazon's fulfillment network.

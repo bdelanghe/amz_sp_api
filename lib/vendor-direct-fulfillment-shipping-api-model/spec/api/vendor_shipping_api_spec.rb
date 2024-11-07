@@ -60,7 +60,7 @@ describe 'VendorShippingApi' do
 
   # unit tests for submit_shipment_confirmations
   # Submits one or more shipment confirmations for vendor orders.  **Usage Plan:**  | Rate (requests per second) | Burst | | ---- | ---- | | 10 | 10 |  The &#x60;x-amzn-RateLimit-Limit&#x60; response header returns the usage plan rate limits that were applied to the requested operation, when available. The table above indicates the default rate and burst values for this operation. Selling partners whose business demands require higher throughput may see higher rate and burst values than those shown here. For more information, see [Usage Plans and Rate Limits in the Selling Partner API](https://developer-docs.amazon.com/sp-api/docs/usage-plans-and-rate-limits-in-the-sp-api).
-  # @param body 
+  # @param body Request body containing the shipment confirmations data.
   # @param [Hash] opts the optional parameters
   # @return [SubmitShipmentConfirmationsResponse]
   describe 'submit_shipment_confirmations test' do
@@ -71,7 +71,7 @@ describe 'VendorShippingApi' do
 
   # unit tests for submit_shipment_status_updates
   # This API call is only to be used by Vendor-Own-Carrier (VOC) vendors. Calling this API will submit a shipment status update for the package that a vendor has shipped. It will provide the Amazon customer visibility on their order, when the package is outside of Amazon Network visibility.  **Usage Plan:**  | Rate (requests per second) | Burst | | ---- | ---- | | 10 | 10 |  The &#x60;x-amzn-RateLimit-Limit&#x60; response header returns the usage plan rate limits that were applied to the requested operation, when available. The table above indicates the default rate and burst values for this operation. Selling partners whose business demands require higher throughput may see higher rate and burst values than those shown here. For more information, see [Usage Plans and Rate Limits in the Selling Partner API](https://developer-docs.amazon.com/sp-api/docs/usage-plans-and-rate-limits-in-the-sp-api).
-  # @param body 
+  # @param body Request body containing the shipment status update data.
   # @param [Hash] opts the optional parameters
   # @return [SubmitShipmentStatusUpdatesResponse]
   describe 'submit_shipment_status_updates test' do

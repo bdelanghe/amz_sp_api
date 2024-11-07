@@ -12,6 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::VendorOrdersApiModel
+  # Represents an order placed by Amazon, including the purchase order number, current state, and order details.
   class Order
     # The purchase order number for this order. Formatting Notes: 8-character alpha-numeric code.
     attr_accessor :purchase_order_number

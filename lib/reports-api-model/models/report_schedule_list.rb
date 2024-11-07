@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Reports
+#Report v2021-06-30
 
 #The Selling Partner API for Reports lets you retrieve and manage a variety of reports that can help selling partners manage their businesses.
 
@@ -14,6 +14,7 @@ require 'date'
 module AmzSpApi::ReportsApiModel
   # A list of report schedules.
   class ReportScheduleList
+    # Detailed information about a report schedule.
     attr_accessor :report_schedules
 
     # Attribute mapping from ruby-style variable name to JSON key.

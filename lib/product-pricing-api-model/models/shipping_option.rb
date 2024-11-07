@@ -14,7 +14,7 @@ require 'date'
 module AmzSpApi::ProductPricingApiModel
   # The shipping option available for the offer.
   class ShippingOption
-    # The type of the shipping option.
+    # The type of shipping option.
     attr_accessor :shipping_option_type
 
     attr_accessor :price

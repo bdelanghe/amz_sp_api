@@ -12,7 +12,7 @@ Swagger Codegen version: 3.0.63
 require 'date'
 
 module AmzSpApi::EasyShipModel
-  # A package. This object contains all the details of the scheduled Easy Ship package including the package identifier, physical attributes such as dimensions and weight, selected time slot to handover the package to carrier, status of the package, and tracking/invoice details.
+  # This object contains all the details of the scheduled Easy Ship package.
   class Package
     attr_accessor :scheduled_package_id
 

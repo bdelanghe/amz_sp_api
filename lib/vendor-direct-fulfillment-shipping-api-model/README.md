@@ -112,7 +112,7 @@ rescue AmzSpApi::VendorDirectFulfillmentShippingApiModel::ApiError => e
 end
 
 api_instance = AmzSpApi::VendorDirectFulfillmentShippingApiModel::VendorShippingApi.new
-body = AmzSpApi::VendorDirectFulfillmentShippingApiModel::SubmitShipmentConfirmationsRequest.new # SubmitShipmentConfirmationsRequest | 
+body = AmzSpApi::VendorDirectFulfillmentShippingApiModel::SubmitShipmentConfirmationsRequest.new # SubmitShipmentConfirmationsRequest | Request body containing the shipment confirmations data.
 
 
 begin
@@ -123,7 +123,7 @@ rescue AmzSpApi::VendorDirectFulfillmentShippingApiModel::ApiError => e
 end
 
 api_instance = AmzSpApi::VendorDirectFulfillmentShippingApiModel::VendorShippingApi.new
-body = AmzSpApi::VendorDirectFulfillmentShippingApiModel::SubmitShipmentStatusUpdatesRequest.new # SubmitShipmentStatusUpdatesRequest | 
+body = AmzSpApi::VendorDirectFulfillmentShippingApiModel::SubmitShipmentStatusUpdatesRequest.new # SubmitShipmentStatusUpdatesRequest | Request body containing the shipment status update data.
 
 
 begin
@@ -162,7 +162,7 @@ rescue AmzSpApi::VendorDirectFulfillmentShippingApiModel::ApiError => e
 end
 
 api_instance = AmzSpApi::VendorDirectFulfillmentShippingApiModel::VendorShippingLabelsApi.new
-body = AmzSpApi::VendorDirectFulfillmentShippingApiModel::SubmitShippingLabelsRequest.new # SubmitShippingLabelsRequest | 
+body = AmzSpApi::VendorDirectFulfillmentShippingApiModel::SubmitShippingLabelsRequest.new # SubmitShippingLabelsRequest | Request body containing one or more shipping labels data.
 
 
 begin

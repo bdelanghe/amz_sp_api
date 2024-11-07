@@ -1,5 +1,5 @@
 =begin
-#Selling Partner API for Reports
+#Report v2021-06-30
 
 #The Selling Partner API for Reports lets you retrieve and manage a variety of reports that can help selling partners manage their businesses.
 
@@ -17,7 +17,7 @@ module AmzSpApi::ReportsApiModel
     # An error code that identifies the type of error that occurred.
     attr_accessor :code
 
-    # A message that describes the error condition in a human-readable form.
+    # A message that describes the error condition.
     attr_accessor :message
 
     # Additional details that can help the caller understand or fix the issue.
