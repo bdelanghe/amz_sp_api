@@ -1,0 +1,9 @@
+{
+  "gemName": "amazon-warehousing-and-distribution-model_20240509",
+  "moduleName": "AmzSpApi::AmazonWarehousingAndDistributionModel20240509",
+  "gemVersion": "0.1.0",
+  "gemAuthor": "Eric Jensen",
+  "gemAuthorEmail": "",
+  "gemHomepage": "https://github.com/ericcj/amz_sp_api",
+  "gemLicense": "Apache-2.0"
+}

@@ -1,0 +1,9 @@
+{
+  "gemName": "easy-ship-model_20220323",
+  "moduleName": "AmzSpApi::EasyShipModel20220323",
+  "gemVersion": "0.1.0",
+  "gemAuthor": "Eric Jensen",
+  "gemAuthorEmail": "",
+  "gemHomepage": "https://github.com/ericcj/amz_sp_api",
+  "gemLicense": "Apache-2.0"
+}

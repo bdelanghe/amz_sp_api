@@ -1,0 +1,9 @@
+{
+  "gemName": "tokens-api-model_20210301",
+  "moduleName": "AmzSpApi::TokensApiModel20210301",
+  "gemVersion": "0.1.0",
+  "gemAuthor": "Eric Jensen",
+  "gemAuthorEmail": "",
+  "gemHomepage": "https://github.com/ericcj/amz_sp_api",
+  "gemLicense": "Apache-2.0"
+}
