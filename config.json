@@ -8,5 +8,6 @@
   "gemLicense": "Apache-2.0",
   "httpClientType": "Typhoeus",
   "modelPackage": "models",
-  "apiPackage": "api"
+  "apiPackage": "api",
+  "libDirectory": "lib"
 }
