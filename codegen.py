@@ -1,19 +1,32 @@
 #!/usr/bin/env python3
 
+import argparse
+import json
 import os
 import re
 import shutil
 import subprocess
-import argparse
+import tempfile
 from glob import glob
 
 # Constants
 MODELS_DIRECTORY = os.path.join('..', 'selling-partner-api-models', 'models')
 LIB_DIRECTORY = 'lib'
 CONFIG_TEMPLATE_FILENAME = 'config.json'
-PREVIOUS_MODELS_FILENAME = 'models_previous.txt'
-CURRENT_MODELS_FILENAME = 'models_current.txt'
 SWAGGER_CODEGEN_COMMAND = 'swagger-codegen'
+
+def create_temp_file(initial_content="{}"):
+    """
+    Create a temporary file, write initial JSON content, and return its path.
+    """
+    temp_file = tempfile.NamedTemporaryFile(delete=False, mode='w')
+    temp_file.write(initial_content)
+    temp_file.close()
+    return temp_file.name
+
+# Initialize temporary files with empty JSON content
+PREVIOUS_MODELS_FILENAME = create_temp_file()
+CURRENT_MODELS_FILENAME = create_temp_file()
 
 def check_dependencies():
     """
@@ -29,6 +42,55 @@ def parse_command_line_arguments():
     parser = argparse.ArgumentParser(description='Generate API clients from Swagger JSON files.')
     parser.add_argument('--dry-run', action='store_true', help='Perform a dry run without making any changes.')
     return parser.parse_args()
+
+def read_models_json(file_path):
+    """
+    Read the models from a JSON file.
+
+    Args:
+        file_path (str): Path to the models JSON file.
+
+    Returns:
+        dict: A dictionary with model identifiers and their versions.
+    """
+    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+        return {}
+    try:
+        with open(file_path, 'r') as file:
+            return json.load(file)
+    except json.JSONDecodeError:
+        print(f"Warning: Failed to parse JSON from {file_path}. Initializing as empty.")
+        return {}
+
+def write_models_json(models_dict, file_path):
+    """
+    Write the models to a JSON file with sorted keys.
+
+    Args:
+        models_dict (dict): A dictionary with model identifiers and their versions.
+        file_path (str): Path to the output file.
+    """
+    with open(file_path, 'w') as file:
+        json.dump(models_dict, file, indent=4, sort_keys=True)
+
+def compare_model_versions(previous_models_dict, current_models_dict):
+    """
+    Compare previous and current models to find changes, including if the default has changed.
+
+    Args:
+        previous_models_dict (dict): Dictionary of previous model versions.
+        current_models_dict (dict): Dictionary of current model versions.
+
+    Returns:
+        tuple: A tuple containing sets of new models, removed models, and changed defaults.
+    """
+    new_models = set(current_models_dict.keys()) - set(previous_models_dict.keys())
+    removed_models = set(previous_models_dict.keys()) - set(current_models_dict.keys())
+    changed_defaults = {
+        model for model in current_models_dict
+        if model in previous_models_dict and current_models_dict[model] != previous_models_dict[model]
+    }
+    return new_models, removed_models, changed_defaults
 
 def collect_api_files(models_directory):
     """
@@ -386,13 +448,13 @@ def main():
 
     api_files_dict = collect_api_files(MODELS_DIRECTORY)
 
-    previous_models_set = read_models_list(PREVIOUS_MODELS_FILENAME)
-    current_models_set = set()
+    previous_models_dict = read_models_json(PREVIOUS_MODELS_FILENAME)
+    current_models_dict = {}
 
-    process_api_files(api_files_dict, is_dry_run, previous_models_set, current_models_set)
+    process_api_files(api_files_dict, is_dry_run, previous_models_dict, current_models_dict)
 
     if is_dry_run:
-        new_models_set, removed_models_set = compare_model_sets(previous_models_set, current_models_set)
+        new_models_set, removed_models_set, changed_defaults_set = compare_model_versions(previous_models_dict, current_models_dict)
         print("\n********** Model Comparison **********")
         print("New models:")
         for model_identifier in sorted(new_models_set):
@@ -400,11 +462,17 @@ def main():
         print("\nRemoved models:")
         for model_identifier in sorted(removed_models_set):
             print(model_identifier)
+        print("\nChanged defaults:")
+        for model_identifier in sorted(changed_defaults_set):
+            print(model_identifier)
         print("**************************************")
     else:
-        write_models_list(current_models_set, PREVIOUS_MODELS_FILENAME)
-        if os.path.exists(CURRENT_MODELS_FILENAME):
-            os.remove(CURRENT_MODELS_FILENAME)
+        write_models_json(current_models_dict, PREVIOUS_MODELS_FILENAME)
+        write_models_json(current_models_dict, CURRENT_MODELS_FILENAME)
+
+    # Clean up temporary files after use
+    os.remove(PREVIOUS_MODELS_FILENAME)
+    os.remove(CURRENT_MODELS_FILENAME)
 
 if __name__ == '__main__':
     main()
