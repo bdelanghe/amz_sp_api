@@ -4,6 +4,7 @@ import os
 import re
 import json
 from glob import glob
+from utils.interactive_utils import print_dry_run_report
 
 def process_api_files_core(api_files_dict, lib_directory, config_template_filename):
     """
@@ -60,23 +61,7 @@ def process_api_files_core(api_files_dict, lib_directory, config_template_filena
 
     return models_to_generate, current_models_dict
 
-def process_api_files(api_files_dict, lib_directory, config_template_filename):
-    """
-    Wrapper around the core processing logic to generate models and track current model versions.
-
-    Args:
-        api_files_dict (dict): Dictionary mapping API names to lists of JSON file paths.
-        lib_directory (str): Directory where the generated libraries will be stored.
-        config_template_filename (str): Template configuration filename.
-
-    Returns:
-        tuple: A tuple containing:
-            - list of models to generate
-            - current models dictionary
-    """
-    return process_api_files_core(api_files_dict, lib_directory, config_template_filename)
-
-def generate_dry_run_report(api_files_dict, lib_directory, config_template_filename, previous_models_dict, gem_version, config_info):
+def generate_dry_run_report(api_files_dict, lib_directory, config_template_filename, previous_models_dict, gem_version):
     """
     Generate a dry-run report summarizing the changes.
 
@@ -86,7 +71,6 @@ def generate_dry_run_report(api_files_dict, lib_directory, config_template_filen
         config_template_filename: Template configuration filename.
         previous_models_dict: Dictionary of previous model identifiers and versions.
         gem_version: The gem version.
-        config_info: Configuration information to display.
 
     Returns:
         A dictionary summarizing the changes for dry-run purposes.
@@ -94,8 +78,8 @@ def generate_dry_run_report(api_files_dict, lib_directory, config_template_filen
     # Use the core processing logic to get models to generate and the current model versions.
     models_to_generate, current_models_dict = process_api_files_core(api_files_dict, lib_directory, config_template_filename)
 
+    # Initialize the report dictionary to track added, updated, and removed models
     report = {
-        "config_info": {key: value for key, value in config_info.items() if key != 'MODULENAME'},
         "sdk_upgrade_summary": {
             "added": [],
             "updated": [],
@@ -112,15 +96,21 @@ def generate_dry_run_report(api_files_dict, lib_directory, config_template_filen
         if model in previous_models_dict and current_models_dict[model] != previous_models_dict[model]
     }
 
-    # Determine added and updated models
+    # Append added and updated models to the report
     for model in models_to_generate:
         model_identifier = f"{model['api_name']} V{model['version']}"
         if model_identifier in new_models:
-            report["sdk_upgrade_summary"]["added"].append(model)
+            report["sdk_upgrade_summary"]["added"].append({
+                'api_name': model['api_name'],
+                'version': model['version']
+            })
         elif model_identifier in changed_defaults:
-            report["sdk_upgrade_summary"]["updated"].append(model)
+            report["sdk_upgrade_summary"]["updated"].append({
+                'api_name': model['api_name'],
+                'version': model['version']
+            })
 
-    # Determine removed models
+    # Append removed models to the report
     for model_identifier in removed_models:
         api_name, version = model_identifier.rsplit(' V', 1)
         report["sdk_upgrade_summary"]["removed"].append({
@@ -130,7 +120,7 @@ def generate_dry_run_report(api_files_dict, lib_directory, config_template_filen
 
     return report
 
-# Helper functions
+
 
 def collect_api_files(models_directory: str) -> dict:
     """

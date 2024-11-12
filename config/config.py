@@ -4,7 +4,7 @@ import json
 import os
 from utils.github_utils import get_github_repo_url
 from utils.git_utils import get_git_config_value, get_latest_git_tag
-from utils.interactive_utils import print_colored
+from utils.interactive_utils import print_config
 
 # Global color map for different sources
 SOURCE_COLORS = {
@@ -119,28 +119,4 @@ class Config:
         """
         Print the current configuration with source information.
         """
-        def bold_text(text: str) -> str:
-            return f"\033[1m{text}\033[0m"
-
-        print_colored("\nConfiguration Information:", color='cyan')
-        for key, value in self.config.items():
-            # Get suffix if it exists for the given key
-            suffix = SUFFIXES.get(key, "")
-
-            # Determine the source of the value and get the color
-            source = self.source_info.get(key, 'unknown')
-            source_color = SOURCE_COLORS.get(source, 'white')
-
-            # Use bold for key names for better readability
-            formatted_key = f"{bold_text(key)}: {value}"
-            
-            # Print key-value pair
-            print_colored(f"  {formatted_key}", color=None, newline=False)
-
-            # Print suffix if it exists with a defined color
-            if suffix:
-                print_colored(f" {suffix}", color=SUFFIX_COLOR, newline=False)
-
-            # Print source information
-            print_colored(f" ({source})", color=source_color)
-
+        print_config(self.config, self.source_info)
