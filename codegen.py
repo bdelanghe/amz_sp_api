@@ -31,7 +31,7 @@ CURRENT_MODELS_FILENAME = create_temp_file()
 def print_colored(message, color=None):
     """
     Print the message in color if the color argument is provided.
-    
+
     Args:
         message (str): The message to print.
         color (str, optional): The color for the text (e.g., 'red', 'green', 'blue').
@@ -176,12 +176,12 @@ def extract_version_from_filename(file_name):
     """
     # Remove file extension
     file_name = os.path.splitext(file_name)[0]
-    
+
     # Try to match 'V' followed by digits at the end of the filename
     match_v = re.search(r'V(\d+)$', file_name)
     # Try to match date format YYYY-MM-DD at the end of the filename
     match_date = re.search(r'(\d{4}-\d{2}-\d{2})$', file_name)
-    
+
     if match_v:
         version = match_v.group(1)  # Extract digits after 'V'
     elif match_date:
@@ -206,16 +206,23 @@ def get_latest_version(api_file_list):
 
     return max(api_file_list, key=version_key)
 
-def process_api_files(api_files_dict, is_dry_run, previous_models_dict, current_models_dict):
+def process_api_files(api_files_dict, previous_models_dict):
     """
-    Process each API and generate code for versioned models for all versions.
+    Process each API and prepare tasks for generating code for versioned models for all versions.
 
     Args:
         api_files_dict (dict): Dictionary mapping API names to lists of JSON file paths.
-        is_dry_run (bool): Flag indicating whether to perform a dry run.
         previous_models_dict (dict): Dictionary of previous model identifiers and versions.
-        current_models_dict (dict): Dictionary to store current model identifiers and versions.
+
+    Returns:
+        tuple: (tasks, current_models_dict, unversioned_models, versioned_models)
+            tasks (list): List of tasks to perform.
+            current_models_dict (dict): Dictionary to store current model identifiers and versions.
+            unversioned_models (list): List of unversioned model data.
+            versioned_models (list): List of versioned model data.
     """
+    tasks = []
+    current_models_dict = {}
     versioned_models = []
     unversioned_models = []  # Optional, if we decide to generate unversioned models
 
@@ -242,12 +249,21 @@ def process_api_files(api_files_dict, is_dry_run, previous_models_dict, current_
                 "module": f"AmzSpApi::{versioned_module_name}"
             })
 
-            if not is_dry_run:
-                versioned_lib_dir = os.path.join(LIB_DIRECTORY, api_name, f"v{version}")
-                versioned_config_path = os.path.join(versioned_lib_dir, CONFIG_TEMPLATE_FILENAME)
-                recreate_directory(versioned_lib_dir)
-                copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, versioned_config_path, versioned_api_name, f"AmzSpApi::{versioned_module_name}")
-                generate_model(api_file, versioned_config_path, versioned_lib_dir, is_default_version=False)
+            versioned_lib_dir = os.path.join(LIB_DIRECTORY, api_name, f"v{version}")
+            versioned_config_path = os.path.join(versioned_lib_dir, CONFIG_TEMPLATE_FILENAME)
+            gem_name = versioned_api_name
+            module_full_name = f"AmzSpApi::{versioned_module_name}"
+            task = {
+                'api_name': api_name,
+                'version': version,
+                'api_file': api_file,
+                'config_path': versioned_config_path,
+                'output_directory': versioned_lib_dir,
+                'module_name': module_full_name,
+                'gem_name': gem_name,
+                'is_default_version': False
+            }
+            tasks.append(task)
 
         # Optionally generate unversioned model for latest version
         unversioned_api_name = api_name
@@ -262,55 +278,23 @@ def process_api_files(api_files_dict, is_dry_run, previous_models_dict, current_
             "module": unversioned_module_name
         })
 
-        if not is_dry_run:
-            # Generate the unversioned model for the latest version
-            unversioned_api_lib_dir = os.path.join(LIB_DIRECTORY, api_name)
-            unversioned_config_path = os.path.join(unversioned_api_lib_dir, CONFIG_TEMPLATE_FILENAME)
-            recreate_directory(unversioned_api_lib_dir)
-            copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, unversioned_config_path, unversioned_api_name, unversioned_module_name)
-            generate_model(latest_version_file, unversioned_config_path, unversioned_api_lib_dir, is_default_version=True)
+        unversioned_api_lib_dir = os.path.join(LIB_DIRECTORY, api_name)
+        unversioned_config_path = os.path.join(unversioned_api_lib_dir, CONFIG_TEMPLATE_FILENAME)
+        gem_name = unversioned_api_name
+        module_full_name = unversioned_module_name
+        task = {
+            'api_name': api_name,
+            'version': latest_version,
+            'api_file': latest_version_file,
+            'config_path': unversioned_config_path,
+            'output_directory': unversioned_api_lib_dir,
+            'module_name': module_full_name,
+            'gem_name': gem_name,
+            'is_default_version': True
+        }
+        tasks.append(task)
 
-    if is_dry_run:
-        # Output the dry run in a more readable format with colors
-        print_colored("\n********** Model Generation Log **********", color='cyan')
-        
-        print_colored("\nVersioned Models:", color='yellow')
-        for model in versioned_models:
-            print_colored(f"- {model['name']} (version {model['version']})", color='white')
-            print_colored(f"  MODULE_NAME: {model['module']}\n", color='magenta')
-
-        # Optionally display unversioned models
-        print_colored("\nUnversioned Models (Latest Versions):", color='green')
-        for model in unversioned_models:
-            print_colored(f"- {model['name']} (version {model['version']})", color='white')
-            print_colored(f"  MODULE_NAME: {model['module']}\n", color='magenta')
-
-        # Output the comparison results
-        new_models_set, removed_models_set, changed_defaults_set = compare_model_versions(previous_models_dict, current_models_dict)
-        print_colored("\n********** Model Comparison **********", color='cyan')
-
-        if new_models_set:
-            print_colored("\nNew Models:", color='green')
-            for model in sorted(new_models_set):
-                print_colored(f"- {model}", color='white')
-        else:
-            print_colored("\nNo New Models.", color='green')
-
-        if removed_models_set:
-            print_colored("\nRemoved Models:", color='red')
-            for model in sorted(removed_models_set):
-                print_colored(f"- {model}", color='white')
-        else:
-            print_colored("\nNo Removed Models.", color='red')
-
-        if changed_defaults_set:
-            print_colored("\nChanged Defaults:", color='yellow')
-            for model in sorted(changed_defaults_set):
-                print_colored(f"- {model}", color='white')
-        else:
-            print_colored("\nNo Changed Defaults.", color='yellow')
-
-        print_colored("\n**************************************\n", color='cyan')
+    return tasks, current_models_dict, unversioned_models, versioned_models
 
 def recreate_directory(directory_path):
     """
@@ -474,11 +458,61 @@ def main():
     api_files_dict = collect_api_files(MODELS_DIRECTORY)
 
     previous_models_dict = read_models_json(PREVIOUS_MODELS_FILENAME)
-    current_models_dict = {}
 
-    process_api_files(api_files_dict, is_dry_run, previous_models_dict, current_models_dict)
+    # Process API files and get tasks
+    tasks, current_models_dict, unversioned_models, versioned_models = process_api_files(api_files_dict, previous_models_dict)
 
-    if not is_dry_run:
+    if is_dry_run:
+        # Output the dry run in a more readable format with colors
+        print_colored("\n********** Model Generation Log **********", color='cyan')
+
+        print_colored("\nVersioned Models:", color='yellow')
+        for model in versioned_models:
+            print_colored(f"- {model['name']} (version {model['version']})", color='white')
+            print_colored(f"  MODULE_NAME: {model['module']}\n", color='magenta')
+
+        # Optionally display unversioned models
+        print_colored("\nUnversioned Models (Latest Versions):", color='green')
+        for model in unversioned_models:
+            print_colored(f"- {model['name']} (version {model['version']})", color='white')
+            print_colored(f"  MODULE_NAME: {model['module']}\n", color='magenta')
+
+        # Output the comparison results
+        new_models_set, removed_models_set, changed_defaults_set = compare_model_versions(previous_models_dict, current_models_dict)
+        print_colored("\n********** Model Comparison **********", color='cyan')
+
+        if new_models_set:
+            print_colored("\nNew Models:", color='green')
+            for model in sorted(new_models_set):
+                print_colored(f"- {model}", color='white')
+        else:
+            print_colored("\nNo New Models.", color='green')
+
+        if removed_models_set:
+            print_colored("\nRemoved Models:", color='red')
+            for model in sorted(removed_models_set):
+                print_colored(f"- {model}", color='white')
+        else:
+            print_colored("\nNo Removed Models.", color='red')
+
+        if changed_defaults_set:
+            print_colored("\nChanged Defaults:", color='yellow')
+            for model in sorted(changed_defaults_set):
+                print_colored(f"- {model}", color='white')
+        else:
+            print_colored("\nNo Changed Defaults.", color='yellow')
+
+        print_colored("\n**************************************\n", color='cyan')
+
+    else:
+        # Perform the tasks
+        for task in tasks:
+            # Generate the model
+            recreate_directory(task['output_directory'])
+            copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, task['config_path'], task['gem_name'], task['module_name'])
+            generate_model(task['api_file'], task['config_path'], task['output_directory'], task['is_default_version'])
+
+        # Write the current models to JSON files
         write_models_json(current_models_dict, PREVIOUS_MODELS_FILENAME)
         write_models_json(current_models_dict, CURRENT_MODELS_FILENAME)
 
