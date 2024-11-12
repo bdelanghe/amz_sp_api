@@ -6,23 +6,6 @@ from utils.github_utils import get_github_repo_url
 from utils.git_utils import get_git_config_value, get_latest_git_tag
 from utils.interactive_utils import print_config
 
-# Global color map for different sources
-SOURCE_COLORS = {
-    'config': 'cyan',
-    'env': 'yellow',
-    'git': 'blue',
-    'GitHub': 'magenta'
-}
-
-# Suffix map for certain configuration keys
-SUFFIXES = {
-    'moduleName': "(set per model)",
-    'gemVersion': "(incr of latest version tag)"
-}
-
-# Suffix color
-SUFFIX_COLOR = 'green'
-
 class Config:
     _instance = None
 
@@ -49,7 +32,10 @@ class Config:
         # Set gemVersion dynamically from the latest git tag
         gem_version = get_latest_git_tag() or "0.1.0"
         self.config['gemVersion'] = gem_version
-        self.source_info['gemVersion'] = 'git'
+        self.source_info['gemVersion'] = "(incr of latest version tag)"
+
+        self.config['moduleName'] = None
+        self.source_info['moduleName'] = "(set per model)"
 
     def _get_value_with_fallback(self, key, config_data):
         """

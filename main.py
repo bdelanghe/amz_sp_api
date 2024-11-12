@@ -5,7 +5,7 @@ import os
 from config.config import Config
 from utils.codegen_utils import check_dependencies, generate_model
 from utils.models_utils import collect_api_files
-from utils.interactive_utils import print_colored, prompt_confirmation, print_dry_run_report
+from utils.interactive_utils import print_error, print_info, prompt_confirmation, print_dry_run_report
 
 def main() -> None:
     """
@@ -25,7 +25,7 @@ def main() -> None:
 
     # Ensure dry-run and interactive aren't used together
     if is_dry_run and is_interactive:
-        print_colored("Error: --dry-run and --interactive cannot be used together.", color='red')
+        print_error("--dry-run and --interactive cannot be used together.")
         return
 
     check_dependencies()
@@ -64,13 +64,13 @@ def main() -> None:
 
         if is_interactive:
             if not prompt_confirmation("Proceed with this configuration?"):
-                print_colored("Operation cancelled by user.", color='red')
+                print_error("Operation cancelled by user.")
                 return
 
         # Generate models in a temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
             for api_name, api_files in api_files_dict.items():
-                print_colored(f"Generating model for API: {api_name}", color='blue')
+                print_info(f"Generating model for API: {api_name}")
                 generate_model(api_files[0], config.get('configTemplateFilename'), os.path.join(temp_dir, 'output'))
 
 if __name__ == '__main__':
