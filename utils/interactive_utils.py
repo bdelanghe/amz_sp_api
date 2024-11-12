@@ -39,3 +39,15 @@ def prompt_confirmation(message: str) -> bool:
             return True
         elif response in ('n', 'no'):
             return False
+
+def is_no_reply_email(email: str) -> bool:
+    """
+    Check if the email is a GitHub no-reply email.
+
+    Args:
+        email (str): The email address to check.
+
+    Returns:
+        bool: True if it's a no-reply email, False otherwise.
+    """
+    return 'noreply' in email

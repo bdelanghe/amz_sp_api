@@ -8,7 +8,7 @@ from utils.github_utils import get_github_repo_url
 from utils.codegen_utils import check_dependencies, generate_model
 from utils.models_utils import collect_api_files
 from utils.version_utils import get_latest_git_tag, increment_version
-from utils.interactive_utils import print_colored, prompt_confirmation
+from utils.interactive_utils import print_colored, prompt_confirmation, is_no_reply_email  # Import here
 
 def main() -> None:
     """
@@ -41,8 +41,11 @@ def main() -> None:
         print_colored("Your git email is a no-reply email. Please set a valid email.", color='red')
         return
 
-    # Get GitHub repo URL, use default if not found
-    github_repo_url = get_github_repo_url() or 'https://github.com/yourusername/yourrepo'
+    # Get GitHub repo URL
+    github_repo_url = get_github_repo_url()
+    if not github_repo_url:
+        print_colored("GitHub repository URL not found. Using default value.", color='red')
+        return
 
     # Prepare configuration information for the gem
     config_info = {
