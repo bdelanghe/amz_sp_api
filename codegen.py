@@ -373,19 +373,19 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
     if models_status['updated']:
         print_colored("\nModels Updated:", color='yellow')
         for model in models_status['updated']:
-            version_info = f"Updated to Version {model['version']}"
-            if model['has_multiple_versions'] and model['is_latest']:
-                version_info += " [latest]"
-            print_colored(f"- {model['api_name']} ({version_info})", color='white')
-        print_colored(f"Total Updated Models: {len(models_status['updated'])}", color='yellow')
+            print_colored(f"\nAPI Name: {model['api_name']}", color='cyan')
+            print_colored(f"Updated to Version: {model['version']}", color='white')
+            print_colored(f"Module Name: {model['module_name']}", color='white')
+        print_colored(f"\nTotal Updated Models: {len(models_status['updated'])}", color='yellow')
     else:
         print_colored("\nNo Models Updated.", color='yellow')
 
     if models_status['removed']:
         print_colored("\nModels Removed:", color='red')
         for model in models_status['removed']:
-            print_colored(f"- {model['api_name']} (Version {model['version']})", color='white')
-        print_colored(f"Total Removed Models: {len(models_status['removed'])}", color='red')
+            print_colored(f"\nAPI Name: {model['api_name']}", color='cyan')
+            print_colored(f"Version: {model['version']}", color='white')
+        print_colored(f"\nTotal Removed Models: {len(models_status['removed'])}", color='red')
     else:
         print_colored("\nNo Models Removed.", color='red')
 
