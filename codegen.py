@@ -263,11 +263,17 @@ def process_api_files(api_files_dict):
         latest_version_file = get_latest_version(api_file_list)
         latest_version = extract_version_from_filename(os.path.basename(latest_version_file))
 
+        processed_versions = set()
+
         for api_file in api_file_list:
             file_name = os.path.basename(api_file)
             version = extract_version_from_filename(file_name)
 
-            versioned_module_name = f"{module_name}::V{version}"
+            if version in processed_versions:
+                continue  # Avoid processing the same version multiple times
+            processed_versions.add(version)
+
+            versioned_module_name = f"AmzSpApi::{module_name}::V{version}"
             versioned_api_name = f"{api_name}_V{version}"
             model_identifier = f"{api_name} V{version}"
             current_models_dict[model_identifier] = version
@@ -276,28 +282,13 @@ def process_api_files(api_files_dict):
             models_to_generate.append({
                 "api_file": api_file,
                 "gem_name": versioned_api_name,
-                "module_name": f"AmzSpApi::{versioned_module_name}",
+                "module_name": versioned_module_name,
                 "lib_dir": os.path.join(LIB_DIRECTORY, api_name, f"v{version}"),
                 "config_path": os.path.join(LIB_DIRECTORY, api_name, f"v{version}", CONFIG_TEMPLATE_FILENAME),
                 "version": version,
-                "api_name": api_name
+                "api_name": api_name,
+                "is_latest": version == latest_version
             })
-
-        # Collect information for unversioned model (latest version)
-        unversioned_api_name = api_name
-        unversioned_module_name = f"AmzSpApi::{module_name}"
-        model_identifier = f"{api_name} V{latest_version}"
-        current_models_dict[model_identifier] = latest_version
-
-        models_to_generate.append({
-            "api_file": latest_version_file,
-            "gem_name": unversioned_api_name,
-            "module_name": unversioned_module_name,
-            "lib_dir": os.path.join(LIB_DIRECTORY, api_name),
-            "config_path": os.path.join(LIB_DIRECTORY, api_name, CONFIG_TEMPLATE_FILENAME),
-            "version": latest_version,
-            "api_name": api_name
-        })
 
     return models_to_generate, current_models_dict
 
@@ -327,11 +318,15 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
         'removed': []
     }
 
+    # Use a set to avoid duplicates
+    added_models_set = set()
+
     # Determine added and updated models
     for model in models_to_generate:
         model_identifier = f"{model['api_name']} V{model['version']}"
-        if model_identifier in new_models:
+        if model_identifier in new_models and model_identifier not in added_models_set:
             models_status['added'].append(model)
+            added_models_set.add(model_identifier)
         elif model_identifier in changed_defaults:
             models_status['updated'].append(model)
 
@@ -430,6 +425,18 @@ def run_swagger_codegen(input_spec_path, config_file_path, output_directory):
         '-o', output_directory
     ], check=True)
 
+def is_no_reply_email(email):
+    """
+    Check if the email is a GitHub no-reply email.
+
+    Args:
+        email (str): The email address to check.
+
+    Returns:
+        bool: True if it's a no-reply email, False otherwise.
+    """
+    return 'noreply' in email
+
 def main():
     """
     Main function to orchestrate code generation and model tracking.
@@ -463,13 +470,17 @@ def main():
         git_author_name = get_git_config_value('user.name') or 'Your Name'
         git_author_email = get_git_config_value('user.email') or 'your.email@example.com'
 
+        # Avoid using GitHub no-reply email
+        if is_no_reply_email(git_author_email):
+            git_author_email = 'your.email@example.com'  # Default or prompt to set via env variable
+
         # Get GitHub repo URL
         github_repo_url = get_github_repo_url() or 'https://github.com/yourusername/yourrepo'
 
         # Allow config to be overwritten by environment variables
         config_info = {
             'GEMNAME': get_env_or_default('GEMNAME', 'amz_sp_api'),
-            'MODULENAME': None,  # Set per model
+            # 'MODULENAME' will be set per model
             'GEMVERSION': get_env_or_default('GEMVERSION', gem_version),
             'GEMAUTHOR': get_env_or_default('GEMAUTHOR', git_author_name),
             'GEMAUTHOREMAIL': get_env_or_default('GEMAUTHOREMAIL', git_author_email),
@@ -486,8 +497,7 @@ def main():
             # Print configuration information
             print_colored("\nConfiguration Information:", color='cyan')
             for key, value in config_info.items():
-                if key != 'MODULENAME':
-                    print_colored(f"{key}: {value}", color='white')
+                print_colored(f"{key}: {value}", color='white')
 
             # Generate models in a temporary directory
             with tempfile.TemporaryDirectory() as temp_dir:
