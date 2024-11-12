@@ -575,16 +575,21 @@ def main():
     else:
         gem_version = current_version
 
-    # Get git config values
-    git_author_name = get_git_config_value('user.name') or ''
-    git_author_email = get_git_config_value('user.email') or ''
-    if not git_author_name or not git_author_email:
-        print_colored("Git user.name and user.email are not set. Please configure them.", color='red')
+    # Read config.json
+    config_data = read_config_file(CONFIG_TEMPLATE_FILENAME)
+
+    # Get gem author and email
+    gem_author = get_env_or_default('GEMAUTHOR', config_data.get('gemAuthor')) or get_git_config_value('user.name')
+    gem_author_email = get_env_or_default('GEMAUTHOREMAIL', config_data.get('gemAuthorEmail')) or get_git_config_value('user.email')
+
+    # Validate gem author and email
+    if not gem_author or not gem_author_email:
+        print_colored("Gem author name and email are not set. Please set them via environment variables or config.json.", color='red')
         return
 
     # Avoid using GitHub no-reply email
-    if is_no_reply_email(git_author_email):
-        print_colored("Your git email is a no-reply email. Please set a valid email.", color='red')
+    if is_no_reply_email(gem_author_email):
+        print_colored("Your gem author email is a no-reply email. Please set a valid email.", color='red')
         return
 
     # Get GitHub repo URL and description
@@ -595,17 +600,14 @@ def main():
 
     gem_description = get_github_repo_description() or "No description available."
 
-    # Read config.json
-    config_data = read_config_file(CONFIG_TEMPLATE_FILENAME)
-
     # Allow config to be overwritten by environment variables
     config_info = {
         'GEMNAME': get_env_or_default('GEMNAME', config_data.get('gemName')),
         # 'MODULENAME' will be set per model
         'GEMVERSION': get_env_or_default('GEMVERSION', gem_version),
-        'GEMAUTHOR': get_env_or_default('GEMAUTHOR', config_data.get('gemAuthor')),
-        'GEMAUTHOREMAIL': get_env_or_default('GEMAUTHOREMAIL', config_data.get('gemAuthorEmail')),
-        'GEMHOMEPAGE': get_env_or_default('GEMHOMEPAGE', config_data.get('gemHomepage')),
+        'GEMAUTHOR': gem_author,
+        'GEMAUTHOREMAIL': gem_author_email,
+        'GEMHOMEPAGE': get_env_or_default('GEMHOMEPAGE', config_data.get('gemHomepage')) or github_repo_url,
         'GEMLICENSE': get_env_or_default('GEMLICENSE', config_data.get('gemLicense')),
         'HTTPCLIENTTYPE': get_env_or_default('HTTPCLIENTTYPE', config_data.get('httpClientType')),
         'MODELPACKAGE': get_env_or_default('MODELPACKAGE', config_data.get('modelPackage')),
