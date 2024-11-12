@@ -127,13 +127,16 @@ class Config:
             source_color = source_colors.get(source, 'white')
 
             # Use bold for key names for better readability
+            # Print key and value on the same line
             print_colored(f"  {bold_text(key)}: {value} ", color=None, newline=False)
+
+            # Add suffix if it exists
             if suffix:
                 print_colored(f"{suffix} ", color='white', newline=False)
-            elif source != "config" and suffix == "":
-                # Print the source only if it's not a config file
+
+            # Print source if it's not a config and if there is no suffix
+            if source != "config" and not suffix:
                 print_colored(f"({source})", color=source_color)
-
-
-
-
+            
+            # Ensure each configuration is printed on its own line
+            print()
