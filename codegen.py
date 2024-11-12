@@ -15,19 +15,53 @@ LIB_DIRECTORY = 'lib'
 CONFIG_TEMPLATE_FILENAME = 'config.json'
 SWAGGER_CODEGEN_COMMAND = 'swagger-codegen'
 IGNORE_FILE_TEMPLATE = '.swagger-codegen-ignore'
+VERSION_FILE = 'version.txt'  # File to keep track of GEMVERSION
+
+def get_git_config_value(key):
+    """
+    Get a value from git config.
+    """
+    try:
+        return subprocess.check_output(['git', 'config', '--get', key]).decode('utf-8').strip()
+    except subprocess.CalledProcessError:
+        return None
+
+def get_github_repo_url():
+    """
+    Get the GitHub repository URL using gh CLI.
+    """
+    try:
+        url = subprocess.check_output(['gh', 'repo', 'view', '--json', 'url', '--jq', '.url']).decode('utf-8').strip()
+        return url
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+def get_env_or_default(env_var, default_value):
+    """
+    Get the value from environment variable or return default.
+    """
+    return os.environ.get(env_var, default_value)
 
 def create_temp_file(initial_content="{}"):
     """
     Create a temporary file, write initial JSON content, and return its path.
     """
-    temp_file = tempfile.NamedTemporaryFile(delete=False, mode='w')
-    temp_file.write(initial_content)
-    temp_file.close()
-    return temp_file.name
+    with tempfile.NamedTemporaryFile(delete=False, mode='w') as temp_file:
+        temp_file.write(initial_content)
+        return temp_file.name
 
-# Initialize temporary files with empty JSON content
-PREVIOUS_MODELS_FILENAME = create_temp_file()
-CURRENT_MODELS_FILENAME = create_temp_file()
+from contextlib import contextmanager
+
+@contextmanager
+def temporary_file(initial_content="{}"):
+    """
+    Context manager for a temporary file.
+    """
+    temp_file = create_temp_file(initial_content)
+    try:
+        yield temp_file
+    finally:
+        os.remove(temp_file)
 
 def print_colored(message, color=None):
     """
@@ -58,6 +92,8 @@ def check_dependencies():
     """
     if not shutil.which(SWAGGER_CODEGEN_COMMAND):
         raise EnvironmentError(f"{SWAGGER_CODEGEN_COMMAND} is not installed or not found in PATH.")
+    if not shutil.which('git'):
+        raise EnvironmentError("git is not installed or not found in PATH.")
 
 def parse_command_line_arguments():
     """
@@ -243,7 +279,6 @@ def process_api_files(api_files_dict):
                 "module_name": f"AmzSpApi::{versioned_module_name}",
                 "lib_dir": os.path.join(LIB_DIRECTORY, api_name, f"v{version}"),
                 "config_path": os.path.join(LIB_DIRECTORY, api_name, f"v{version}", CONFIG_TEMPLATE_FILENAME),
-                "is_default_version": False,
                 "version": version,
                 "api_name": api_name
             })
@@ -260,14 +295,13 @@ def process_api_files(api_files_dict):
             "module_name": unversioned_module_name,
             "lib_dir": os.path.join(LIB_DIRECTORY, api_name),
             "config_path": os.path.join(LIB_DIRECTORY, api_name, CONFIG_TEMPLATE_FILENAME),
-            "is_default_version": True,
             "version": latest_version,
             "api_name": api_name
         })
 
     return models_to_generate, current_models_dict
 
-def generate_dry_run_report(models_to_generate, previous_models_dict, current_models_dict):
+def generate_dry_run_report(models_to_generate, previous_models_dict, current_models_dict, gem_version, config_info):
     """
     Generate a dry-run report summarizing the changes.
 
@@ -275,7 +309,14 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
         models_to_generate (list): List of models to generate with their details.
         previous_models_dict (dict): Dictionary of previous model identifiers and versions.
         current_models_dict (dict): Dictionary of current model identifiers and versions.
+        gem_version (str): The gem version.
+        config_info (dict): Configuration information to display.
     """
+    # Print configuration information
+    print_colored("\nConfiguration Information:", color='cyan')
+    for key, value in config_info.items():
+        print_colored(f"{key}: {value}", color='white')
+
     # Compare models to find new, updated, and removed models
     new_models, removed_models, changed_defaults = compare_model_versions(previous_models_dict, current_models_dict)
 
@@ -327,32 +368,21 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
     else:
         print_colored("\nNo Models Removed.", color='red')
 
-    print_colored("\nDetailed Model Information:", color='cyan')
-    print_colored("---------------------------", color='cyan')
+    print_colored(f"\nGem Version: {gem_version}", color='cyan')
 
-    for status, models in models_status.items():
-        if models:
-            status_color = {'added': 'green', 'updated': 'yellow', 'removed': 'red'}.get(status, 'white')
-            print_colored(f"\n{status.capitalize()} Models:", color=status_color)
-            for model in models:
-                if status != 'removed':
-                    print_colored(f"API Name: {model['api_name']}", color='white')
-                    print_colored(f"Version: {model['version']}", color='white')
-                    print_colored(f"Module Name: {model['module_name']}\n", color='magenta')
-                else:
-                    print_colored(f"API Name: {model['api_name']}", color='white')
-                    print_colored(f"Version: {model['version']}\n", color='white')
-
-def recreate_directory(directory_path):
+def get_next_version(current_version):
     """
-    Remove and recreate a directory.
+    Increment the version number.
 
     Args:
-        directory_path (str): Path to the directory.
+        current_version (str): The current version string.
+
+    Returns:
+        str: The next version string.
     """
-    if os.path.exists(directory_path):
-        shutil.rmtree(directory_path)
-    os.makedirs(directory_path)
+    major, minor, patch = map(int, current_version.split('.'))
+    patch += 1
+    return f"{major}.{minor}.{patch}"
 
 def copy_and_modify_config_template(source_config_path, destination_config_path, config_replacements):
     """
@@ -410,47 +440,109 @@ def main():
 
     api_files_dict = collect_api_files(MODELS_DIRECTORY)
 
-    previous_models_dict = read_models_json(PREVIOUS_MODELS_FILENAME)
-    models_to_generate, current_models_dict = process_api_files(api_files_dict)
+    with temporary_file() as previous_models_filename, temporary_file() as current_models_filename:
+        previous_models_dict = read_models_json(previous_models_filename)
+        models_to_generate, current_models_dict = process_api_files(api_files_dict)
 
-    if is_dry_run:
-        # Generate the dry-run report
-        generate_dry_run_report(models_to_generate, previous_models_dict, current_models_dict)
-    else:
-        # Perform the actual code generation
-        for model in models_to_generate:
-            # Prepare config replacements
-            config_replacements = {
-                'GEMNAME': model['gem_name'],
-                'MODULENAME': model['module_name'],
-                'GEMVERSION': '0.1.0',
-                'GEMAUTHOR': 'Your Name',
-                'GEMAUTHOREMAIL': 'your.email@example.com',
-                'GEMHOMEPAGE': 'https://github.com/yourusername/yourrepo',
-                'GEMLICENSE': 'Apache-2.0',
-                'HTTPCLIENTTYPE': 'Typhoeus',
-                'MODELPACKAGE': 'models',
-                'APIPACKAGE': 'api'
-            }
+        # Determine GEMVERSION
+        initial_version = '0.1.0'
+        if os.path.exists(VERSION_FILE):
+            with open(VERSION_FILE, 'r') as vf:
+                current_version = vf.read().strip()
+        else:
+            current_version = initial_version
 
-            # Copy and modify config template
-            recreate_directory(model['lib_dir'])
-            copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, model['config_path'], config_replacements)
+        # Check if there are changes
+        new_models, removed_models, changed_defaults = compare_model_versions(previous_models_dict, current_models_dict)
+        if new_models or removed_models or changed_defaults:
+            gem_version = get_next_version(current_version)
+        else:
+            gem_version = current_version
 
-            # Copy .swagger-codegen-ignore to output directory
-            ignore_file_source = IGNORE_FILE_TEMPLATE
-            ignore_file_destination = os.path.join(model['lib_dir'], '.swagger-codegen-ignore')
-            if os.path.exists(ignore_file_source):
-                shutil.copy(ignore_file_source, ignore_file_destination)
+        # Get git config values
+        git_author_name = get_git_config_value('user.name') or 'Your Name'
+        git_author_email = get_git_config_value('user.email') or 'your.email@example.com'
 
-            generate_model(model['api_file'], model['config_path'], model['lib_dir'])
+        # Get GitHub repo URL
+        github_repo_url = get_github_repo_url() or 'https://github.com/yourusername/yourrepo'
 
-        write_models_json(current_models_dict, PREVIOUS_MODELS_FILENAME)
-        write_models_json(current_models_dict, CURRENT_MODELS_FILENAME)
+        # Allow config to be overwritten by environment variables
+        config_info = {
+            'GEMNAME': get_env_or_default('GEMNAME', 'amz_sp_api'),
+            'MODULENAME': None,  # Set per model
+            'GEMVERSION': get_env_or_default('GEMVERSION', gem_version),
+            'GEMAUTHOR': get_env_or_default('GEMAUTHOR', git_author_name),
+            'GEMAUTHOREMAIL': get_env_or_default('GEMAUTHOREMAIL', git_author_email),
+            'GEMHOMEPAGE': get_env_or_default('GEMHOMEPAGE', github_repo_url),
+            'GEMLICENSE': get_env_or_default('GEMLICENSE', 'Apache-2.0'),
+            'HTTPCLIENTTYPE': get_env_or_default('HTTPCLIENTTYPE', 'Typhoeus'),
+            'MODELPACKAGE': get_env_or_default('MODELPACKAGE', 'models'),
+            'APIPACKAGE': get_env_or_default('APIPACKAGE', 'api')
+        }
 
-    # Clean up temporary files after use
-    os.remove(PREVIOUS_MODELS_FILENAME)
-    os.remove(CURRENT_MODELS_FILENAME)
+        if is_dry_run:
+            generate_dry_run_report(models_to_generate, previous_models_dict, current_models_dict, gem_version, config_info)
+        else:
+            # Print configuration information
+            print_colored("\nConfiguration Information:", color='cyan')
+            for key, value in config_info.items():
+                if key != 'MODULENAME':
+                    print_colored(f"{key}: {value}", color='white')
+
+            # Generate models in a temporary directory
+            with tempfile.TemporaryDirectory() as temp_dir:
+                success = True
+                for model in models_to_generate:
+                    model_config = config_info.copy()
+                    model_config['GEMNAME'] = model['gem_name']
+                    model_config['MODULENAME'] = model['module_name']
+                    model_config['GEMVERSION'] = config_info['GEMVERSION']
+
+                    # Prepare config replacements
+                    config_replacements = model_config
+
+                    # Paths in temp directory
+                    temp_lib_dir = os.path.join(temp_dir, model['lib_dir'])
+                    temp_config_path = os.path.join(temp_dir, model['config_path'])
+
+                    # Copy and modify config template
+                    os.makedirs(os.path.dirname(temp_config_path), exist_ok=True)
+                    copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, temp_config_path, config_replacements)
+
+                    # Copy .swagger-codegen-ignore to temp output directory
+                    ignore_file_source = IGNORE_FILE_TEMPLATE
+                    ignore_file_destination = os.path.join(os.path.dirname(temp_config_path), '.swagger-codegen-ignore')
+                    if os.path.exists(ignore_file_source):
+                        shutil.copy(ignore_file_source, ignore_file_destination)
+
+                    try:
+                        generate_model(model['api_file'], temp_config_path, temp_lib_dir)
+                    except subprocess.CalledProcessError as e:
+                        print_colored(f"Error generating model {model['gem_name']}: {e}", color='red')
+                        success = False
+                        break
+
+                # Move generated code to lib directory if successful
+                if success:
+                    for model in models_to_generate:
+                        temp_lib_dir = os.path.join(temp_dir, model['lib_dir'])
+                        final_lib_dir = model['lib_dir']
+                        # Remove existing directory if it exists
+                        if os.path.exists(final_lib_dir):
+                            shutil.rmtree(final_lib_dir)
+                        # Create parent directories if needed
+                        os.makedirs(os.path.dirname(final_lib_dir), exist_ok=True)
+                        # Move from temp to final location
+                        shutil.move(temp_lib_dir, final_lib_dir)
+
+                    # Write updated models and version
+                    write_models_json(current_models_dict, previous_models_filename)
+                    write_models_json(current_models_dict, current_models_filename)
+
+                    with open(VERSION_FILE, 'w') as vf:
+                        vf.write(gem_version)
+                else:
+                    print_colored("Generation failed. No changes have been made.", color='red')
 
 if __name__ == '__main__':
     main()
