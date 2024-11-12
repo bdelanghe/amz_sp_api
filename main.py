@@ -45,8 +45,9 @@ def main() -> None:
 
     check_dependencies()
 
-    # Collect API files
-    api_files_dict = collect_api_files(config.get('LIBDIRECTORY'))
+    # Collect API files using config
+    lib_directory = config.get('LIBDIRECTORY')
+    api_files_dict = collect_api_files(lib_directory)
 
     # Determine GEMVERSION using Git tags
     latest_git_tag = get_latest_git_tag()
@@ -61,14 +62,13 @@ def main() -> None:
     }
     config_info['GEMVERSION'] = gem_version
 
+    # Handle Dry Run Scenario
     if is_dry_run:
-        # Print configuration information
         print_colored("\nConfiguration Information (Dry Run):", color='cyan')
         for key, value in config_info.items():
             if key != 'MODULENAME':
                 print_colored(f"{key}: {value}", color='white')
 
-        # Generate dry-run report for models
         with tempfile.NamedTemporaryFile() as previous_models_filename:
             from utils.models_utils import read_models_json, generate_dry_run_report
 
@@ -80,9 +80,8 @@ def main() -> None:
                 config_info=config_info
             )
             print_dry_run_report(report)
-
     else:
-        # Print configuration information for non-dry-run scenario
+        # Handle Non-Dry Run Scenario
         print_colored("\nConfiguration Information:", color='cyan')
         for key, value in config_info.items():
             if key != 'MODULENAME':
@@ -93,7 +92,6 @@ def main() -> None:
                 print_colored("Operation cancelled by user.", color='red')
                 return
 
-        # Generate models in a temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
             for api_name, api_files in api_files_dict.items():
                 print_colored(f"Generating model for API: {api_name}", color='blue')

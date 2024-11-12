@@ -1,26 +1,21 @@
+## utils/models_utils.py
+
 import os
 import re
 import json
 from glob import glob
-from config.config import read_config_file
 
-# Load configuration
-config_data = read_config_file('config.json')
-LIB_DIRECTORY = config_data.get('libDirectory', 'lib')
-
-CONFIG_TEMPLATE_FILENAME = 'config.json'
-
-def process_api_files_core(api_files_dict):
+def process_api_files_core(api_files_dict, lib_directory, config_template_filename):
     """
-    Core logic for processing each API and preparing data structures for versioned models for all versions.
+    Core processing logic to prepare data structures for versioned models for all versions.
 
     Args:
         api_files_dict (dict): Dictionary mapping API names to lists of JSON file paths.
+        lib_directory (str): Directory where the generated libraries will be stored.
+        config_template_filename (str): Template configuration filename.
 
     Returns:
-        tuple: A tuple containing:
-            - list of models to generate
-            - current models dictionary for tracking versions
+        tuple: A tuple containing the list of models to generate and the current models dictionary.
     """
     models_to_generate = []
     current_models_dict = {}
@@ -55,8 +50,8 @@ def process_api_files_core(api_files_dict):
                 "api_file": api_file,
                 "gem_name": versioned_api_name,
                 "module_name": versioned_module_name,
-                "lib_dir": os.path.join(LIB_DIRECTORY, api_name, f"v{version}"),
-                "config_path": os.path.join(LIB_DIRECTORY, api_name, f"v{version}", CONFIG_TEMPLATE_FILENAME),
+                "lib_dir": os.path.join(lib_directory, api_name, f"v{version}"),
+                "config_path": os.path.join(lib_directory, api_name, f"v{version}", config_template_filename),
                 "version": version,
                 "api_name": api_name,
                 "is_latest": is_latest,
@@ -65,26 +60,30 @@ def process_api_files_core(api_files_dict):
 
     return models_to_generate, current_models_dict
 
-def process_api_files(api_files_dict):
+def process_api_files(api_files_dict, lib_directory, config_template_filename):
     """
     Wrapper around the core processing logic to generate models and track current model versions.
 
     Args:
         api_files_dict (dict): Dictionary mapping API names to lists of JSON file paths.
+        lib_directory (str): Directory where the generated libraries will be stored.
+        config_template_filename (str): Template configuration filename.
 
     Returns:
         tuple: A tuple containing:
             - list of models to generate
             - current models dictionary
     """
-    return process_api_files_core(api_files_dict)
+    return process_api_files_core(api_files_dict, lib_directory, config_template_filename)
 
-def generate_dry_run_report(api_files_dict, previous_models_dict, gem_version, config_info):
+def generate_dry_run_report(api_files_dict, lib_directory, config_template_filename, previous_models_dict, gem_version, config_info):
     """
     Generate a dry-run report summarizing the changes.
 
     Args:
         api_files_dict: Dictionary mapping API names to lists of JSON file paths.
+        lib_directory: Directory where the generated libraries will be stored.
+        config_template_filename: Template configuration filename.
         previous_models_dict: Dictionary of previous model identifiers and versions.
         gem_version: The gem version.
         config_info: Configuration information to display.
@@ -93,7 +92,7 @@ def generate_dry_run_report(api_files_dict, previous_models_dict, gem_version, c
         A dictionary summarizing the changes for dry-run purposes.
     """
     # Use the core processing logic to get models to generate and the current model versions.
-    models_to_generate, current_models_dict = process_api_files_core(api_files_dict)
+    models_to_generate, current_models_dict = process_api_files_core(api_files_dict, lib_directory, config_template_filename)
 
     report = {
         "config_info": {key: value for key, value in config_info.items() if key != 'MODULENAME'},
