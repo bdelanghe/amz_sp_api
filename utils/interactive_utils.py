@@ -165,7 +165,7 @@ def _print_detailed_model_section(title: str, models: list, color: str, show_ver
     if models:
         _print_colored(f"\n{title}:", color=color)
         for model in models:
-            version_str = f" (V{model['version']})" if show_version and 'version' in model else ""
+            version_str = f" (V{model.get('version', 'N/A')})" if show_version else ""
             _print_colored(f"  {model['api_name']}{version_str}", color='white', indent=2)
 
 def _format_key_value_pair(key: str, value: str, source_info: dict) -> str:
