@@ -15,6 +15,18 @@ PREVIOUS_MODELS_FILENAME = 'models_previous.txt'
 CURRENT_MODELS_FILENAME = 'models_current.txt'
 SWAGGER_CODEGEN_COMMAND = 'swagger-codegen'
 
+# Define default versions for each API
+DEFAULT_VERSIONS = {
+    'orders-api-model': 'ordersV0.json',
+    'fulfillment-inbound-api-model': 'fulfillmentInboundV0.json',
+    'fulfillment-outbound-api-model': 'fulfillmentOutbound_2020-07-01.json',
+    'product-pricing-api-model': 'productPricingV0.json',
+    'finances-api-model': 'financesV0.json',
+    'feeds-api-model': 'feeds_2021-06-30.json',
+    'reports-api-model': 'reports_2021-06-30.json',
+    # Add other APIs and their default versions here
+}
+
 def check_dependencies():
     """
     Check if external dependencies are available.
@@ -89,9 +101,12 @@ def extract_version_from_filename(file_name):
     Returns:
         str: The extracted version.
     """
-    version_match = re.search(r'(V\d+|_[0-9]{4}-[0-9]{2}-[0-9]{2})', file_name)
+    # Remove file extension
+    file_name = os.path.splitext(file_name)[0]
+    # Extract version info from the file name
+    version_match = re.search(r'(\d{4}-\d{2}-\d{2}|V\d+)$', file_name)
     if version_match:
-        version = version_match.group(1).replace('_', '').replace('-', '')
+        version = version_match.group(1).replace('-', '')
     else:
         version = 'V0'
     return version
@@ -140,7 +155,7 @@ def compare_model_sets(previous_models_set, current_models_set):
 
 def process_api_files(api_files_dict, is_dry_run, previous_models_set, current_models_set):
     """
-    Process each API and generate code for unversioned and versioned models.
+    Process each API and generate code for default and versioned models.
 
     Args:
         api_files_dict (dict): Dictionary mapping API names to lists of JSON file paths.
@@ -150,60 +165,64 @@ def process_api_files(api_files_dict, is_dry_run, previous_models_set, current_m
     """
     for api_name, api_file_list in api_files_dict.items():
         module_name = extract_module_name(api_name)
-        unversioned_api_lib_dir = os.path.join(LIB_DIRECTORY, api_name)
-        unversioned_config_path = os.path.join(unversioned_api_lib_dir, CONFIG_TEMPLATE_FILENAME)
 
-        if is_dry_run:
-            print(f"Would remove and recreate directory: {unversioned_api_lib_dir}")
-        else:
-            recreate_directory(unversioned_api_lib_dir)
-            copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, unversioned_config_path, api_name, module_name)
+        # Determine the default version for this API
+        default_version_filename = DEFAULT_VERSIONS.get(api_name, None)
 
+        # Process files
         for api_file in api_file_list:
             file_name = os.path.basename(api_file)
             version = extract_version_from_filename(file_name)
             version_clean = version
-            versioned_module_name = f"{module_name}{version_clean}"
-            versioned_api_name = f"{api_name}_{version_clean}"
-            model_identifier = f"{api_name} {version_clean}"
+
+            # Determine if this is the default version
+            is_default_version = (file_name == default_version_filename)
+
+            if is_default_version:
+                # Generate unversioned model
+                unversioned_api_lib_dir = os.path.join(LIB_DIRECTORY, api_name)
+                unversioned_config_path = os.path.join(unversioned_api_lib_dir, CONFIG_TEMPLATE_FILENAME)
+
+                if is_dry_run:
+                    print(f"Would generate unversioned model for {api_name}, version {version_clean}")
+                    print(f"MODULE_NAME: AmzSpApi::{module_name}")
+                else:
+                    recreate_directory(unversioned_api_lib_dir)
+                    copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, unversioned_config_path, api_name, f"AmzSpApi::{module_name}")
+                    generate_model(api_file, unversioned_config_path, unversioned_api_lib_dir, is_default_version=True)
+            else:
+                # Generate versioned model
+                versioned_module_name = f"{module_name}::V{version_clean}"
+                versioned_api_name = f"{api_name}_V{version_clean}"
+                model_identifier = f"{api_name} V{version_clean}"
+                current_models_set.add(model_identifier)
+
+                if is_dry_run:
+                    print(f"Would generate versioned model for {versioned_api_name}")
+                    print(f"MODULE_NAME: AmzSpApi::{versioned_module_name}")
+                else:
+                    versioned_lib_dir = os.path.join(LIB_DIRECTORY, api_name, f"v{version_clean}")
+                    versioned_config_path = os.path.join(versioned_lib_dir, CONFIG_TEMPLATE_FILENAME)
+                    recreate_directory(versioned_lib_dir)
+                    copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, versioned_config_path, versioned_api_name, f"AmzSpApi::{module_name}::V{version_clean}")
+                    generate_model(api_file, versioned_config_path, versioned_lib_dir, is_default_version=False)
+
+            # Add model identifier to current models set
+            model_identifier = f"{api_name} V{version_clean}"
             current_models_set.add(model_identifier)
 
-            if is_dry_run:
-                print(f"Would generate unversioned model for {api_name}, version {version_clean}")
-                print(f"MODULE_NAME: {module_name}")
-                print(f"Would generate versioned model for {versioned_api_name}")
-                print(f"MODULE_NAME_VERSION: {versioned_module_name}")
-            else:
-                generate_unversioned_model(api_file, unversioned_config_path, unversioned_api_lib_dir)
-                generate_versioned_model(api_file, versioned_api_name, versioned_module_name)
-
-def generate_unversioned_model(api_file_path, config_file_path, output_directory):
+def generate_model(api_file_path, config_file_path, output_directory, is_default_version):
     """
-    Generate the unversioned model.
+    Generate the API model.
 
     Args:
         api_file_path (str): Path to the API JSON file.
         config_file_path (str): Path to the config file.
         output_directory (str): Output directory for generated files.
+        is_default_version (bool): Flag indicating whether this is the default version.
     """
     run_swagger_codegen(api_file_path, config_file_path, output_directory)
-    organize_generated_files(output_directory, move_rb_to=LIB_DIRECTORY)
-
-def generate_versioned_model(api_file_path, versioned_api_name, versioned_module_name):
-    """
-    Generate the versioned model.
-
-    Args:
-        api_file_path (str): Path to the API JSON file.
-        versioned_api_name (str): Name of the versioned API.
-        versioned_module_name (str): Name of the versioned module.
-    """
-    versioned_lib_dir = os.path.join(LIB_DIRECTORY, versioned_api_name)
-    versioned_config_path = os.path.join(versioned_lib_dir, CONFIG_TEMPLATE_FILENAME)
-    recreate_directory(versioned_lib_dir)
-    copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, versioned_config_path, versioned_api_name, versioned_module_name)
-    run_swagger_codegen(api_file_path, versioned_config_path, versioned_lib_dir)
-    organize_generated_files(versioned_lib_dir)
+    organize_generated_files(output_directory, is_default_version)
 
 def recreate_directory(directory_path):
     """
@@ -262,49 +281,57 @@ def run_swagger_codegen(input_spec_path, config_file_path, output_directory):
         '-o', output_directory
     ], check=True)
 
-def organize_generated_files(output_directory, move_rb_to=None):
+def organize_generated_files(output_directory, is_default_version):
     """
     Organize the generated files by moving and cleaning up unnecessary files.
 
     Args:
         output_directory (str): The directory containing generated files.
-        move_rb_to (str, optional): Destination directory to move the API .rb file.
+        is_default_version (bool): Flag indicating whether this is the default version.
     """
     api_name = os.path.basename(output_directory)
-    move_api_rb_file(output_directory, api_name, move_rb_to)
-    move_api_lib_contents(output_directory, api_name)
+    if is_default_version:
+        # Move {API_NAME}.rb to lib/
+        move_api_rb_file(output_directory, api_name, move_rb_to=LIB_DIRECTORY)
+        move_api_lib_contents(output_directory, api_name, destination_dir=os.path.join(LIB_DIRECTORY, api_name))
+    else:
+        # Keep files within the versioned directory
+        move_api_rb_file(output_directory, api_name, move_rb_to=output_directory)
+        move_api_lib_contents(output_directory, api_name, destination_dir=output_directory)
     clean_up_generated_files(output_directory)
 
-def move_api_rb_file(output_directory, api_name, destination_directory=None):
+def move_api_rb_file(output_directory, api_name, move_rb_to=None):
     """
     Move the {API_NAME}.rb file to the specified destination directory.
 
     Args:
         output_directory (str): The directory containing the .rb file.
         api_name (str): The API name.
-        destination_directory (str, optional): The destination directory.
+        move_rb_to (str, optional): The destination directory.
     """
     source_rb_file = os.path.join(output_directory, 'lib', f"{api_name}.rb")
     if os.path.exists(source_rb_file):
-        if destination_directory:
-            destination_rb_file = os.path.join(destination_directory, f"{api_name}.rb")
+        if move_rb_to:
+            destination_rb_file = os.path.join(move_rb_to, f"{api_name}.rb")
         else:
             destination_rb_file = os.path.join(output_directory, f"{api_name}.rb")
         shutil.move(source_rb_file, destination_rb_file)
 
-def move_api_lib_contents(output_directory, api_name):
+def move_api_lib_contents(output_directory, api_name, destination_dir):
     """
-    Move the contents of lib/{API_NAME} to the output directory.
+    Move the contents of lib/{API_NAME} to the specified destination directory.
 
     Args:
         output_directory (str): The directory containing the lib/{API_NAME} directory.
         api_name (str): The API name.
+        destination_dir (str): The destination directory for the contents.
     """
     source_lib_api_dir = os.path.join(output_directory, 'lib', api_name)
     if os.path.exists(source_lib_api_dir):
+        os.makedirs(destination_dir, exist_ok=True)
         for item_name in os.listdir(source_lib_api_dir):
             source_item_path = os.path.join(source_lib_api_dir, item_name)
-            destination_item_path = os.path.join(output_directory, item_name)
+            destination_item_path = os.path.join(destination_dir, item_name)
             if os.path.exists(destination_item_path):
                 remove_existing_item(destination_item_path)
             shutil.move(source_item_path, destination_item_path)
