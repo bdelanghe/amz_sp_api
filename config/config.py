@@ -1,4 +1,4 @@
-# config/config.py
+# config/config.py (Updated)
 
 import json
 import os
@@ -32,7 +32,7 @@ class Config:
         # Set gemVersion dynamically from the latest git tag
         gem_version = get_latest_git_tag() or "0.1.0"
         self.config['gemVersion'] = gem_version
-        self.source_info['gemVersion'] = 'git'
+        self.source_info['gemVersion'] = 'dynamically set from latest Git tag'
 
     def _get_value_with_fallback(self, key, config_data):
         """
@@ -102,13 +102,23 @@ class Config:
         """
         Print the current configuration with source information.
         """
+        def bold_text(text: str) -> str:
+            return f"\033[1m{text}\033[0m"
+
         print_colored("\nConfiguration Information:", color='cyan')
         for key, value in self.config.items():
             suffix = ""
             if key == 'moduleName':
                 suffix = " (per model)"
             elif key == 'gemVersion':
-                suffix = " (dynamically set from latest Git tag)"
+                suffix = f" ({self.source_info[key]})"
             source = self.source_info.get(key, 'unknown')
-            source_display = f"({source})"
-            print_colored(f"  {key}: {value} {suffix} {source_display}", color=None)
+
+            # Avoid duplicate source information if it's already clear in suffix
+            if 'dynamically set' not in suffix:
+                source_display = f"({source})"
+            else:
+                source_display = ""
+
+            # Use bold for key names for better readability
+            print_colored(f"  {bold_text(key)}: {value} {suffix} {source_display}", color=None)
