@@ -28,6 +28,29 @@ def create_temp_file(initial_content="{}"):
 PREVIOUS_MODELS_FILENAME = create_temp_file()
 CURRENT_MODELS_FILENAME = create_temp_file()
 
+def print_colored(message, color=None):
+    """
+    Print the message in color if the color argument is provided.
+    
+    Args:
+        message (str): The message to print.
+        color (str, optional): The color for the text (e.g., 'red', 'green', 'blue').
+    """
+    colors = {
+        'red': '\033[91m',
+        'green': '\033[92m',
+        'yellow': '\033[93m',
+        'blue': '\033[94m',
+        'magenta': '\033[95m',
+        'cyan': '\033[96m',
+        'white': '\033[97m'
+    }
+    end_color = '\033[0m'
+    if color in colors:
+        print(f"{colors[color]}{message}{end_color}")
+    else:
+        print(message)
+
 def check_dependencies():
     """
     Check if external dependencies are available.
@@ -167,48 +190,6 @@ def extract_version_from_filename(file_name):
         version = '0'  # Default version number
     return version
 
-def read_models_list(file_path):
-    """
-    Read the list of models from a file.
-
-    Args:
-        file_path (str): Path to the models list file.
-
-    Returns:
-        set: A set of model identifiers.
-    """
-    if not os.path.exists(file_path):
-        return set()
-    with open(file_path, 'r') as file:
-        models = set(file.read().splitlines())
-    return models
-
-def write_models_list(models_set, file_path):
-    """
-    Write the list of models to a file.
-
-    Args:
-        models_set (set): A set of model identifiers.
-        file_path (str): Path to the output file.
-    """
-    with open(file_path, 'w') as file:
-        file.write('\n'.join(sorted(models_set)))
-
-def compare_model_sets(previous_models_set, current_models_set):
-    """
-    Compare previous and current models to find new and removed models.
-
-    Args:
-        previous_models_set (set): Set of previous model identifiers.
-        current_models_set (set): Set of current model identifiers.
-
-    Returns:
-        tuple: A tuple containing sets of new models and removed models.
-    """
-    new_models = current_models_set - previous_models_set
-    removed_models = previous_models_set - current_models_set
-    return new_models, removed_models
-
 def get_latest_version(api_file_list):
     """
     Get the latest version from a list of API files based on date or version.
@@ -227,7 +208,7 @@ def get_latest_version(api_file_list):
 
 def process_api_files(api_files_dict, is_dry_run, previous_models_dict, current_models_dict):
     """
-    Process each API and generate code for default (unversioned) and versioned models.
+    Process each API and generate code for versioned models for all versions.
 
     Args:
         api_files_dict (dict): Dictionary mapping API names to lists of JSON file paths.
@@ -235,70 +216,101 @@ def process_api_files(api_files_dict, is_dry_run, previous_models_dict, current_
         previous_models_dict (dict): Dictionary of previous model identifiers and versions.
         current_models_dict (dict): Dictionary to store current model identifiers and versions.
     """
+    versioned_models = []
+    unversioned_models = []  # Optional, if we decide to generate unversioned models
+
     for api_name, api_file_list in api_files_dict.items():
         module_name = extract_module_name(api_name)
 
-        # Get the file path for the most recent version
+        # Determine the latest version
         latest_version_file = get_latest_version(api_file_list)
+        latest_version = extract_version_from_filename(os.path.basename(latest_version_file))
 
-        # Determine unversioned (default) version
-        if latest_version_file:
-            unversioned_version = extract_version_from_filename(os.path.basename(latest_version_file))
-            unversioned_api_name = api_name
-            unversioned_module_name = f"AmzSpApi::{module_name}"
-            model_identifier = f"{api_name} V{unversioned_version}"
+        for api_file in api_file_list:
+            file_name = os.path.basename(api_file)
+            version = extract_version_from_filename(file_name)
 
-            # Add the unversioned model to the current models dictionary
-            current_models_dict[model_identifier] = unversioned_version
+            versioned_module_name = f"{module_name}::V{version}"
+            versioned_api_name = f"{api_name}_V{version}"
+            model_identifier = f"{api_name} V{version}"
+            current_models_dict[model_identifier] = version
 
-            if is_dry_run:
-                print(f"Would generate unversioned model for {api_name}, version {unversioned_version}")
-                print(f"MODULE_NAME: {unversioned_module_name}")
-            else:
-                # Generate the unversioned model
-                unversioned_api_lib_dir = os.path.join(LIB_DIRECTORY, api_name)
-                unversioned_config_path = os.path.join(unversioned_api_lib_dir, CONFIG_TEMPLATE_FILENAME)
-                recreate_directory(unversioned_api_lib_dir)
-                copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, unversioned_config_path, unversioned_api_name, unversioned_module_name)
-                generate_model(latest_version_file, unversioned_config_path, unversioned_api_lib_dir, is_default_version=True)
+            # Add to versioned models list for logging
+            versioned_models.append({
+                "name": versioned_api_name,
+                "version": version,
+                "module": f"AmzSpApi::{versioned_module_name}"
+            })
 
-            # Process each versioned file
-            for api_file in api_file_list:
-                file_name = os.path.basename(api_file)
-                version = extract_version_from_filename(file_name)
-                version_clean = version
+            if not is_dry_run:
+                versioned_lib_dir = os.path.join(LIB_DIRECTORY, api_name, f"v{version}")
+                versioned_config_path = os.path.join(versioned_lib_dir, CONFIG_TEMPLATE_FILENAME)
+                recreate_directory(versioned_lib_dir)
+                copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, versioned_config_path, versioned_api_name, f"AmzSpApi::{versioned_module_name}")
+                generate_model(api_file, versioned_config_path, versioned_lib_dir, is_default_version=False)
 
-                # Skip if it's the default version already handled
-                if api_file == latest_version_file:
-                    continue
+        # Optionally generate unversioned model for latest version
+        unversioned_api_name = api_name
+        unversioned_module_name = f"AmzSpApi::{module_name}"
+        model_identifier = f"{api_name} V{latest_version}"
+        current_models_dict[model_identifier] = latest_version
 
-                versioned_module_name = f"{module_name}::V{version_clean}"
-                versioned_api_name = f"{api_name}_V{version_clean}"
-                model_identifier = f"{api_name} V{version_clean}"
-                current_models_dict[model_identifier] = version_clean
+        # Add to unversioned models list for logging
+        unversioned_models.append({
+            "name": unversioned_api_name,
+            "version": latest_version,
+            "module": unversioned_module_name
+        })
 
-                if is_dry_run:
-                    print(f"Would generate versioned model for {versioned_api_name}")
-                    print(f"MODULE_NAME: AmzSpApi::{versioned_module_name}")
-                else:
-                    versioned_lib_dir = os.path.join(LIB_DIRECTORY, api_name, f"v{version_clean}")
-                    versioned_config_path = os.path.join(versioned_lib_dir, CONFIG_TEMPLATE_FILENAME)
-                    recreate_directory(versioned_lib_dir)
-                    copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, versioned_config_path, versioned_api_name, f"AmzSpApi::{module_name}::V{version_clean}")
-                    generate_model(api_file, versioned_config_path, versioned_lib_dir, is_default_version=False)
+        if not is_dry_run:
+            # Generate the unversioned model for the latest version
+            unversioned_api_lib_dir = os.path.join(LIB_DIRECTORY, api_name)
+            unversioned_config_path = os.path.join(unversioned_api_lib_dir, CONFIG_TEMPLATE_FILENAME)
+            recreate_directory(unversioned_api_lib_dir)
+            copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, unversioned_config_path, unversioned_api_name, unversioned_module_name)
+            generate_model(latest_version_file, unversioned_config_path, unversioned_api_lib_dir, is_default_version=True)
 
-def generate_model(api_file_path, config_file_path, output_directory, is_default_version):
-    """
-    Generate the API model.
+    if is_dry_run:
+        # Output the dry run in a more readable format with colors
+        print_colored("\n********** Model Generation Log **********", color='cyan')
+        
+        print_colored("\nVersioned Models:", color='yellow')
+        for model in versioned_models:
+            print_colored(f"- {model['name']} (version {model['version']})", color='white')
+            print_colored(f"  MODULE_NAME: {model['module']}\n", color='magenta')
 
-    Args:
-        api_file_path (str): Path to the API JSON file.
-        config_file_path (str): Path to the config file.
-        output_directory (str): Output directory for generated files.
-        is_default_version (bool): Flag indicating whether this is the default version.
-    """
-    run_swagger_codegen(api_file_path, config_file_path, output_directory)
-    organize_generated_files(output_directory, is_default_version)
+        # Optionally display unversioned models
+        print_colored("\nUnversioned Models (Latest Versions):", color='green')
+        for model in unversioned_models:
+            print_colored(f"- {model['name']} (version {model['version']})", color='white')
+            print_colored(f"  MODULE_NAME: {model['module']}\n", color='magenta')
+
+        # Output the comparison results
+        new_models_set, removed_models_set, changed_defaults_set = compare_model_versions(previous_models_dict, current_models_dict)
+        print_colored("\n********** Model Comparison **********", color='cyan')
+
+        if new_models_set:
+            print_colored("\nNew Models:", color='green')
+            for model in sorted(new_models_set):
+                print_colored(f"- {model}", color='white')
+        else:
+            print_colored("\nNo New Models.", color='green')
+
+        if removed_models_set:
+            print_colored("\nRemoved Models:", color='red')
+            for model in sorted(removed_models_set):
+                print_colored(f"- {model}", color='white')
+        else:
+            print_colored("\nNo Removed Models.", color='red')
+
+        if changed_defaults_set:
+            print_colored("\nChanged Defaults:", color='yellow')
+            for model in sorted(changed_defaults_set):
+                print_colored(f"- {model}", color='white')
+        else:
+            print_colored("\nNo Changed Defaults.", color='yellow')
+
+        print_colored("\n**************************************\n", color='cyan')
 
 def recreate_directory(directory_path):
     """
@@ -339,6 +351,19 @@ def replace_placeholder_in_file(file_path, placeholder, replacement):
     content = content.replace(placeholder, replacement)
     with open(file_path, 'w') as file:
         file.write(content)
+
+def generate_model(api_file_path, config_file_path, output_directory, is_default_version):
+    """
+    Generate the API model.
+
+    Args:
+        api_file_path (str): Path to the API JSON file.
+        config_file_path (str): Path to the config file.
+        output_directory (str): Output directory for generated files.
+        is_default_version (bool): Flag indicating whether this is the default version.
+    """
+    run_swagger_codegen(api_file_path, config_file_path, output_directory)
+    organize_generated_files(output_directory, is_default_version)
 
 def run_swagger_codegen(input_spec_path, config_file_path, output_directory):
     """
@@ -453,20 +478,7 @@ def main():
 
     process_api_files(api_files_dict, is_dry_run, previous_models_dict, current_models_dict)
 
-    if is_dry_run:
-        new_models_set, removed_models_set, changed_defaults_set = compare_model_versions(previous_models_dict, current_models_dict)
-        print("\n********** Model Comparison **********")
-        print("New models:")
-        for model_identifier in sorted(new_models_set):
-            print(model_identifier)
-        print("\nRemoved models:")
-        for model_identifier in sorted(removed_models_set):
-            print(model_identifier)
-        print("\nChanged defaults:")
-        for model_identifier in sorted(changed_defaults_set):
-            print(model_identifier)
-        print("**************************************")
-    else:
+    if not is_dry_run:
         write_models_json(current_models_dict, PREVIOUS_MODELS_FILENAME)
         write_models_json(current_models_dict, CURRENT_MODELS_FILENAME)
 
