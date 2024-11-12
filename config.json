@@ -9,5 +9,6 @@
   "httpClientType": "Typhoeus",
   "modelPackage": "models",
   "apiPackage": "api",
-  "libDirectory": "lib"
+  "libDirectory": "lib",
+  "configTemplateFilename": "config.json"
 }
