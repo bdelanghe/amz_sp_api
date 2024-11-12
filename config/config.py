@@ -6,6 +6,20 @@ from utils.github_utils import get_github_repo_url
 from utils.git_utils import get_git_config_value, get_latest_git_tag
 from utils.interactive_utils import print_colored
 
+# Global color map for different sources
+SOURCE_COLORS = {
+    'config': 'cyan',
+    'env': 'yellow',
+    'git': 'blue',
+    'GitHub': 'magenta'
+}
+
+# Suffix map for certain configuration keys
+SUFFIXES = {
+    'moduleName': "(set per model)",
+    'gemVersion': "(dynamically set from latest Git tag)"
+}
+
 class Config:
     _instance = None
 
@@ -32,7 +46,7 @@ class Config:
         # Set gemVersion dynamically from the latest git tag
         gem_version = get_latest_git_tag() or "0.1.0"
         self.config['gemVersion'] = gem_version
-        self.source_info['gemVersion'] = 'dynamically set from latest Git tag'
+        self.source_info['gemVersion'] = 'git'
 
     def _get_value_with_fallback(self, key, config_data):
         """
@@ -105,29 +119,16 @@ class Config:
         def bold_text(text: str) -> str:
             return f"\033[1m{text}\033[0m"
 
-        # Color map for different sources
-        source_colors = {
-            'config': 'cyan',
-            'env': 'yellow',
-            'git': 'blue',
-            'GitHub': 'magenta'
-        }
-
         print_colored("\nConfiguration Information:", color='cyan')
         for key, value in self.config.items():
-            # Define a custom suffix only if needed
-            suffix = ""
-            if key == 'moduleName':
-                suffix = "(set per model)"
-            elif key == 'gemVersion':
-                suffix = "(dynamically set from latest Git tag)"
+            # Get suffix if it exists for the given key
+            suffix = SUFFIXES.get(key, "")
 
             # Determine the source of the value and get the color
             source = self.source_info.get(key, 'unknown')
-            source_color = source_colors.get(source, 'white')
+            source_color = SOURCE_COLORS.get(source, 'white')
 
             # Use bold for key names for better readability
-            # Print key, value, and suffix (if any) on the same line
             formatted_key = f"{bold_text(key)}: {value}"
             if suffix and source == 'config':
                 formatted_key += f" {suffix}"
@@ -141,4 +142,3 @@ class Config:
 
             # Ensure each configuration is printed on its own line
             print()
-
