@@ -8,6 +8,14 @@ from utils.models_utils import collect_api_files
 from utils.version_utils import get_latest_git_tag, increment_version
 from utils.interactive_utils import print_colored, prompt_confirmation, print_dry_run_report
 
+import tempfile
+import os
+from config.config import Config
+from utils.codegen_utils import check_dependencies, generate_model
+from utils.models_utils import collect_api_files
+from utils.version_utils import get_latest_git_tag, increment_version
+from utils.interactive_utils import print_colored, prompt_confirmation, print_dry_run_report
+
 def main() -> None:
     """
     Main function to orchestrate code generation and model tracking.
@@ -38,20 +46,20 @@ def main() -> None:
     gem_version = increment_version(current_version)
 
     config_info = {
-        key: config.get(key) for key in [
-            'GEMNAME', 'MODULENAME', 'GEMVERSION', 'GEMAUTHOR', 'GEMAUTHOREMAIL',
-            'GEMHOMEPAGE', 'GEMLICENSE', 'HTTPCLIENTTYPE', 'MODELPACKAGE', 'APIPACKAGE'
+        key: config.get(key.lower()) for key in [
+            'gemName', 'moduleName', 'gemVersion', 'gemAuthor', 'gemAuthorEmail',
+            'gemHomepage', 'gemLicense', 'httpClientType', 'modelPackage', 'apiPackage'
         ]
     }
-    config_info['GEMVERSION'] = gem_version
+    config_info['gemVersion'] = gem_version
 
     if is_print_config:
         # Print configuration information
         print_colored("\nCurrent Configuration Information:", color='cyan')
         for key, value in config_info.items():
-            if key == 'MODULENAME':
+            if key == 'moduleName':
                 print_colored(f"{key}: {value} (dynamically set per model)", color='yellow')
-            elif key == 'GEMVERSION':
+            elif key == 'gemVersion':
                 print_colored(f"{key}: {value} (dynamically set from latest Git tag)", color='yellow')
             else:
                 print_colored(f"{key}: {value}", color='white')
@@ -60,15 +68,15 @@ def main() -> None:
     check_dependencies()
 
     # Collect API files
-    api_files_dict = collect_api_files(config.get('LIBDIRECTORY'))
+    api_files_dict = collect_api_files(config.get('libDirectory'))
 
     if is_dry_run:
         # Print configuration information
         print_colored("\nConfiguration Information:", color='cyan')
         for key, value in config_info.items():
-            if key == 'MODULENAME':
+            if key == 'moduleName':
                 print_colored(f"{key}: {value} (dynamically set per model)", color='yellow')
-            elif key == 'GEMVERSION':
+            elif key == 'gemVersion':
                 print_colored(f"{key}: {value} (dynamically set from latest Git tag)", color='yellow')
             else:
                 print_colored(f"{key}: {value}", color='white')
@@ -90,9 +98,9 @@ def main() -> None:
         # Print configuration information for non-dry-run scenario
         print_colored("\nConfiguration Information:", color='cyan')
         for key, value in config_info.items():
-            if key == 'MODULENAME':
+            if key == 'moduleName':
                 print_colored(f"{key}: {value} (dynamically set per model)", color='yellow')
-            elif key == 'GEMVERSION':
+            elif key == 'gemVersion':
                 print_colored(f"{key}: {value} (dynamically set from latest Git tag)", color='yellow')
             else:
                 print_colored(f"{key}: {value}", color='white')
@@ -106,7 +114,7 @@ def main() -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             for api_name, api_files in api_files_dict.items():
                 print_colored(f"Generating model for API: {api_name}", color='blue')
-                generate_model(api_files[0], config.get('CONFIG_TEMPLATE_FILENAME'), os.path.join(temp_dir, 'output'))
+                generate_model(api_files[0], config.get('configTemplateFilename'), os.path.join(temp_dir, 'output'))
 
 if __name__ == '__main__':
     main()
