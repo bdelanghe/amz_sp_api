@@ -1,7 +1,102 @@
-import json
+# utils/models_utils.py
+
 import os
-from glob import glob
 import re
+from glob import glob
+import json
+
+LIB_DIRECTORY = 'lib'
+
+def collect_api_files(models_directory: str) -> dict[str, list[str]]:
+    """
+    Collect JSON files grouped by API name.
+
+    Args:
+        models_directory (str): Path to the models directory.
+
+    Returns:
+        dict[str, list[str]]: A dictionary mapping API names to lists of JSON file paths.
+    """
+    json_file_paths = glob(os.path.join(models_directory, '**', '*.json'), recursive=True)
+    api_files = {}
+    for json_file_path in json_file_paths:
+        api_name = extract_api_name_from_path(json_file_path)
+        if api_name is None:
+            continue
+        api_files.setdefault(api_name, []).append(json_file_path)
+    return api_files
+
+def extract_api_name_from_path(file_path: str) -> str | None:
+    """
+    Extract the API name from the file path.
+
+    Args:
+        file_path (str): The path to the JSON file.
+
+    Returns:
+        str | None: The extracted API name, or None if not found.
+    """
+    path_parts = file_path.split(os.sep)
+    if 'models' not in path_parts:
+        return None
+    models_index = path_parts.index('models')
+    if models_index + 1 >= len(path_parts):
+        return None
+    return path_parts[models_index + 1]
+
+def extract_module_name(api_name: str) -> str:
+    """
+    Convert the API name to a module name by capitalizing letters after hyphens or underscores.
+
+    Args:
+        api_name (str): The API name.
+
+    Returns:
+        str: The module name.
+    """
+    return ''.join(word.capitalize() for word in re.split('[-_]', api_name))
+
+def extract_version_from_filename(file_name: str) -> str:
+    """
+    Extract the version from the file name.
+
+    Args:
+        file_name (str): The JSON file name.
+
+    Returns:
+        str: The extracted version number as a string, without the 'V' prefix.
+    """
+    # Remove file extension
+    file_name = os.path.splitext(file_name)[0]
+
+    # Try to match 'V' followed by digits at the end of the filename
+    match_v = re.search(r'V(\d+)$', file_name)
+    # Try to match date format YYYY-MM-DD at the end of the filename
+    match_date = re.search(r'(\d{4}-\d{2}-\d{2})$', file_name)
+
+    if match_v:
+        version = match_v.group(1)  # Extract digits after 'V'
+    elif match_date:
+        version = match_date.group(1).replace('-', '')  # Remove dashes
+    else:
+        version = '0'  # Default version number
+    return version
+
+def get_latest_version(api_file_list: list[str]) -> str:
+    """
+    Get the latest version from a list of API files based on date or version.
+
+    Args:
+        api_file_list (list[str]): List of JSON file paths.
+
+    Returns:
+        str: The path to the file with the most recent version.
+    """
+    def version_key(file_path: str) -> int:
+        version = extract_version_from_filename(os.path.basename(file_path))
+        return int(version)  # Assumes all versions can be compared numerically
+
+    return max(api_file_list, key=version_key)
 
 def read_models_json(file_path: str) -> dict:
     """
@@ -22,15 +117,15 @@ def read_models_json(file_path: str) -> dict:
         print(f"Warning: Failed to parse JSON from {file_path}. Initializing as empty.")
         return {}
 
-def process_api_files(api_files_dict: dict) -> tuple:
+def process_api_files(api_files_dict: dict[str, list[str]]) -> tuple[list[dict], dict]:
     """
     Process each API and prepare data structures for versioned models for all versions.
 
     Args:
-        api_files_dict (dict): Dictionary mapping API names to lists of JSON file paths.
+        api_files_dict (dict[str, list[str]]): Dictionary mapping API names to lists of JSON file paths.
 
     Returns:
-        tuple: A tuple containing the list of models to generate and the current models dictionary.
+        tuple[list[dict], dict]: A tuple containing the list of models to generate and the current models dictionary.
     """
     models_to_generate = []
     current_models_dict = {}
@@ -73,99 +168,6 @@ def process_api_files(api_files_dict: dict) -> tuple:
 
     return models_to_generate, current_models_dict
 
-def generate_dry_run_report(models_to_generate: list, previous_models_dict: dict, current_models_dict: dict, gem_version: str, config_info: dict) -> None:
-    """
-    Generate a dry-run report summarizing the changes.
-
-    Args:
-        models_to_generate (list): List of models to generate with their details.
-        previous_models_dict (dict): Dictionary of previous model identifiers and versions.
-        current_models_dict (dict): Dictionary of current model identifiers and versions.
-        gem_version (str): The gem version.
-        config_info (dict): Configuration information to display.
-    """
-    from utils.interactive_utils import print_colored
-
-    # Print configuration information
-    print_colored("\nConfiguration Information:", color='cyan')
-    for key, value in config_info.items():
-        if key != 'MODULENAME':
-            print_colored(f"{key}: {value}", color='white')
-
-    # Compare models to find new, updated, and removed models
-    new_models, removed_models, changed_defaults = compare_model_versions(previous_models_dict, current_models_dict)
-
-    # Organize models by status
-    models_status = {
-        'added': [],
-        'updated': [],
-        'removed': []
-    }
-
-    # Use a set to avoid duplicates
-    added_models_set = set()
-
-    # Determine added and updated models
-    for model in models_to_generate:
-        model_identifier = f"{model['api_name']} V{model['version']}"
-        if model_identifier in new_models and model_identifier not in added_models_set:
-            models_status['added'].append(model)
-            added_models_set.add(model_identifier)
-        elif model_identifier in changed_defaults:
-            models_status['updated'].append(model)
-
-    # Sort the added models by API name and version
-    models_status['added'].sort(key=lambda x: (x['api_name'], int(x['version'])))
-
-    # Determine removed models
-    for model_identifier in removed_models:
-        api_name, version = model_identifier.rsplit(' V', 1)
-        models_status['removed'].append({
-            'api_name': api_name,
-            'version': version
-        })
-
-    # Print the report
-    print_colored("\nSDK Upgrade Summary", color='cyan')
-    print_colored("===================", color='cyan')
-
-    if models_status['added']:
-        print_colored("\nNew Models Added:", color='green')
-        last_api_name = None
-        for model in models_status['added']:
-            if model['api_name'] != last_api_name:
-                print_colored(f"\nAPI Name: {model['api_name']}", color='cyan')
-                last_api_name = model['api_name']
-            version_info = f"Version: {model['version']}"
-            if model['has_multiple_versions'] and model['is_latest']:
-                version_info += " [latest]"
-            print_colored(f"- {version_info}", color='white')
-            print_colored(f"  Module Name: {model['module_name']}", color='white')
-        print_colored(f"\nTotal New Models: {len(models_status['added'])}", color='green')
-    else:
-        print_colored("\nNo New Models Added.", color='green')
-
-    if models_status['updated']:
-        print_colored("\nModels Updated:", color='yellow')
-        for model in models_status['updated']:
-            version_info = f"Updated to Version {model['version']}"
-            if model['has_multiple_versions'] and model['is_latest']:
-                version_info += " [latest]"
-            print_colored(f"- {model['api_name']} ({version_info})", color='white')
-        print_colored(f"Total Updated Models: {len(models_status['updated'])}", color='yellow')
-    else:
-        print_colored("\nNo Models Updated.", color='yellow')
-
-    if models_status['removed']:
-        print_colored("\nModels Removed:", color='red')
-        for model in models_status['removed']:
-            print_colored(f"- {model['api_name']} (Version {model['version']})", color='white')
-        print_colored(f"Total Removed Models: {len(models_status['removed'])}", color='red')
-    else:
-        print_colored("\nNo Models Removed.", color='red')
-
-    print_colored(f"\nGem Version: {gem_version}", color='cyan')
-
 def write_models_json(models_dict: dict, file_path: str) -> None:
     """
     Write the models to a JSON file with sorted keys.
@@ -176,32 +178,3 @@ def write_models_json(models_dict: dict, file_path: str) -> None:
     """
     with open(file_path, 'w') as file:
         json.dump(models_dict, file, indent=4, sort_keys=True)
-
-# Utility functions used in process_api_files
-def extract_module_name(api_name: str) -> str:
-    return ''.join(word.capitalize() for word in re.split('[-_]', api_name))
-
-def extract_version_from_filename(file_name: str) -> str:
-    match_v = re.search(r'V(\d+)$', file_name)
-    match_date = re.search(r'(\d{4}-\d{2}-\d{2})$', file_name)
-
-    if match_v:
-        return match_v.group(1)
-    elif match_date:
-        return match_date.group(1).replace('-', '')
-    return '0'
-
-def get_latest_version(api_file_list: list) -> str:
-    def version_key(file_path):
-        version = extract_version_from_filename(os.path.basename(file_path))
-        return int(version)
-    return max(api_file_list, key=version_key)
-
-def compare_model_versions(previous_models_dict: dict, current_models_dict: dict) -> tuple:
-    new_models = set(current_models_dict.keys()) - set(previous_models_dict.keys())
-    removed_models = set(previous_models_dict.keys()) - set(current_models_dict.keys())
-    changed_defaults = {
-        model for model in current_models_dict
-        if model in previous_models_dict and current_models_dict[model] != previous_models_dict[model]
-    }
-    return new_models, removed_models, changed_defaults
