@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import tempfile
 import os
 from config.config import Config
