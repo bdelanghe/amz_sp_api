@@ -15,18 +15,6 @@ PREVIOUS_MODELS_FILENAME = 'models_previous.txt'
 CURRENT_MODELS_FILENAME = 'models_current.txt'
 SWAGGER_CODEGEN_COMMAND = 'swagger-codegen'
 
-# Define default versions for each API
-DEFAULT_VERSIONS = {
-    'orders-api-model': 'ordersV0.json',
-    'fulfillment-inbound-api-model': 'fulfillmentInboundV0.json',
-    'fulfillment-outbound-api-model': 'fulfillmentOutbound_2020-07-01.json',
-    'product-pricing-api-model': 'productPricingV0.json',
-    'finances-api-model': 'financesV0.json',
-    'feeds-api-model': 'feeds_2021-06-30.json',
-    'reports-api-model': 'reports_2021-06-30.json',
-    # Add other APIs and their default versions here
-}
-
 def check_dependencies():
     """
     Check if external dependencies are available.
@@ -159,9 +147,25 @@ def compare_model_sets(previous_models_set, current_models_set):
     removed_models = previous_models_set - current_models_set
     return new_models, removed_models
 
+def get_latest_version(api_file_list):
+    """
+    Get the latest version from a list of API files based on date or version.
+
+    Args:
+        api_file_list (list): List of JSON file paths.
+
+    Returns:
+        str: The path to the file with the most recent version.
+    """
+    def version_key(file_path):
+        version = extract_version_from_filename(os.path.basename(file_path))
+        return int(version)  # Assumes all versions can be compared numerically (dates > V0, V1)
+
+    return max(api_file_list, key=version_key)
+
 def process_api_files(api_files_dict, is_dry_run, previous_models_set, current_models_set):
     """
-    Process each API and generate code for default and versioned models.
+    Process each API and generate code for default (unversioned) and versioned models.
 
     Args:
         api_files_dict (dict): Dictionary mapping API names to lists of JSON file paths.
@@ -172,32 +176,40 @@ def process_api_files(api_files_dict, is_dry_run, previous_models_set, current_m
     for api_name, api_file_list in api_files_dict.items():
         module_name = extract_module_name(api_name)
 
-        # Determine the default version for this API
-        default_version_filename = DEFAULT_VERSIONS.get(api_name, None)
+        # Get the file path for the most recent version
+        latest_version_file = get_latest_version(api_file_list)
 
-        # Process files
-        for api_file in api_file_list:
-            file_name = os.path.basename(api_file)
-            version = extract_version_from_filename(file_name)
-            version_clean = version
+        # Determine unversioned (default) version
+        if latest_version_file:
+            unversioned_version = extract_version_from_filename(os.path.basename(latest_version_file))
+            unversioned_api_name = api_name
+            unversioned_module_name = f"AmzSpApi::{module_name}"
+            model_identifier = f"{api_name} V{unversioned_version}"
 
-            # Determine if this is the default version
-            is_default_version = (file_name == default_version_filename)
+            # Add the unversioned model to the current models set
+            current_models_set.add(model_identifier)
 
-            if is_default_version:
-                # Generate unversioned model
+            if is_dry_run:
+                print(f"Would generate unversioned model for {api_name}, version {unversioned_version}")
+                print(f"MODULE_NAME: {unversioned_module_name}")
+            else:
+                # Generate the unversioned model
                 unversioned_api_lib_dir = os.path.join(LIB_DIRECTORY, api_name)
                 unversioned_config_path = os.path.join(unversioned_api_lib_dir, CONFIG_TEMPLATE_FILENAME)
+                recreate_directory(unversioned_api_lib_dir)
+                copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, unversioned_config_path, unversioned_api_name, unversioned_module_name)
+                generate_model(latest_version_file, unversioned_config_path, unversioned_api_lib_dir, is_default_version=True)
 
-                if is_dry_run:
-                    print(f"Would generate unversioned model for {api_name}, version {version_clean}")
-                    print(f"MODULE_NAME: AmzSpApi::{module_name}")
-                else:
-                    recreate_directory(unversioned_api_lib_dir)
-                    copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, unversioned_config_path, api_name, f"AmzSpApi::{module_name}")
-                    generate_model(api_file, unversioned_config_path, unversioned_api_lib_dir, is_default_version=True)
-            else:
-                # Generate versioned model
+            # Process each versioned file
+            for api_file in api_file_list:
+                file_name = os.path.basename(api_file)
+                version = extract_version_from_filename(file_name)
+                version_clean = version
+
+                # Skip if it's the default version already handled
+                if api_file == latest_version_file:
+                    continue
+
                 versioned_module_name = f"{module_name}::V{version_clean}"
                 versioned_api_name = f"{api_name}_V{version_clean}"
                 model_identifier = f"{api_name} V{version_clean}"
@@ -212,10 +224,6 @@ def process_api_files(api_files_dict, is_dry_run, previous_models_set, current_m
                     recreate_directory(versioned_lib_dir)
                     copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, versioned_config_path, versioned_api_name, f"AmzSpApi::{module_name}::V{version_clean}")
                     generate_model(api_file, versioned_config_path, versioned_lib_dir, is_default_version=False)
-
-            # Add model identifier to current models set
-            model_identifier = f"{api_name} V{version_clean}"
-            current_models_set.add(model_identifier)
 
 def generate_model(api_file_path, config_file_path, output_directory, is_default_version):
     """
