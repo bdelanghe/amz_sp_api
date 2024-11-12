@@ -52,7 +52,6 @@ def main() -> None:
                 api_files_dict=api_files_dict,
                 previous_models_dict=previous_models_dict,
                 gem_version=config.get('gemVersion'),
-                config_info=config.get_all(),
                 lib_directory=config.get('libDirectory'),
                 config_template_filename=config.get('configTemplateFilename')
             )
