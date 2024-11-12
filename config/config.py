@@ -32,7 +32,7 @@ class Config:
         # Set gemVersion dynamically from the latest git tag
         gem_version = get_latest_git_tag() or "0.1.0"
         self.config['gemVersion'] = gem_version
-        self.source_info['gemVersion'] = 'latest Git tag'
+        self.source_info['gemVersion'] = 'git'
 
     def _get_value_with_fallback(self, key, config_data):
         """
@@ -52,26 +52,26 @@ class Config:
         # 1. Check if it's available in the environment variable
         value = os.getenv(key.upper(), None)
         if value:
-            return value, 'environment variable'
+            return value, 'env'
 
         # 2. Check if it's available in the config data
         value = config_data.get(key, None)
         if value:
-            return value, 'config file'
+            return value, 'config'
 
         # 3. Use fallback mechanisms for specific keys
         if key == 'gemAuthor':
             value = get_git_config_value('user.name')
             if value:
-                return value, 'git config user.name'
+                return value, 'git'
         elif key == 'gemAuthorEmail':
             value = get_git_config_value('user.email')
             if value:
-                return value, 'git config user.email'
+                return value, 'git'
         elif key == 'gemHomepage':
             value = get_github_repo_url()
             if value:
-                return value, 'GitHub repo URL'
+                return value, 'GitHub'
 
         raise ValueError(f"Configuration value for '{key}' is required but was not found.")
 
@@ -102,13 +102,13 @@ class Config:
         """
         Print the current configuration with source information.
         """
-        print_colored("\nCurrent Configuration Information:", color='cyan')
+        print_colored("\nConfiguration Information:", color='cyan')
         for key, value in self.config.items():
             suffix = ""
             if key == 'moduleName':
-                suffix = " (dynamically set per model)"
+                suffix = " (per model)"
             elif key == 'gemVersion':
                 suffix = " (dynamically set from latest Git tag)"
-            source = self.source_info.get(key, 'unknown source')
-            source_color = 'green' if source == 'environment variable' else 'yellow'
-            print_colored(f"{key}: {value}{suffix} [set from: {source}]", color=source_color)
+            source = self.source_info.get(key, 'unknown')
+            source_display = f"({source})"
+            print_colored(f"  {key}: {value} {suffix} {source_display}", color=None)
