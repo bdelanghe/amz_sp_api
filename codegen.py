@@ -265,6 +265,7 @@ def process_api_files(api_files_dict):
         latest_version = extract_version_from_filename(os.path.basename(latest_version_file))
 
         processed_versions = set()
+        has_multiple_versions = len(api_file_list) > 1
 
         for api_file in api_file_list:
             file_name = os.path.basename(api_file)
@@ -279,8 +280,6 @@ def process_api_files(api_files_dict):
             model_identifier = f"{api_name} V{version}"
             current_models_dict[model_identifier] = version
 
-            # Determine if there are multiple versions
-            has_multiple_versions = len(api_file_list) > 1
             is_latest = version == latest_version
 
             # Collect information for versioned model
@@ -337,6 +336,9 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
         elif model_identifier in changed_defaults:
             models_status['updated'].append(model)
 
+    # Sort the added models by API name and version
+    models_status['added'].sort(key=lambda x: (x['api_name'], int(x['version'])))
+
     # Determine removed models
     for model_identifier in removed_models:
         api_name, version = model_identifier.rsplit(' V', 1)
@@ -349,25 +351,30 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
     print_colored("\nSDK Upgrade Summary", color='cyan')
     print_colored("===================", color='cyan')
 
-    # Simplify the output by grouping models
     if models_status['added']:
         print_colored("\nNew Models Added:", color='green')
+        last_api_name = None
         for model in models_status['added']:
-            version_info = f" (Version {model['version']})"
+            if model['api_name'] != last_api_name:
+                print_colored(f"\nAPI Name: {model['api_name']}", color='cyan')
+                last_api_name = model['api_name']
+            version_info = f"Version: {model['version']}"
             if model['has_multiple_versions'] and model['is_latest']:
                 version_info += " [latest]"
-            print_colored(f"- {model['api_name']}{version_info}", color='white')
-        print_colored(f"Total New Models: {len(models_status['added'])}", color='green')
+                version_info = f"{version_info}"
+            print_colored(f"- {version_info}", color='white')
+            print_colored(f"  Module Name: {model['module_name']}", color='white')
+        print_colored(f"\nTotal New Models: {len(models_status['added'])}", color='green')
     else:
         print_colored("\nNo New Models Added.", color='green')
 
     if models_status['updated']:
         print_colored("\nModels Updated:", color='yellow')
         for model in models_status['updated']:
-            version_info = f" (Updated to Version {model['version']})"
+            version_info = f"Updated to Version {model['version']}"
             if model['has_multiple_versions'] and model['is_latest']:
                 version_info += " [latest]"
-            print_colored(f"- {model['api_name']}{version_info}", color='white')
+            print_colored(f"- {model['api_name']} ({version_info})", color='white')
         print_colored(f"Total Updated Models: {len(models_status['updated'])}", color='yellow')
     else:
         print_colored("\nNo Models Updated.", color='yellow')
@@ -381,28 +388,6 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
         print_colored("\nNo Models Removed.", color='red')
 
     print_colored(f"\nGem Version: {gem_version}", color='cyan')
-
-    # Detailed Model Information
-    print_colored("\nDetailed Model Information:", color='cyan')
-    print_colored("---------------------------", color='cyan')
-
-    for status, models in models_status.items():
-        if models:
-            status_color = {'added': 'green', 'updated': 'yellow', 'removed': 'red'}.get(status, 'white')
-            print_colored(f"\n{status.capitalize()} Models:", color=status_color)
-            for model in models:
-                if status != 'removed':
-                    latest_tag = ''
-                    if model['has_multiple_versions'] and model['is_latest']:
-                        latest_tag = ' [latest]'
-                        latest_tag = f"\033[95m{latest_tag}\033[0m"  # magenta color
-                    print_colored(f"API Name: {model['api_name']}", color='white')
-                    print_colored(f"Version: {model['version']}{latest_tag}", color='white')
-                    print_colored(f"Module Name: {model['module_name']}", color='white')
-                    print()
-                else:
-                    print_colored(f"API Name: {model['api_name']}", color='white')
-                    print_colored(f"Version: {model['version']}\n", color='white')
 
 def get_next_version(current_version):
     """
