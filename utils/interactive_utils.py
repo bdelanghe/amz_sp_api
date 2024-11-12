@@ -1,12 +1,13 @@
 import json
 
-def print_colored(message: str, color: str | None = None) -> None:
+def print_colored(message: str, color: str | None = None, newline: bool = True) -> None:
     """
     Print the message in color if the color argument is provided.
 
     Args:
         message: The message to print.
         color: The color for the text (e.g., 'red', 'green', 'blue').
+        newline: Whether to print a new line after the message. Default is True.
     """
     colors = {
         'red': '\033[91m',
@@ -18,10 +19,13 @@ def print_colored(message: str, color: str | None = None) -> None:
         'white': '\033[97m'
     }
     end_color = '\033[0m'
-    if color in colors:
-        print(f"{colors[color]}{message}{end_color}")
+    colored_message = f"{colors[color]}{message}{end_color}" if color in colors else message
+    
+    if newline:
+        print(colored_message)
     else:
-        print(message)
+        print(colored_message, end='')
+
 
 def prompt_confirmation(message: str) -> bool:
     """

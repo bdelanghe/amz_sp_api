@@ -115,17 +115,22 @@ class Config:
 
         print_colored("\nConfiguration Information:", color='cyan')
         for key, value in self.config.items():
+            # Define suffix for dynamic values
             suffix = ""
             if key == 'moduleName':
-                suffix = "(per model)"
+                suffix = "(set per model)"
             elif key == 'gemVersion':
-                suffix = f"({self.source_info[key]})"
+                suffix = "(dynamically set from latest Git tag)"
 
+            # Determine the source of the value and get the color
             source = self.source_info.get(key, 'unknown')
             source_color = source_colors.get(source, 'white')
 
             # Use bold for key names for better readability
-            print_colored(f"  {bold_text(key)}: {value} {suffix}", color=None)
-            if suffix == "":
-                print_colored(f"  ({source})", color=source_color, indent=4)
+            print_colored(f"  {bold_text(key)}: {value} ", color=None, newline=False)
+            if suffix:
+                print_colored(f"{suffix} ", color='white', newline=False)
+            print_colored(f"({source})", color=source_color)
+
+
 
