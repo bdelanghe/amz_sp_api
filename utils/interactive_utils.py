@@ -167,7 +167,7 @@ def _format_key_value_pair(key: str, value: str, source_info: dict) -> str:
     Format key-value pairs with color and source information.
     """
     source = source_info.get(key, 'unknown')
-    source_color = SOURCE_COLORS.get(source)
+    source_color = SOURCE_COLORS.get(source, SOURCE_COLORS['unknown'])
 
     # Bold the key for better readability
     formatted_key = f"{_bold_text(key)}: {value}"
