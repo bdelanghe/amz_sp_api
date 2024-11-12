@@ -225,15 +225,15 @@ def get_latest_version(api_file_list):
 
     return max(api_file_list, key=version_key)
 
-def process_api_files(api_files_dict, is_dry_run, previous_models_set, current_models_set):
+def process_api_files(api_files_dict, is_dry_run, previous_models_dict, current_models_dict):
     """
     Process each API and generate code for default (unversioned) and versioned models.
 
     Args:
         api_files_dict (dict): Dictionary mapping API names to lists of JSON file paths.
         is_dry_run (bool): Flag indicating whether to perform a dry run.
-        previous_models_set (set): Set of previous model identifiers.
-        current_models_set (set): Set to store current model identifiers.
+        previous_models_dict (dict): Dictionary of previous model identifiers and versions.
+        current_models_dict (dict): Dictionary to store current model identifiers and versions.
     """
     for api_name, api_file_list in api_files_dict.items():
         module_name = extract_module_name(api_name)
@@ -248,8 +248,8 @@ def process_api_files(api_files_dict, is_dry_run, previous_models_set, current_m
             unversioned_module_name = f"AmzSpApi::{module_name}"
             model_identifier = f"{api_name} V{unversioned_version}"
 
-            # Add the unversioned model to the current models set
-            current_models_set.add(model_identifier)
+            # Add the unversioned model to the current models dictionary
+            current_models_dict[model_identifier] = unversioned_version
 
             if is_dry_run:
                 print(f"Would generate unversioned model for {api_name}, version {unversioned_version}")
@@ -275,7 +275,7 @@ def process_api_files(api_files_dict, is_dry_run, previous_models_set, current_m
                 versioned_module_name = f"{module_name}::V{version_clean}"
                 versioned_api_name = f"{api_name}_V{version_clean}"
                 model_identifier = f"{api_name} V{version_clean}"
-                current_models_set.add(model_identifier)
+                current_models_dict[model_identifier] = version_clean
 
                 if is_dry_run:
                     print(f"Would generate versioned model for {versioned_api_name}")
