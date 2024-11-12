@@ -1,4 +1,4 @@
-# utils/interactive_utils.py
+import json
 
 def print_colored(message: str, color: str | None = None) -> None:
     """
@@ -40,14 +40,42 @@ def prompt_confirmation(message: str) -> bool:
         elif response in ('n', 'no'):
             return False
 
-def is_no_reply_email(email: str) -> bool:
+def print_dry_run_report(report: dict) -> None:
     """
-    Check if the email is a GitHub no-reply email.
+    Print the dry-run report based on the provided JSON dictionary.
 
     Args:
-        email (str): The email address to check.
-
-    Returns:
-        bool: True if it's a no-reply email, False otherwise.
+        report: A dictionary summarizing the changes for dry-run purposes.
     """
-    return 'noreply' in email
+    print_colored("\nConfiguration Information:", color='cyan')
+    for key, value in report["config_info"].items():
+        print_colored(f"  {key}: {value}", color='white')
+
+    print_colored("\nSDK Upgrade Summary", color='cyan')
+    print_colored("===================", color='cyan')
+
+    if report["sdk_upgrade_summary"]["added"]:
+        print_colored("\nNew Models Added:", color='green')
+        for model in report["sdk_upgrade_summary"]["added"]:
+            print_colored(f"  - API Name: {model['api_name']}, Version: {model['version']}", color='white')
+        print_colored(f"Total New Models: {len(report['sdk_upgrade_summary']['added'])}", color='green')
+    else:
+        print_colored("\nNo New Models Added.", color='green')
+
+    if report["sdk_upgrade_summary"]["updated"]:
+        print_colored("\nModels Updated:", color='yellow')
+        for model in report["sdk_upgrade_summary"]["updated"]:
+            print_colored(f"  - {model['api_name']} Updated to Version {model['version']}", color='white')
+        print_colored(f"Total Updated Models: {len(report['sdk_upgrade_summary']['updated'])}", color='yellow')
+    else:
+        print_colored("\nNo Models Updated.", color='yellow')
+
+    if report["sdk_upgrade_summary"]["removed"]:
+        print_colored("\nModels Removed:", color='red')
+        for model in report["sdk_upgrade_summary"]["removed"]:
+            print_colored(f"  - {model['api_name']} Version {model['version']}", color='white')
+        print_colored(f"Total Removed Models: {len(report['sdk_upgrade_summary']['removed'])}", color='red')
+    else:
+        print_colored("\nNo Models Removed.", color='red')
+
+    print_colored(f"\nGem Version: {report['gem_version']}", color='cyan')

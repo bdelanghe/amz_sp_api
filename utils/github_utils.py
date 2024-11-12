@@ -31,3 +31,15 @@ def get_github_repo_description() -> str | None:
         ).decode('utf-8').strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
+
+def is_no_reply_email(email: str) -> bool:
+    """
+    Check if the email is a GitHub no-reply email.
+
+    Args:
+        email (str): The email address to check.
+
+    Returns:
+        bool: True if it's a no-reply email, False otherwise.
+    """
+    return 'noreply' in email
