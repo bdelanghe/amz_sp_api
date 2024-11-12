@@ -120,7 +120,7 @@ class Config:
             if key == 'moduleName':
                 suffix = "(set per model)"
             elif key == 'gemVersion':
-                suffix = "(git)"
+                suffix = "(dynamically set from latest Git tag)"
 
             # Determine the source of the value and get the color
             source = self.source_info.get(key, 'unknown')
@@ -128,15 +128,15 @@ class Config:
 
             # Use bold for key names for better readability
             # Print key and value on the same line
-            print_colored(f"  {bold_text(key)}: {value} ", color=None, newline=False)
-
-            # Add suffix if it exists
+            formatted_key = f"{bold_text(key)}: {value}"
             if suffix:
-                print_colored(f"{suffix} ", color='white', newline=False)
-
-            # Print source if it's not a config and if there is no suffix
-            if source != "config" and not suffix:
-                print_colored(f"({source})", color=source_color)
+                formatted_key += f" {suffix}"
             
+            print_colored(f"  {formatted_key}", color=None, newline=False)
+
+            # Print source if it's not a config
+            if source != "config":
+                print_colored(f" ({source})", color=source_color)
+
             # Ensure each configuration is printed on its own line
             print()
