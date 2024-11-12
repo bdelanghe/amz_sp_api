@@ -105,20 +105,27 @@ class Config:
         def bold_text(text: str) -> str:
             return f"\033[1m{text}\033[0m"
 
+        # Color map for different sources
+        source_colors = {
+            'config': 'cyan',
+            'env': 'yellow',
+            'git': 'blue',
+            'GitHub': 'magenta'
+        }
+
         print_colored("\nConfiguration Information:", color='cyan')
         for key, value in self.config.items():
             suffix = ""
             if key == 'moduleName':
-                suffix = " (per model)"
+                suffix = "(per model)"
             elif key == 'gemVersion':
-                suffix = f" ({self.source_info[key]})"
-            source = self.source_info.get(key, 'unknown')
+                suffix = f"({self.source_info[key]})"
 
-            # Avoid duplicate source information if it's already clear in suffix
-            if 'dynamically set' not in suffix:
-                source_display = f"({source})"
-            else:
-                source_display = ""
+            source = self.source_info.get(key, 'unknown')
+            source_color = source_colors.get(source, 'white')
 
             # Use bold for key names for better readability
-            print_colored(f"  {bold_text(key)}: {value} {suffix} {source_display}", color=None)
+            print_colored(f"  {bold_text(key)}: {value} {suffix}", color=None)
+            if suffix == "":
+                print_colored(f"  ({source})", color=source_color, indent=4)
+
