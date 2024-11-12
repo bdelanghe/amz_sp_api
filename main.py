@@ -25,7 +25,11 @@ def main() -> None:
     is_print_config = args.print_config
 
     # Load Configurations using Singleton
-    config = Config()
+    try:
+        config = Config()
+    except (FileNotFoundError, ValueError) as e:
+        print_colored(str(e), color='red')
+        return
 
     # If --print-config flag is set, print the configuration and exit
     if is_print_config:
@@ -49,7 +53,6 @@ def main() -> None:
     current_version = latest_git_tag.lstrip('v') if latest_git_tag else '0.1.0'
     gem_version = increment_version(current_version)
 
-    # Collect configuration info for further usage
     config_info = {
         key: config.get(key) for key in [
             'GEMNAME', 'MODULENAME', 'GEMVERSION', 'GEMAUTHOR', 'GEMAUTHOREMAIL',

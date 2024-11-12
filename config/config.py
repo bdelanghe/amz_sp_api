@@ -3,30 +3,39 @@
 import json
 import os
 
-def read_config_file(config_filename: str) -> dict[str, str]:
-    """
-    Read configuration from config.json file.
+class Config:
+    _instance = None
 
-    Args:
-        config_filename: Path to the config.json file.
+    def __new__(cls, config_filename='config.json'):
+        if cls._instance is None:
+            cls._instance = super(Config, cls).__new__(cls)
+            cls._instance._initialize(config_filename)
+        return cls._instance
 
-    Returns:
-        Configuration dictionary.
-    """
-    if not os.path.exists(config_filename):
-        raise FileNotFoundError(f"Configuration file {config_filename} not found.")
-    with open(config_filename, 'r') as file:
-        return json.load(file)
+    def _initialize(self, config_filename):
+        if not os.path.exists(config_filename):
+            raise FileNotFoundError(f"Configuration file {config_filename} not found.")
+        
+        with open(config_filename, 'r') as file:
+            config_data = json.load(file)
 
-def get_env_or_default(env_var: str, default_value: str) -> str:
-    """
-    Get the value from environment variable or return default.
+        # Load configuration values from the environment or use defaults
+        self.config = {key: self._get_env_or_error(key, config_data) for key in config_data}
 
-    Args:
-        env_var: Environment variable name.
-        default_value: Default value if the environment variable is not set.
+    def _get_env_or_error(self, key, config_data):
+        """
+        Get the value from environment variables, or default from config.
+        Raise an error if the key is not found or the value is empty.
+        """
+        value = os.getenv(key.upper(), config_data.get(key))
+        if not value:
+            raise ValueError(f"Configuration value for '{key}' is required but was not found.")
+        return value
 
-    Returns:
-        The value from the environment variable or the default value.
-    """
-    return os.getenv(env_var, default_value)
+    def get(self, key):
+        """
+        Get a value from the configuration.
+        """
+        if key not in self.config:
+            raise KeyError(f"Configuration key '{key}' not found.")
+        return self.config[key]
