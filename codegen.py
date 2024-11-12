@@ -579,8 +579,8 @@ def main():
     config_data = read_config_file(CONFIG_TEMPLATE_FILENAME)
 
     # Get gem author and email
-    gem_author = get_env_or_default('GEMAUTHOR', config_data.get('gemAuthor')) or get_git_config_value('user.name')
-    gem_author_email = get_env_or_default('GEMAUTHOREMAIL', config_data.get('gemAuthorEmail')) or get_git_config_value('user.email')
+    gem_author = get_env_or_default('GEMAUTHOR', get_git_config_value('user.name'))
+    gem_author_email = get_env_or_default('GEMAUTHOREMAIL', get_git_config_value('user.email'))
 
     # Validate gem author and email
     if not gem_author or not gem_author_email:
