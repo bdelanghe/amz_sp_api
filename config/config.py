@@ -127,16 +127,18 @@ class Config:
             source_color = source_colors.get(source, 'white')
 
             # Use bold for key names for better readability
-            # Print key and value on the same line
+            # Print key, value, and suffix (if any) on the same line
             formatted_key = f"{bold_text(key)}: {value}"
-            if suffix:
+            if suffix and source == 'config':
                 formatted_key += f" {suffix}"
             
+            # Print key-value pair
             print_colored(f"  {formatted_key}", color=None, newline=False)
 
-            # Print source if it's not a config
+            # Print source information if it's not config (and suffix is already appended for config)
             if source != "config":
                 print_colored(f" ({source})", color=source_color)
 
             # Ensure each configuration is printed on its own line
             print()
+
