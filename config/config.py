@@ -17,8 +17,11 @@ SOURCE_COLORS = {
 # Suffix map for certain configuration keys
 SUFFIXES = {
     'moduleName': "(set per model)",
-    'gemVersion': "(dynamically set from latest Git tag)"
+    'gemVersion': "(incr of latest version tag)"
 }
+
+# Suffix color
+SUFFIX_COLOR = 'green'
 
 class Config:
     _instance = None
@@ -130,15 +133,14 @@ class Config:
 
             # Use bold for key names for better readability
             formatted_key = f"{bold_text(key)}: {value}"
-            if suffix and source == 'config':
-                formatted_key += f" {suffix}"
             
             # Print key-value pair
             print_colored(f"  {formatted_key}", color=None, newline=False)
 
-            # Print source information if it's not config (and suffix is already appended for config)
-            if source != "config":
-                print_colored(f" ({source})", color=source_color)
+            # Print suffix if it exists with a defined color
+            if suffix:
+                print_colored(f" {suffix}", color=SUFFIX_COLOR, newline=False)
 
-            # Ensure each configuration is printed on its own line
-            print()
+            # Print source information
+            print_colored(f" ({source})", color=source_color)
+
