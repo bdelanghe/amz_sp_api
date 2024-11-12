@@ -79,10 +79,10 @@ def print_dry_run_report(report: dict) -> None:
     # Gem version summary
     _print_colored(f"Gem Version: {report['gem_version']}", color='\033[96m')
 
-    # Print detailed information for added, updated, and removed models
-    _print_detailed_model_section("New Models Added", added_models, 'green')
-    _print_detailed_model_section("Models Updated", updated_models, 'yellow', True)
-    _print_detailed_model_section("Models Removed", removed_models, 'red', True)
+    # Print detailed information for added, updated, and removed models, sorted alphabetically
+    _print_detailed_model_section("New Models Added", sorted(added_models, key=lambda x: x['api_name']), 'green')
+    _print_detailed_model_section("Models Updated", sorted(updated_models, key=lambda x: x['api_name']), 'yellow', True)
+    _print_detailed_model_section("Models Removed", sorted(removed_models, key=lambda x: x['api_name']), 'red', True)
 
 def print_error(message: str) -> None:
     """
@@ -155,11 +155,17 @@ def _print_summary_section(title: str, items: list, color: str) -> None:
 def _print_detailed_model_section(title: str, models: list, color: str, show_version: bool = False) -> None:
     """
     Helper function to print detailed information for models in a section.
+
+    Args:
+        title: Title of the section.
+        models: List of models to print details for.
+        color: Color to use for printing.
+        show_version: Whether to display the model version.
     """
     if models:
         _print_colored(f"\n{title}:", color=color)
         for model in models:
-            version_str = f" v{model['version']}" if show_version else ""
+            version_str = f" (V{model['version']})" if show_version and 'version' in model else ""
             _print_colored(f"  {model['api_name']}{version_str}", color='white', indent=2)
 
 def _format_key_value_pair(key: str, value: str, source_info: dict) -> str:
