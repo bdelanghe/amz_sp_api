@@ -4,7 +4,7 @@ import tempfile
 import os
 from config.config import Config
 from utils.codegen_utils import check_dependencies, generate_model
-from utils.models_utils import collect_api_files, generate_dry_run_report, read_models_json
+from utils.models_utils import collect_api_files, read_models_json, generate_dry_run_report
 from utils.version_utils import get_latest_git_tag, increment_version
 from utils.interactive_utils import print_colored, prompt_confirmation, print_dry_run_report
 
@@ -29,6 +29,8 @@ def main() -> None:
         print_colored("Error: --dry-run and --interactive cannot be used together.", color='red')
         return
 
+    check_dependencies()
+
     # Load Configurations using Singleton
     config = Config()
 
@@ -43,7 +45,15 @@ def main() -> None:
         return
 
     # Collect API files
-    api_files_dict = collect_api_files(config.get('libDirectory'))
+    lib_directory = config.get('libDirectory')
+    config_template_filename = config.get('configTemplateFilename')
+
+    # Check if models directory exists, otherwise, print an error and exit.
+    if not os.path.exists(lib_directory):
+        print_colored(f"Error: Models directory '{lib_directory}' does not exist. Please check your configuration.", color='red')
+        return
+
+    api_files_dict = collect_api_files(lib_directory)
 
     # Determine GEMVERSION using Git tags
     latest_git_tag = get_latest_git_tag()
@@ -59,17 +69,17 @@ def main() -> None:
     }
     config_info['gemVersion'] = gem_version
 
-    # Retrieve lib_directory and config_template_filename from the configuration
-    lib_directory = config.get('libDirectory')
-    config_template_filename = config.get('configTemplateFilename')
-
     if is_dry_run:
-        # Print configuration information
+        # Print configuration information only once for dry-run scenario
         print_colored("\nConfiguration Information:", color='cyan')
         for key, value in config_info.items():
-            if key != 'moduleName':
-                suffix = " (dynamically set from latest Git tag)" if key == 'gemVersion' else ""
-                print_colored(f"{key}: {value}{suffix}", color='white')
+            if key == 'moduleName':
+                suffix = " (dynamically set per model)"
+            elif key == 'gemVersion':
+                suffix = " (dynamically set from latest Git tag)"
+            else:
+                suffix = ""
+            print_colored(f"{key}: {value}{suffix}", color='white')
 
         # Generate dry-run report for models
         with tempfile.NamedTemporaryFile() as previous_models_filename:
@@ -88,9 +98,13 @@ def main() -> None:
         # Print configuration information for non-dry-run scenario
         print_colored("\nConfiguration Information:", color='cyan')
         for key, value in config_info.items():
-            if key != 'moduleName':
-                suffix = " (dynamically set from latest Git tag)" if key == 'gemVersion' else ""
-                print_colored(f"{key}: {value}{suffix}", color='white')
+            if key == 'moduleName':
+                suffix = " (dynamically set per model)"
+            elif key == 'gemVersion':
+                suffix = " (dynamically set from latest Git tag)"
+            else:
+                suffix = ""
+            print_colored(f"{key}: {value}{suffix}", color='white')
 
         if is_interactive:
             if not prompt_confirmation("Proceed with this configuration?"):
