@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import tempfile
 import os
 from config.config import Config
@@ -24,30 +22,13 @@ def main() -> None:
     is_interactive = args.interactive
     is_print_config = args.print_config
 
-    # Load Configurations using Singleton
-    try:
-        config = Config()
-    except (FileNotFoundError, ValueError) as e:
-        print_colored(str(e), color='red')
-        return
-
-    # If --print-config flag is set, print the configuration and exit
-    if is_print_config:
-        print_colored("\nCurrent Configuration Information:", color='cyan')
-        for key, value in config.config.items():
-            print_colored(f"{key}: {value}", color='white')
-        return
-
     # Ensure dry-run and interactive aren't used together
     if is_dry_run and is_interactive:
         print_colored("Error: --dry-run and --interactive cannot be used together.", color='red')
         return
 
-    check_dependencies()
-
-    # Collect API files using config
-    lib_directory = config.get('LIBDIRECTORY')
-    api_files_dict = collect_api_files(lib_directory)
+    # Load Configurations using Singleton
+    config = Config()
 
     # Determine GEMVERSION using Git tags
     latest_git_tag = get_latest_git_tag()
@@ -62,13 +43,35 @@ def main() -> None:
     }
     config_info['GEMVERSION'] = gem_version
 
-    # Handle Dry Run Scenario
-    if is_dry_run:
-        print_colored("\nConfiguration Information (Dry Run):", color='cyan')
+    if is_print_config:
+        # Print configuration information
+        print_colored("\nCurrent Configuration Information:", color='cyan')
         for key, value in config_info.items():
-            if key != 'MODULENAME':
+            if key == 'MODULENAME':
+                print_colored(f"{key}: {value} (dynamically set per model)", color='yellow')
+            elif key == 'GEMVERSION':
+                print_colored(f"{key}: {value} (dynamically set from latest Git tag)", color='yellow')
+            else:
+                print_colored(f"{key}: {value}", color='white')
+        return
+
+    check_dependencies()
+
+    # Collect API files
+    api_files_dict = collect_api_files(config.get('LIBDIRECTORY'))
+
+    if is_dry_run:
+        # Print configuration information
+        print_colored("\nConfiguration Information:", color='cyan')
+        for key, value in config_info.items():
+            if key == 'MODULENAME':
+                print_colored(f"{key}: {value} (dynamically set per model)", color='yellow')
+            elif key == 'GEMVERSION':
+                print_colored(f"{key}: {value} (dynamically set from latest Git tag)", color='yellow')
+            else:
                 print_colored(f"{key}: {value}", color='white')
 
+        # Generate dry-run report for models
         with tempfile.NamedTemporaryFile() as previous_models_filename:
             from utils.models_utils import read_models_json, generate_dry_run_report
 
@@ -80,11 +83,16 @@ def main() -> None:
                 config_info=config_info
             )
             print_dry_run_report(report)
+
     else:
-        # Handle Non-Dry Run Scenario
+        # Print configuration information for non-dry-run scenario
         print_colored("\nConfiguration Information:", color='cyan')
         for key, value in config_info.items():
-            if key != 'MODULENAME':
+            if key == 'MODULENAME':
+                print_colored(f"{key}: {value} (dynamically set per model)", color='yellow')
+            elif key == 'GEMVERSION':
+                print_colored(f"{key}: {value} (dynamically set from latest Git tag)", color='yellow')
+            else:
                 print_colored(f"{key}: {value}", color='white')
 
         if is_interactive:
@@ -92,6 +100,7 @@ def main() -> None:
                 print_colored("Operation cancelled by user.", color='red')
                 return
 
+        # Generate models in a temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
             for api_name, api_files in api_files_dict.items():
                 print_colored(f"Generating model for API: {api_name}", color='blue')
