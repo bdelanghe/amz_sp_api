@@ -10,5 +10,6 @@
   "modelPackage": "models",
   "apiPackage": "api",
   "libDirectory": "lib",
-  "configTemplateFilename": "config.json"
+  "configTemplateFilename": "config.json",
+  "modelsSource": "../selling-partner-api-models/models"
 }

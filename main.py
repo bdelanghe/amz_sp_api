@@ -45,15 +45,16 @@ def main() -> None:
         return
 
     # Collect API files
+    models_source = config.get('modelsSource')
     lib_directory = config.get('libDirectory')
     config_template_filename = config.get('configTemplateFilename')
 
-    # Check if models directory exists, otherwise, print an error and exit.
-    if not os.path.exists(lib_directory):
-        print_colored(f"Error: Models directory '{lib_directory}' does not exist. Please check your configuration.", color='red')
+    # Check if models source directory exists, otherwise, print an error and exit.
+    if not os.path.exists(models_source):
+        print_colored(f"Error: Models directory '{models_source}' does not exist. Please check your configuration.", color='red')
         return
 
-    api_files_dict = collect_api_files(lib_directory)
+    api_files_dict = collect_api_files(models_source)
 
     # Determine GEMVERSION using Git tags
     latest_git_tag = get_latest_git_tag()
@@ -95,6 +96,11 @@ def main() -> None:
             print_dry_run_report(report)
 
     else:
+        # Ensure output directory exists
+        if not os.path.exists(lib_directory):
+            os.makedirs(lib_directory)
+            print_colored(f"Created output directory '{lib_directory}'.", color='green')
+
         # Print configuration information for non-dry-run scenario
         print_colored("\nConfiguration Information:", color='cyan')
         for key, value in config_info.items():
@@ -111,11 +117,11 @@ def main() -> None:
                 print_colored("Operation cancelled by user.", color='red')
                 return
 
-        # Generate models in a temporary directory
+        # Generate models in the output directory
         with tempfile.TemporaryDirectory() as temp_dir:
             for api_name, api_files in api_files_dict.items():
                 print_colored(f"Generating model for API: {api_name}", color='blue')
-                generate_model(api_files[0], config_template_filename, os.path.join(temp_dir, 'output'))
+                generate_model(api_files[0], config_template_filename, os.path.join(lib_directory, 'output'))
 
 if __name__ == '__main__':
     main()
