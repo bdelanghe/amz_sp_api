@@ -14,6 +14,7 @@ MODELS_DIRECTORY = os.path.join('..', 'selling-partner-api-models', 'models')
 LIB_DIRECTORY = 'lib'
 CONFIG_TEMPLATE_FILENAME = 'config.json'
 SWAGGER_CODEGEN_COMMAND = 'swagger-codegen'
+IGNORE_FILE_TEMPLATE = '.swagger-codegen-ignore'
 
 def create_temp_file(initial_content="{}"):
     """
@@ -371,7 +372,7 @@ def copy_and_modify_config_template(source_config_path, destination_config_path,
     with open(destination_config_path, 'w') as file:
         file.write(content)
 
-def generate_model(api_file_path, config_file_path, output_directory, is_default_version):
+def generate_model(api_file_path, config_file_path, output_directory):
     """
     Generate the API model.
 
@@ -379,10 +380,8 @@ def generate_model(api_file_path, config_file_path, output_directory, is_default
         api_file_path (str): Path to the API JSON file.
         config_file_path (str): Path to the config file.
         output_directory (str): Output directory for generated files.
-        is_default_version (bool): Flag indicating whether this is the default version.
     """
     run_swagger_codegen(api_file_path, config_file_path, output_directory)
-    organize_generated_files(output_directory, is_default_version)
 
 def run_swagger_codegen(input_spec_path, config_file_path, output_directory):
     """
@@ -400,90 +399,6 @@ def run_swagger_codegen(input_spec_path, config_file_path, output_directory):
         '-c', config_file_path,
         '-o', output_directory
     ], check=True)
-
-def organize_generated_files(output_directory, is_default_version):
-    """
-    Organize the generated files by moving and cleaning up unnecessary files.
-
-    Args:
-        output_directory (str): The directory containing generated files.
-        is_default_version (bool): Flag indicating whether this is the default version.
-    """
-    api_name = os.path.basename(output_directory)
-    if is_default_version:
-        # Move {API_NAME}.rb to lib/
-        move_api_rb_file(output_directory, api_name, move_rb_to=LIB_DIRECTORY)
-        move_api_lib_contents(output_directory, api_name, destination_dir=os.path.join(LIB_DIRECTORY, api_name))
-    else:
-        # Keep files within the versioned directory
-        move_api_rb_file(output_directory, api_name, move_rb_to=output_directory)
-        move_api_lib_contents(output_directory, api_name, destination_dir=output_directory)
-    clean_up_generated_files(output_directory)
-
-def move_api_rb_file(output_directory, api_name, move_rb_to=None):
-    """
-    Move the {API_NAME}.rb file to the specified destination directory.
-
-    Args:
-        output_directory (str): The directory containing the .rb file.
-        api_name (str): The API name.
-        move_rb_to (str, optional): The destination directory.
-    """
-    source_rb_file = os.path.join(output_directory, 'lib', f"{api_name}.rb")
-    if os.path.exists(source_rb_file):
-        if move_rb_to:
-            destination_rb_file = os.path.join(move_rb_to, f"{api_name}.rb")
-        else:
-            destination_rb_file = os.path.join(output_directory, f"{api_name}.rb")
-        shutil.move(source_rb_file, destination_rb_file)
-
-def move_api_lib_contents(output_directory, api_name, destination_dir):
-    """
-    Move the contents of lib/{API_NAME} to the specified destination directory.
-
-    Args:
-        output_directory (str): The directory containing the lib/{API_NAME} directory.
-        api_name (str): The API name.
-        destination_dir (str): The destination directory for the contents.
-    """
-    source_lib_api_dir = os.path.join(output_directory, 'lib', api_name)
-    if os.path.exists(source_lib_api_dir):
-        os.makedirs(destination_dir, exist_ok=True)
-        for item_name in os.listdir(source_lib_api_dir):
-            source_item_path = os.path.join(source_lib_api_dir, item_name)
-            destination_item_path = os.path.join(destination_dir, item_name)
-            if os.path.exists(destination_item_path):
-                remove_existing_item(destination_item_path)
-            shutil.move(source_item_path, destination_item_path)
-
-def remove_existing_item(item_path):
-    """
-    Remove an existing file or directory.
-
-    Args:
-        item_path (str): Path to the file or directory to remove.
-    """
-    if os.path.isdir(item_path):
-        shutil.rmtree(item_path)
-    else:
-        os.remove(item_path)
-
-def clean_up_generated_files(output_directory):
-    """
-    Remove unnecessary files and directories from the output directory.
-
-    Args:
-        output_directory (str): The directory to clean up.
-    """
-    # Remove the lib directory if it exists
-    lib_directory = os.path.join(output_directory, 'lib')
-    if os.path.exists(lib_directory):
-        shutil.rmtree(lib_directory, ignore_errors=True)
-
-    # Remove unnecessary files like gemspec and others
-    files_to_remove = [f for f in os.listdir(output_directory) if f.endswith('.gemspec') or f == '.swagger-codegen-ignore']
-    for filename in files_to_remove:
-        os.remove(os.path.join(output_directory, filename))
 
 def main():
     """
@@ -504,27 +419,31 @@ def main():
     else:
         # Perform the actual code generation
         for model in models_to_generate:
-            # Read and prepare config replacements
+            # Prepare config replacements
             config_replacements = {
                 'GEMNAME': model['gem_name'],
-                'MODULENAME': model['module_name']
+                'MODULENAME': model['module_name'],
+                'GEMVERSION': '0.1.0',
+                'GEMAUTHOR': 'Your Name',
+                'GEMAUTHOREMAIL': 'your.email@example.com',
+                'GEMHOMEPAGE': 'https://github.com/yourusername/yourrepo',
+                'GEMLICENSE': 'Apache-2.0',
+                'HTTPCLIENTTYPE': 'Typhoeus',
+                'MODELPACKAGE': 'models',
+                'APIPACKAGE': 'api'
             }
 
-            # Read the extended config.json
-            with open(CONFIG_TEMPLATE_FILENAME, 'r') as config_file:
-                config_data = json.load(config_file)
-
-            # Update config data with replacements
-            config_data['gemName'] = model['gem_name']
-            config_data['moduleName'] = model['module_name']
-
-            # Write the updated config.json
-            os.makedirs(os.path.dirname(model['config_path']), exist_ok=True)
-            with open(model['config_path'], 'w') as config_file:
-                json.dump(config_data, config_file, indent=4)
-
+            # Copy and modify config template
             recreate_directory(model['lib_dir'])
-            generate_model(model['api_file'], model['config_path'], model['lib_dir'], model['is_default_version'])
+            copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, model['config_path'], config_replacements)
+
+            # Copy .swagger-codegen-ignore to output directory
+            ignore_file_source = IGNORE_FILE_TEMPLATE
+            ignore_file_destination = os.path.join(model['lib_dir'], '.swagger-codegen-ignore')
+            if os.path.exists(ignore_file_source):
+                shutil.copy(ignore_file_source, ignore_file_destination)
+
+            generate_model(model['api_file'], model['config_path'], model['lib_dir'])
 
         write_models_json(current_models_dict, PREVIOUS_MODELS_FILENAME)
         write_models_json(current_models_dict, CURRENT_MODELS_FILENAME)
