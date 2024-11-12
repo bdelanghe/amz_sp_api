@@ -1,9 +1,0 @@
-{
-  "gemName": "invoices-api-model_20240619",
-  "moduleName": "AmzSpApi::InvoicesApiModel20240619",
-  "gemVersion": "0.1.0",
-  "gemAuthor": "Eric Jensen",
-  "gemAuthorEmail": "",
-  "gemHomepage": "https://github.com/ericcj/amz_sp_api",
-  "gemLicense": "Apache-2.0"
-}
