@@ -13,7 +13,8 @@ SOURCE_COLORS = {
     'config': '\033[96m',   # cyan
     'env': '\033[93m',      # yellow
     'git': '\033[94m',      # blue
-    'GitHub': '\033[95m'    # magenta
+    'GitHub': '\033[95m',   # magenta
+    'unknown': '\033[92m'   # green 
 }
 
 # ANSI escape codes for text styles
@@ -166,7 +167,7 @@ def _format_key_value_pair(key: str, value: str, source_info: dict) -> str:
     Format key-value pairs with color and source information.
     """
     source = source_info.get(key, 'unknown')
-    source_color = SOURCE_COLORS.get(source, '\033[97m')  # default to white
+    source_color = SOURCE_COLORS.get(source)
 
     # Bold the key for better readability
     formatted_key = f"{_bold_text(key)}: {value}"
