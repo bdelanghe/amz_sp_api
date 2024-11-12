@@ -99,16 +99,22 @@ def extract_version_from_filename(file_name):
         file_name (str): The JSON file name.
 
     Returns:
-        str: The extracted version.
+        str: The extracted version number as a string, without the 'V' prefix.
     """
     # Remove file extension
     file_name = os.path.splitext(file_name)[0]
-    # Extract version info from the file name
-    version_match = re.search(r'(\d{4}-\d{2}-\d{2}|V\d+)$', file_name)
-    if version_match:
-        version = version_match.group(1).replace('-', '')
+    
+    # Try to match 'V' followed by digits at the end of the filename
+    match_v = re.search(r'V(\d+)$', file_name)
+    # Try to match date format YYYY-MM-DD at the end of the filename
+    match_date = re.search(r'(\d{4}-\d{2}-\d{2})$', file_name)
+    
+    if match_v:
+        version = match_v.group(1)  # Extract digits after 'V'
+    elif match_date:
+        version = match_date.group(1).replace('-', '')  # Remove dashes
     else:
-        version = 'V0'
+        version = '0'  # Default version number
     return version
 
 def read_models_list(file_path):
