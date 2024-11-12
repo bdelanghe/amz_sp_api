@@ -3,7 +3,7 @@
 import json
 import os
 from utils.github_utils import get_github_repo_url
-from utils.git_utils import get_git_config_value
+from utils.git_utils import get_git_config_value, get_latest_git_tag
 from utils.interactive_utils import print_colored
 
 class Config:
@@ -25,8 +25,14 @@ class Config:
         # Load configuration values from environment or other sources with fallbacks
         self.config = {}
         self.source_info = {}  # Track how each value is set
+
         for key in config_data:
             self.config[key], self.source_info[key] = self._get_value_with_fallback(key, config_data)
+
+        # Set gemVersion dynamically from the latest git tag
+        gem_version = get_latest_git_tag() or "0.1.0"
+        self.config['gemVersion'] = gem_version
+        self.source_info['gemVersion'] = 'latest Git tag'
 
     def _get_value_with_fallback(self, key, config_data):
         """
@@ -104,4 +110,5 @@ class Config:
             elif key == 'gemVersion':
                 suffix = " (dynamically set from latest Git tag)"
             source = self.source_info.get(key, 'unknown source')
-            print_colored(f"{key}: {value}{suffix} [set from: {source}]", color='white')
+            source_color = 'green' if source == 'environment variable' else 'yellow'
+            print_colored(f"{key}: {value}{suffix} [set from: {source}]", color=source_color)

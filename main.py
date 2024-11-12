@@ -5,7 +5,6 @@ import os
 from config.config import Config
 from utils.codegen_utils import check_dependencies, generate_model
 from utils.models_utils import collect_api_files
-from utils.version_utils import get_latest_git_tag, increment_version
 from utils.interactive_utils import print_colored, prompt_confirmation, print_dry_run_report
 
 def main() -> None:
@@ -43,19 +42,6 @@ def main() -> None:
     models_source_directory = config.get('modelsSourceDirectory')
     api_files_dict = collect_api_files(models_source_directory)
 
-    # Determine GEMVERSION using Git tags
-    latest_git_tag = get_latest_git_tag()
-    current_version = latest_git_tag.lstrip('v') if latest_git_tag else '0.1.0'
-    gem_version = increment_version(current_version)
-
-    config_info = {
-        key: config.get(key) for key in [
-            'gemName', 'moduleName', 'gemVersion', 'gemAuthor', 'gemAuthorEmail',
-            'gemHomepage', 'gemLicense', 'httpClientType', 'modelPackage', 'apiPackage'
-        ]
-    }
-    config_info['gemVersion'] = gem_version
-
     if is_dry_run:
         # Generate dry-run report for models
         with tempfile.NamedTemporaryFile() as previous_models_filename:
@@ -65,8 +51,8 @@ def main() -> None:
             report = generate_dry_run_report(
                 api_files_dict=api_files_dict,
                 previous_models_dict=previous_models_dict,
-                gem_version=gem_version,
-                config_info=config_info,
+                gem_version=config.get('gemVersion'),
+                config_info=config.get_all(),
                 lib_directory=config.get('libDirectory'),
                 config_template_filename=config.get('configTemplateFilename')
             )
