@@ -1,7 +1,10 @@
+# config/config.py
+
 import json
 import os
 from utils.github_utils import get_github_repo_url
 from utils.git_utils import get_git_config_value
+from utils.interactive_utils import print_colored
 
 class Config:
     _instance = None
@@ -20,19 +23,22 @@ class Config:
             config_data = json.load(file)
 
         # Load configuration values from environment or other sources with fallbacks
-        self.config = {key: self._get_value_with_fallback(key, config_data) for key in config_data}
+        self.config = {}
+        self.source_info = {}  # Track how each value is set
+        for key in config_data:
+            self.config[key], self.source_info[key] = self._get_value_with_fallback(key, config_data)
 
     def _get_value_with_fallback(self, key, config_data):
         """
         Get the value from environment variables, config file, GitHub repo URL, or Git config.
-        Raise an error if the key is not found or the value is empty after all attempts.
+        Track how the value was set.
 
         Args:
             key (str): The configuration key to retrieve.
             config_data (dict): The configuration data from the config file.
 
         Returns:
-            str: The value for the given key.
+            tuple: The value for the given key and its source.
 
         Raises:
             ValueError: If the configuration value is not found.
@@ -40,25 +46,28 @@ class Config:
         # 1. Check if it's available in the environment variable
         value = os.getenv(key.upper(), None)
         if value:
-            return value
+            return value, 'environment variable'
 
         # 2. Check if it's available in the config data
         value = config_data.get(key, None)
         if value:
-            return value
+            return value, 'config file'
 
         # 3. Use fallback mechanisms for specific keys
         if key == 'gemAuthor':
             value = get_git_config_value('user.name')
+            if value:
+                return value, 'git config user.name'
         elif key == 'gemAuthorEmail':
             value = get_git_config_value('user.email')
+            if value:
+                return value, 'git config user.email'
         elif key == 'gemHomepage':
             value = get_github_repo_url()
+            if value:
+                return value, 'GitHub repo URL'
 
-        if not value:
-            raise ValueError(f"Configuration value for '{key}' is required but was not found.")
-        
-        return value
+        raise ValueError(f"Configuration value for '{key}' is required but was not found.")
 
     def get(self, key):
         """
@@ -76,3 +85,23 @@ class Config:
         if key not in self.config:
             raise KeyError(f"Configuration key '{key}' not found.")
         return self.config[key]
+
+    def get_all(self):
+        """
+        Get all configuration values as a dictionary.
+        """
+        return self.config
+
+    def print_config(self):
+        """
+        Print the current configuration with source information.
+        """
+        print_colored("\nCurrent Configuration Information:", color='cyan')
+        for key, value in self.config.items():
+            suffix = ""
+            if key == 'moduleName':
+                suffix = " (dynamically set per model)"
+            elif key == 'gemVersion':
+                suffix = " (dynamically set from latest Git tag)"
+            source = self.source_info.get(key, 'unknown source')
+            print_colored(f"{key}: {value}{suffix} [set from: {source}]", color='white')
