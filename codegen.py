@@ -176,12 +176,12 @@ def extract_version_from_filename(file_name):
     """
     # Remove file extension
     file_name = os.path.splitext(file_name)[0]
-    
+
     # Try to match 'V' followed by digits at the end of the filename
     match_v = re.search(r'V(\d+)$', file_name)
     # Try to match date format YYYY-MM-DD at the end of the filename
     match_date = re.search(r'(\d{4}-\d{2}-\d{2})$', file_name)
-    
+
     if match_v:
         version = match_v.group(1)  # Extract digits after 'V'
     elif match_date:
@@ -202,7 +202,7 @@ def get_latest_version(api_file_list):
     """
     def version_key(file_path):
         version = extract_version_from_filename(os.path.basename(file_path))
-        return int(version)  # Assumes all versions can be compared numerically (dates > V0, V1)
+        return int(version)  # Assumes all versions can be compared numerically
 
     return max(api_file_list, key=version_key)
 
@@ -353,33 +353,22 @@ def recreate_directory(directory_path):
         shutil.rmtree(directory_path)
     os.makedirs(directory_path)
 
-def copy_and_modify_config_template(source_config_path, destination_config_path, gem_name, module_name):
+def copy_and_modify_config_template(source_config_path, destination_config_path, config_replacements):
     """
     Copy the config template and replace placeholders.
 
     Args:
         source_config_path (str): Path to the source config template.
         destination_config_path (str): Path to the destination config file.
-        gem_name (str): The gem name to replace in the config.
-        module_name (str): The module name to replace in the config.
+        config_replacements (dict): Dictionary of placeholders and their replacements.
     """
-    shutil.copy(source_config_path, destination_config_path)
-    replace_placeholder_in_file(destination_config_path, 'GEMNAME', gem_name)
-    replace_placeholder_in_file(destination_config_path, 'MODULENAME', module_name)
-
-def replace_placeholder_in_file(file_path, placeholder, replacement):
-    """
-    Replace a placeholder string with the replacement in a file.
-
-    Args:
-        file_path (str): Path to the file.
-        placeholder (str): The placeholder string to replace.
-        replacement (str): The replacement string.
-    """
-    with open(file_path, 'r') as file:
+    with open(source_config_path, 'r') as file:
         content = file.read()
-    content = content.replace(placeholder, replacement)
-    with open(file_path, 'w') as file:
+
+    for placeholder, replacement in config_replacements.items():
+        content = content.replace(placeholder, replacement)
+
+    with open(destination_config_path, 'w') as file:
         file.write(content)
 
 def generate_model(api_file_path, config_file_path, output_directory, is_default_version):
@@ -486,12 +475,15 @@ def clean_up_generated_files(output_directory):
     Args:
         output_directory (str): The directory to clean up.
     """
+    # Remove the lib directory if it exists
     lib_directory = os.path.join(output_directory, 'lib')
     if os.path.exists(lib_directory):
         shutil.rmtree(lib_directory, ignore_errors=True)
-    gemspec_files = [f for f in os.listdir(output_directory) if f.endswith('.gemspec')]
-    for gemspec_file in gemspec_files:
-        os.remove(os.path.join(output_directory, gemspec_file))
+
+    # Remove unnecessary files like gemspec and others
+    files_to_remove = [f for f in os.listdir(output_directory) if f.endswith('.gemspec') or f == '.swagger-codegen-ignore']
+    for filename in files_to_remove:
+        os.remove(os.path.join(output_directory, filename))
 
 def main():
     """
@@ -512,9 +504,26 @@ def main():
     else:
         # Perform the actual code generation
         for model in models_to_generate:
+            # Read and prepare config replacements
+            config_replacements = {
+                'GEMNAME': model['gem_name'],
+                'MODULENAME': model['module_name']
+            }
+
+            # Read the extended config.json
+            with open(CONFIG_TEMPLATE_FILENAME, 'r') as config_file:
+                config_data = json.load(config_file)
+
+            # Update config data with replacements
+            config_data['gemName'] = model['gem_name']
+            config_data['moduleName'] = model['module_name']
+
+            # Write the updated config.json
+            os.makedirs(os.path.dirname(model['config_path']), exist_ok=True)
+            with open(model['config_path'], 'w') as config_file:
+                json.dump(config_data, config_file, indent=4)
+
             recreate_directory(model['lib_dir'])
-            copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, model['config_path'],
-                                            model['gem_name'], model['module_name'])
             generate_model(model['api_file'], model['config_path'], model['lib_dir'], model['is_default_version'])
 
         write_models_json(current_models_dict, PREVIOUS_MODELS_FILENAME)
