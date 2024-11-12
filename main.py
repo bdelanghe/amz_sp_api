@@ -8,14 +8,6 @@ from utils.models_utils import collect_api_files
 from utils.version_utils import get_latest_git_tag, increment_version
 from utils.interactive_utils import print_colored, prompt_confirmation, print_dry_run_report
 
-import tempfile
-import os
-from config.config import Config
-from utils.codegen_utils import check_dependencies, generate_model
-from utils.models_utils import collect_api_files
-from utils.version_utils import get_latest_git_tag, increment_version
-from utils.interactive_utils import print_colored, prompt_confirmation, print_dry_run_report
-
 def main() -> None:
     """
     Main function to orchestrate code generation and model tracking.
@@ -46,7 +38,7 @@ def main() -> None:
     gem_version = increment_version(current_version)
 
     config_info = {
-        key: config.get(key.lower()) for key in [
+        key: config.get(key) for key in [
             'gemName', 'moduleName', 'gemVersion', 'gemAuthor', 'gemAuthorEmail',
             'gemHomepage', 'gemLicense', 'httpClientType', 'modelPackage', 'apiPackage'
         ]
