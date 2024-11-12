@@ -101,6 +101,7 @@ def parse_command_line_arguments():
     """
     parser = argparse.ArgumentParser(description='Generate API clients from Swagger JSON files.')
     parser.add_argument('--dry-run', action='store_true', help='Perform a dry run without making any changes.')
+    parser.add_argument('--interactive', action='store_true', help='Run the script in interactive mode, prompting for confirmation at each step.')
     return parser.parse_args()
 
 def read_models_json(file_path):
@@ -275,8 +276,8 @@ def process_api_files(api_files_dict):
 
             versioned_module_name = f"AmzSpApi::{module_name}::V{version}"
             versioned_api_name = f"{api_name}_V{version}"
-            model_identifier = f"{api_name} V{version}"
-            current_models_dict[model_identifier] = version
+            model_identifier_versioned = f"{api_name} V{version} versioned"
+            current_models_dict[model_identifier_versioned] = version
 
             # Collect information for versioned model
             models_to_generate.append({
@@ -287,8 +288,28 @@ def process_api_files(api_files_dict):
                 "config_path": os.path.join(LIB_DIRECTORY, api_name, f"v{version}", CONFIG_TEMPLATE_FILENAME),
                 "version": version,
                 "api_name": api_name,
-                "is_latest": version == latest_version
+                "is_latest": version == latest_version,
+                "is_unversioned": False
             })
+
+            # If this is the latest version, also create unversioned model
+            if version == latest_version:
+                unversioned_module_name = f"AmzSpApi::{module_name}"
+                unversioned_api_name = api_name
+                model_identifier_unversioned = f"{api_name} V{version} unversioned"
+                current_models_dict[model_identifier_unversioned] = version
+
+                models_to_generate.append({
+                    "api_file": api_file,
+                    "gem_name": unversioned_api_name,
+                    "module_name": unversioned_module_name,
+                    "lib_dir": os.path.join(LIB_DIRECTORY, api_name),
+                    "config_path": os.path.join(LIB_DIRECTORY, api_name, CONFIG_TEMPLATE_FILENAME),
+                    "version": version,
+                    "api_name": api_name,
+                    "is_latest": True,
+                    "is_unversioned": True
+                })
 
     return models_to_generate, current_models_dict
 
@@ -306,7 +327,8 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
     # Print configuration information
     print_colored("\nConfiguration Information:", color='cyan')
     for key, value in config_info.items():
-        print_colored(f"{key}: {value}", color='white')
+        if key != 'MODULENAME':
+            print_colored(f"{key}: {value}", color='white')
 
     # Compare models to find new, updated, and removed models
     new_models, removed_models, changed_defaults = compare_model_versions(previous_models_dict, current_models_dict)
@@ -323,7 +345,7 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
 
     # Determine added and updated models
     for model in models_to_generate:
-        model_identifier = f"{model['api_name']} V{model['version']}"
+        model_identifier = f"{model['api_name']} V{model['version']} {'unversioned' if model['is_unversioned'] else 'versioned'}"
         if model_identifier in new_models and model_identifier not in added_models_set:
             models_status['added'].append(model)
             added_models_set.add(model_identifier)
@@ -332,10 +354,12 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
 
     # Determine removed models
     for model_identifier in removed_models:
-        api_name, version = model_identifier.rsplit(' V', 1)
+        api_name, version_and_type = model_identifier.rsplit(' V', 1)
+        version, model_type = version_and_type.rsplit(' ', 1)
         models_status['removed'].append({
             'api_name': api_name,
-            'version': version
+            'version': version,
+            'is_unversioned': model_type == 'unversioned'
         })
 
     # Print the report
@@ -346,6 +370,7 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
         print_colored("\nNew Models Added:", color='green')
         for model in models_status['added']:
             print_colored(f"- {model['api_name']} (Version {model['version']})", color='white')
+        print_colored(f"Total New Models: {len(models_status['added'])}", color='green')
     else:
         print_colored("\nNo New Models Added.", color='green')
 
@@ -353,6 +378,7 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
         print_colored("\nModels Updated:", color='yellow')
         for model in models_status['updated']:
             print_colored(f"- {model['api_name']} (Updated to Version {model['version']})", color='white')
+        print_colored(f"Total Updated Models: {len(models_status['updated'])}", color='yellow')
     else:
         print_colored("\nNo Models Updated.", color='yellow')
 
@@ -360,10 +386,37 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
         print_colored("\nModels Removed:", color='red')
         for model in models_status['removed']:
             print_colored(f"- {model['api_name']} (Version {model['version']})", color='white')
+        print_colored(f"Total Removed Models: {len(models_status['removed'])}", color='red')
     else:
         print_colored("\nNo Models Removed.", color='red')
 
     print_colored(f"\nGem Version: {gem_version}", color='cyan')
+
+    # Detailed Model Information
+    print_colored("\nDetailed Model Information:", color='cyan')
+    print_colored("---------------------------", color='cyan')
+
+    for status, models in models_status.items():
+        if models:
+            status_color = {'added': 'green', 'updated': 'yellow', 'removed': 'red'}.get(status, 'white')
+            print_colored(f"\n{status.capitalize()} Models:", color=status_color)
+            for model in models:
+                if status != 'removed':
+                    default_tag = ''
+                    if model.get('is_unversioned'):
+                        default_tag = ' [Default]'
+                        default_tag = f"\033[95m{default_tag}\033[0m"  # magenta color
+                    print_colored(f"API Name: {model['api_name']}", color='white')
+                    print_colored(f"Version: {model['version']}", color='white')
+                    print_colored(f"Module Name: {model['module_name']}{default_tag}", color='white')
+                    print()
+                else:
+                    default_tag = ''
+                    if model.get('is_unversioned'):
+                        default_tag = ' [Default]'
+                        default_tag = f"\033[95m{default_tag}\033[0m"
+                    print_colored(f"API Name: {model['api_name']}", color='white')
+                    print_colored(f"Version: {model['version']}{default_tag}\n", color='white')
 
 def get_next_version(current_version):
     """
@@ -437,6 +490,23 @@ def is_no_reply_email(email):
     """
     return 'noreply' in email
 
+def prompt_confirmation(message):
+    """
+    Prompt the user for confirmation.
+
+    Args:
+        message (str): The message to display.
+
+    Returns:
+        bool: True if the user confirms, False otherwise.
+    """
+    while True:
+        response = input(f"{message} [y/n]: ").lower()
+        if response in ('y', 'yes'):
+            return True
+        elif response in ('n', 'no'):
+            return False
+
 def main():
     """
     Main function to orchestrate code generation and model tracking.
@@ -444,6 +514,7 @@ def main():
     check_dependencies()
     args = parse_command_line_arguments()
     is_dry_run = args.dry_run
+    is_interactive = args.interactive
 
     api_files_dict = collect_api_files(MODELS_DIRECTORY)
 
@@ -497,7 +568,13 @@ def main():
             # Print configuration information
             print_colored("\nConfiguration Information:", color='cyan')
             for key, value in config_info.items():
-                print_colored(f"{key}: {value}", color='white')
+                if key != 'MODULENAME':
+                    print_colored(f"{key}: {value}", color='white')
+
+            if is_interactive:
+                if not prompt_confirmation("Do you want to proceed with code generation?"):
+                    print_colored("Operation cancelled by user.", color='red')
+                    return
 
             # Generate models in a temporary directory
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -525,6 +602,13 @@ def main():
                     if os.path.exists(ignore_file_source):
                         shutil.copy(ignore_file_source, ignore_file_destination)
 
+                    if is_interactive:
+                        print_colored(f"\nAbout to generate model: {model['gem_name']}", color='cyan')
+                        print_colored(f"Module Name: {model['module_name']}", color='white')
+                        if not prompt_confirmation("Proceed with this model?"):
+                            print_colored(f"Skipping model: {model['gem_name']}", color='yellow')
+                            continue
+
                     try:
                         generate_model(model['api_file'], temp_config_path, temp_lib_dir)
                     except subprocess.CalledProcessError as e:
@@ -534,6 +618,11 @@ def main():
 
                 # Move generated code to lib directory if successful
                 if success:
+                    if is_interactive:
+                        if not prompt_confirmation("All models generated successfully. Proceed to move files to final destination?"):
+                            print_colored("Operation cancelled by user. No changes have been made.", color='red')
+                            return
+
                     for model in models_to_generate:
                         temp_lib_dir = os.path.join(temp_dir, model['lib_dir'])
                         final_lib_dir = model['lib_dir']
@@ -551,6 +640,7 @@ def main():
 
                     with open(VERSION_FILE, 'w') as vf:
                         vf.write(gem_version)
+                    print_colored("Code generation completed successfully.", color='green')
                 else:
                     print_colored("Generation failed. No changes have been made.", color='red')
 
