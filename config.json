@@ -1,12 +1,12 @@
 {
-  "gemName": "GEMNAME",
+  "gemName": "amz_sp_api",
   "moduleName": "MODULENAME",
   "gemVersion": "GEMVERSION",
-  "gemAuthor": "GEMAUTHOR",
-  "gemAuthorEmail": "GEMAUTHOREMAIL",
-  "gemHomepage": "GEMHOMEPAGE",
-  "gemLicense": "GEMLICENSE",
-  "httpClientType": "HTTPCLIENTTYPE",
-  "modelPackage": "MODELPACKAGE",
-  "apiPackage": "APIPACKAGE"
+  "gemAuthor": "Your Name",
+  "gemAuthorEmail": "your.email@example.com",
+  "gemHomepage": "https://github.com/yourusername/amz_sp_api",
+  "gemLicense": "Apache-2.0",
+  "httpClientType": "Typhoeus",
+  "modelPackage": "models",
+  "apiPackage": "api"
 }

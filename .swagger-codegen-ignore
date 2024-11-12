@@ -1,4 +1,16 @@
-*.gemspec
+# Ignore root-level files
+Gemfile
+LICENSE
 README.md
+Rakefile
+amz_sp_api.gemspec.erb
+codegen.py
+config.json
+git_push.sh
+
+# Ignore specific patterns
+*.gemspec
+*.md
 lib/**/*_spec.rb
 spec/
+test/

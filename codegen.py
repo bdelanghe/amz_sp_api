@@ -8,13 +8,14 @@ import shutil
 import subprocess
 import tempfile
 from glob import glob
+from contextlib import contextmanager
 
 # Constants
 MODELS_DIRECTORY = os.path.join('..', 'selling-partner-api-models', 'models')
 LIB_DIRECTORY = 'lib'
 CONFIG_TEMPLATE_FILENAME = 'config.json'
+GEMSPEC_TEMPLATE_FILENAME = 'amz_sp_api.gemspec.erb'
 SWAGGER_CODEGEN_COMMAND = 'swagger-codegen'
-IGNORE_FILE_TEMPLATE = '.swagger-codegen-ignore'
 VERSION_FILE = 'version.txt'  # File to keep track of GEMVERSION
 
 def get_git_config_value(key):
@@ -28,11 +29,30 @@ def get_git_config_value(key):
 
 def get_github_repo_url():
     """
-    Get the GitHub repository URL using gh CLI.
+    Get the GitHub repository URL using git.
     """
     try:
-        url = subprocess.check_output(['gh', 'repo', 'view', '--json', 'url', '--jq', '.url']).decode('utf-8').strip()
+        url = subprocess.check_output(['git', 'config', '--get', 'remote.origin.url']).decode('utf-8').strip()
+        # Convert git@github.com:user/repo.git to https://github.com/user/repo
+        if url.startswith('git@'):
+            url = url.replace(':', '/')
+            url = url.replace('git@', 'https://')
+            url = url.rstrip('.git')
+        elif url.startswith('https://') and url.endswith('.git'):
+            url = url.rstrip('.git')
         return url
+    except subprocess.CalledProcessError:
+        return None
+
+def get_github_repo_description():
+    """
+    Get the GitHub repository description using gh CLI.
+    """
+    try:
+        description = subprocess.check_output(
+            ['gh', 'repo', 'view', '--json', 'description', '--jq', '.description']
+        ).decode('utf-8').strip()
+        return description
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
 
@@ -41,27 +61,6 @@ def get_env_or_default(env_var, default_value):
     Get the value from environment variable or return default.
     """
     return os.environ.get(env_var, default_value)
-
-def create_temp_file(initial_content="{}"):
-    """
-    Create a temporary file, write initial JSON content, and return its path.
-    """
-    with tempfile.NamedTemporaryFile(delete=False, mode='w') as temp_file:
-        temp_file.write(initial_content)
-        return temp_file.name
-
-from contextlib import contextmanager
-
-@contextmanager
-def temporary_file(initial_content="{}"):
-    """
-    Context manager for a temporary file.
-    """
-    temp_file = create_temp_file(initial_content)
-    try:
-        yield temp_file
-    finally:
-        os.remove(temp_file)
 
 def print_colored(message, color=None):
     """
@@ -453,51 +452,23 @@ def increment_version(current_version, prerelease_label=None):
 
     return new_version
 
-def copy_and_modify_config_template(source_config_path, destination_config_path, config_replacements):
+def copy_and_modify_template(source_path, destination_path, replacements):
     """
-    Copy the config template and replace placeholders.
+    Copy the template and replace placeholders.
 
     Args:
-        source_config_path (str): Path to the source config template.
-        destination_config_path (str): Path to the destination config file.
-        config_replacements (dict): Dictionary of placeholders and their replacements.
+        source_path (str): Path to the source template.
+        destination_path (str): Path to the destination file.
+        replacements (dict): Dictionary of placeholders and their replacements.
     """
-    with open(source_config_path, 'r') as file:
+    with open(source_path, 'r') as file:
         content = file.read()
 
-    for placeholder, replacement in config_replacements.items():
-        content = content.replace(placeholder, replacement)
+    for placeholder, replacement in replacements.items():
+        content = content.replace(f"<{placeholder}>", replacement)
 
-    with open(destination_config_path, 'w') as file:
+    with open(destination_path, 'w') as file:
         file.write(content)
-
-def generate_model(api_file_path, config_file_path, output_directory):
-    """
-    Generate the API model.
-
-    Args:
-        api_file_path (str): Path to the API JSON file.
-        config_file_path (str): Path to the config file.
-        output_directory (str): Output directory for generated files.
-    """
-    run_swagger_codegen(api_file_path, config_file_path, output_directory)
-
-def run_swagger_codegen(input_spec_path, config_file_path, output_directory):
-    """
-    Run the swagger-codegen command.
-
-    Args:
-        input_spec_path (str): Path to the input specification (API JSON file).
-        config_file_path (str): Path to the configuration file.
-        output_directory (str): Output directory for generated code.
-    """
-    subprocess.run([
-        SWAGGER_CODEGEN_COMMAND, 'generate',
-        '-i', input_spec_path,
-        '-l', 'ruby',
-        '-c', config_file_path,
-        '-o', output_directory
-    ], check=True)
 
 def is_no_reply_email(email):
     """
@@ -528,6 +499,49 @@ def prompt_confirmation(message):
         elif response in ('n', 'no'):
             return False
 
+def read_config_file(config_filename):
+    """
+    Read configuration from config.json file.
+
+    Args:
+        config_filename (str): Path to the config.json file.
+
+    Returns:
+        dict: Configuration dictionary.
+    """
+    if not os.path.exists(config_filename):
+        raise FileNotFoundError(f"Configuration file {config_filename} not found.")
+    with open(config_filename, 'r') as file:
+        return json.load(file)
+
+def create_swagger_codegen_ignore(destination_path):
+    """
+    Create or update the .swagger-codegen-ignore file with specified patterns.
+
+    Args:
+        destination_path (str): The path where the .swagger-codegen-ignore file should be placed.
+    """
+    ignore_patterns = [
+        'Gemfile',
+        'LICENSE',
+        'README.md',
+        'Rakefile',
+        'amz_sp_api.gemspec.erb',
+        'codegen.py',
+        'config.json',
+        'git_push.sh',
+        '*.gemspec',
+        '*.md',
+        'lib/**/*_spec.rb',
+        'spec/',
+        'test/'
+    ]
+
+    ignore_file_content = '\n'.join(ignore_patterns)
+
+    with open(destination_path, 'w') as ignore_file:
+        ignore_file.write(ignore_file_content)
+
 def main():
     """
     Main function to orchestrate code generation and model tracking.
@@ -541,175 +555,165 @@ def main():
 
     api_files_dict = collect_api_files(MODELS_DIRECTORY)
 
-    with temporary_file() as previous_models_filename, temporary_file() as current_models_filename:
-        previous_models_dict = read_models_json(previous_models_filename)
-        models_to_generate, current_models_dict = process_api_files(api_files_dict)
+    previous_models_filename = 'models_previous.json'
+    current_models_filename = 'models_current.json'
 
-        # Determine GEMVERSION using Git tags
-        latest_git_tag = get_latest_git_tag()
-        if latest_git_tag:
-            current_version = latest_git_tag.lstrip('v')
-        else:
-            current_version = '0.1.0'  # Default initial version
+    previous_models_dict = read_models_json(previous_models_filename)
+    models_to_generate, current_models_dict = process_api_files(api_files_dict)
 
-        # Check if there are changes
-        new_models, removed_models, changed_defaults = compare_model_versions(previous_models_dict, current_models_dict)
-        if new_models or removed_models or changed_defaults:
-            gem_version = increment_version(current_version, prerelease_label if is_prerelease else None)
-        else:
-            gem_version = current_version
+    # Determine GEMVERSION using Git tags
+    latest_git_tag = get_latest_git_tag()
+    if latest_git_tag:
+        current_version = latest_git_tag.lstrip('v')
+    else:
+        current_version = '0.1.0'  # Default initial version
 
-        # Get git config values
-        git_author_name = get_git_config_value('user.name') or 'Your Name'
-        git_author_email = get_git_config_value('user.email') or 'your.email@example.com'
+    # Check if there are changes
+    new_models, removed_models, changed_defaults = compare_model_versions(previous_models_dict, current_models_dict)
+    if new_models or removed_models or changed_defaults:
+        gem_version = increment_version(current_version, prerelease_label if is_prerelease else None)
+    else:
+        gem_version = current_version
 
-        # Avoid using GitHub no-reply email
-        if is_no_reply_email(git_author_email):
-            git_author_email = 'your.email@example.com'  # Default or prompt to set via env variable
+    # Get git config values
+    git_author_name = get_git_config_value('user.name') or ''
+    git_author_email = get_git_config_value('user.email') or ''
+    if not git_author_name or not git_author_email:
+        print_colored("Git user.name and user.email are not set. Please configure them.", color='red')
+        return
 
-        # Get GitHub repo URL
-        github_repo_url = get_github_repo_url() or 'https://github.com/yourusername/yourrepo'
+    # Avoid using GitHub no-reply email
+    if is_no_reply_email(git_author_email):
+        print_colored("Your git email is a no-reply email. Please set a valid email.", color='red')
+        return
 
-        # Allow config to be overwritten by environment variables
-        config_info = {
-            'GEMNAME': get_env_or_default('GEMNAME', 'amz_sp_api'),
-            # 'MODULENAME' will be set per model
-            'GEMVERSION': get_env_or_default('GEMVERSION', gem_version),
-            'GEMAUTHOR': get_env_or_default('GEMAUTHOR', git_author_name),
-            'GEMAUTHOREMAIL': get_env_or_default('GEMAUTHOREMAIL', git_author_email),
-            'GEMHOMEPAGE': get_env_or_default('GEMHOMEPAGE', github_repo_url),
-            'GEMLICENSE': get_env_or_default('GEMLICENSE', 'Apache-2.0'),
-            'HTTPCLIENTTYPE': get_env_or_default('HTTPCLIENTTYPE', 'Typhoeus'),
-            'MODELPACKAGE': get_env_or_default('MODELPACKAGE', 'models'),
-            'APIPACKAGE': get_env_or_default('APIPACKAGE', 'api')
-        }
+    # Get GitHub repo URL and description
+    github_repo_url = get_github_repo_url()
+    if not github_repo_url:
+        print_colored("Unable to determine GitHub repository URL.", color='red')
+        return
 
-        if is_dry_run:
-            generate_dry_run_report(models_to_generate, previous_models_dict, current_models_dict, gem_version, config_info)
-        else:
-            # Print configuration information
-            print_colored("\nConfiguration Information:", color='cyan')
-            for key, value in config_info.items():
-                if key != 'MODULENAME':
-                    print_colored(f"{key}: {value}", color='white')
+    gem_description = get_github_repo_description() or "No description available."
 
-            if is_interactive:
-                print_colored(f"\nDetermined Gem Version: {gem_version}", color='cyan')
-                if is_prerelease:
-                    print_colored(f"This will be marked as a prerelease: {prerelease_label}", color='yellow')
-                if not prompt_confirmation(f"Proceed with Gem Version {gem_version}?"):
-                    print_colored("Operation cancelled by user.", color='red')
-                    return
+    # Read config.json
+    config_data = read_config_file(CONFIG_TEMPLATE_FILENAME)
 
-            # Generate models in a temporary directory
-            with tempfile.TemporaryDirectory() as temp_dir:
-                success = True
+    # Allow config to be overwritten by environment variables
+    config_info = {
+        'GEMNAME': get_env_or_default('GEMNAME', config_data.get('gemName')),
+        # 'MODULENAME' will be set per model
+        'GEMVERSION': get_env_or_default('GEMVERSION', gem_version),
+        'GEMAUTHOR': get_env_or_default('GEMAUTHOR', config_data.get('gemAuthor')),
+        'GEMAUTHOREMAIL': get_env_or_default('GEMAUTHOREMAIL', config_data.get('gemAuthorEmail')),
+        'GEMHOMEPAGE': get_env_or_default('GEMHOMEPAGE', config_data.get('gemHomepage')),
+        'GEMLICENSE': get_env_or_default('GEMLICENSE', config_data.get('gemLicense')),
+        'HTTPCLIENTTYPE': get_env_or_default('HTTPCLIENTTYPE', config_data.get('httpClientType')),
+        'MODELPACKAGE': get_env_or_default('MODELPACKAGE', config_data.get('modelPackage')),
+        'APIPACKAGE': get_env_or_default('APIPACKAGE', config_data.get('apiPackage'))
+    }
+
+    if is_interactive:
+        print_colored("\nConfiguration Information:", color='cyan')
+        for key, value in config_info.items():
+            if key != 'MODULENAME':
+                print_colored(f"{key}: {value}", color='white')
+        if not prompt_confirmation("Do you want to proceed with these settings?"):
+            print_colored("Operation cancelled by user.", color='red')
+            return
+
+    if is_dry_run:
+        generate_dry_run_report(models_to_generate, previous_models_dict, current_models_dict, gem_version, config_info)
+    else:
+        # Generate models in a temporary directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            success = True
+            for model in models_to_generate:
+                model_config = config_info.copy()
+                model_config['GEMNAME'] = model['gem_name']
+                model_config['MODULENAME'] = model['module_name']
+                model_config['GEMVERSION'] = config_info['GEMVERSION']
+
+                # Prepare config replacements
+                config_replacements = model_config
+
+                # Paths in temp directory
+                temp_lib_dir = os.path.join(temp_dir, model['lib_dir'])
+                temp_config_path = os.path.join(temp_dir, model['config_path'])
+                temp_gemspec_path = os.path.join(temp_lib_dir, f"{model['gem_name']}.gemspec")
+
+                # Copy and modify config template
+                os.makedirs(os.path.dirname(temp_config_path), exist_ok=True)
+                copy_and_modify_template(CONFIG_TEMPLATE_FILENAME, temp_config_path, config_replacements)
+
+                # Copy and modify gemspec template
+                gemspec_replacements = {
+                    'GEM_NAME': model['gem_name'],
+                    'MODULE_NAME': model['module_name'],
+                    'GEM_VERSION': config_info['GEMVERSION'],
+                    'GEM_AUTHOR': config_info['GEMAUTHOR'],
+                    'GEM_AUTHOR_EMAIL': config_info['GEMAUTHOREMAIL'],
+                    'GEM_HOMEPAGE': config_info['GEMHOMEPAGE'],
+                    'GEM_SUMMARY': gem_description,
+                    'GEM_LONG_DESCRIPTION': gem_description,
+                    'GEM_LICENSE': config_info['GEMLICENSE'],
+                    'CHANGELOG_URI': f"{config_info['GEMHOMEPAGE']}/releases",
+                    'OPENAPI_VERSION': model['version'],
+                    'GENERATOR_INFO': "https://github.com/swagger-api/swagger-codegen.git\nSwagger Codegen version: 3.0.24"
+                }
+                copy_and_modify_template(GEMSPEC_TEMPLATE_FILENAME, temp_gemspec_path, gemspec_replacements)
+
+                # Create .swagger-codegen-ignore
+                ignore_file_destination = os.path.join(os.path.dirname(temp_config_path), '.swagger-codegen-ignore')
+                create_swagger_codegen_ignore(ignore_file_destination)
+
+                if is_interactive:
+                    latest_tag = ' [latest]' if model['has_multiple_versions'] and model['is_latest'] else ''
+                    print_colored(f"\nAbout to generate model: {model['gem_name']}", color='cyan')
+                    print_colored(f"Module Name: {model['module_name']}{latest_tag}", color='white')
+                    if not prompt_confirmation("Proceed with this model?"):
+                        print_colored(f"Skipping model: {model['gem_name']}", color='yellow')
+                        continue
+
+                try:
+                    # Generate the model
+                    generate_model(model['api_file'], temp_config_path, temp_lib_dir)
+                except subprocess.CalledProcessError as e:
+                    print_colored(f"Error generating model {model['gem_name']}: {e}", color='red')
+                    success = False
+                    break
+
+            # Move generated code to lib directory if successful
+            if success:
+                if is_interactive:
+                    if not prompt_confirmation("All models generated successfully. Proceed to move files to final destination?"):
+                        print_colored("Operation cancelled by user. No changes have been made.", color='red')
+                        return
+
                 for model in models_to_generate:
-                    model_config = config_info.copy()
-                    model_config['GEMNAME'] = model['gem_name']
-                    model_config['MODULENAME'] = model['module_name']
-                    model_config['GEMVERSION'] = config_info['GEMVERSION']
-
-                    # Prepare config replacements
-                    config_replacements = model_config
-
-                    # Paths in temp directory
                     temp_lib_dir = os.path.join(temp_dir, model['lib_dir'])
-                    temp_config_path = os.path.join(temp_dir, model['config_path'])
+                    final_lib_dir = model['lib_dir']
+                    # Remove existing directory if it exists
+                    if os.path.exists(final_lib_dir):
+                        shutil.rmtree(final_lib_dir)
+                    # Create parent directories if needed
+                    os.makedirs(os.path.dirname(final_lib_dir), exist_ok=True)
+                    # Move from temp to final location
+                    shutil.move(temp_lib_dir, final_lib_dir)
 
-                    # Copy and modify config template
-                    os.makedirs(os.path.dirname(temp_config_path), exist_ok=True)
-                    copy_and_modify_config_template(CONFIG_TEMPLATE_FILENAME, temp_config_path, config_replacements)
+                # Write updated models and version
+                write_models_json(current_models_dict, previous_models_filename)
+                write_models_json(current_models_dict, current_models_filename)
 
-                    # Copy .swagger-codegen-ignore to temp output directory
-                    ignore_file_source = IGNORE_FILE_TEMPLATE
-                    ignore_file_destination = os.path.join(os.path.dirname(temp_config_path), '.swagger-codegen-ignore')
-                    if os.path.exists(ignore_file_source):
-                        shutil.copy(ignore_file_source, ignore_file_destination)
+                with open(VERSION_FILE, 'w') as vf:
+                    vf.write(gem_version)
 
-                    if is_interactive:
-                        latest_tag = ' [latest]' if model['has_multiple_versions'] and model['is_latest'] else ''
-                        print_colored(f"\nAbout to generate model: {model['gem_name']}", color='cyan')
-                        print_colored(f"Module Name: {model['module_name']}{latest_tag}", color='white')
-                        if not prompt_confirmation("Proceed with this model?"):
-                            print_colored(f"Skipping model: {model['gem_name']}", color='yellow')
-                            continue
+                print_colored("Code generation completed successfully.", color='green')
 
-                    try:
-                        generate_model(model['api_file'], temp_config_path, temp_lib_dir)
-                    except subprocess.CalledProcessError as e:
-                        print_colored(f"Error generating model {model['gem_name']}: {e}", color='red')
-                        success = False
-                        break
+                if is_interactive:
+                    print_colored("\nPlease create your release notes following your preferred structure.", color='cyan')
 
-                # Move generated code to lib directory if successful
-                if success:
-                    if is_interactive:
-                        if not prompt_confirmation("All models generated successfully. Proceed to move files to final destination?"):
-                            print_colored("Operation cancelled by user. No changes have been made.", color='red')
-                            return
-
-                    for model in models_to_generate:
-                        temp_lib_dir = os.path.join(temp_dir, model['lib_dir'])
-                        final_lib_dir = model['lib_dir']
-                        # Remove existing directory if it exists
-                        if os.path.exists(final_lib_dir):
-                            shutil.rmtree(final_lib_dir)
-                        # Create parent directories if needed
-                        os.makedirs(os.path.dirname(final_lib_dir), exist_ok=True)
-                        # Move from temp to final location
-                        shutil.move(temp_lib_dir, final_lib_dir)
-
-                    # Write updated models and version
-                    write_models_json(current_models_dict, previous_models_filename)
-                    write_models_json(current_models_dict, current_models_filename)
-
-                    with open(VERSION_FILE, 'w') as vf:
-                        vf.write(gem_version)
-
-                    # Commit changes
-                    subprocess.run(['git', 'add', '.'], check=True)
-                    commit_message = f"Update generated code to version {gem_version}"
-                    subprocess.run(['git', 'commit', '-m', commit_message], check=True)
-                    print_colored(f"Committed changes with message: '{commit_message}'", color='green')
-
-                    # Create a new Git tag
-                    new_tag = f"v{gem_version}"
-                    try:
-                        subprocess.run(['git', 'tag', new_tag], check=True)
-                        print_colored(f"Created new Git tag: {new_tag}", color='green')
-                        if is_interactive:
-                            if prompt_confirmation("Do you want to push the changes and the new tag to the remote repository?"):
-                                subprocess.run(['git', 'push'], check=True)
-                                subprocess.run(['git', 'push', 'origin', new_tag], check=True)
-                                print_colored(f"Pushed changes and tag {new_tag} to remote repository.", color='green')
-                    except subprocess.CalledProcessError as e:
-                        print_colored(f"Failed to create or push Git tag: {e}", color='red')
-
-                    # Create a GitHub release
-                    release_command = [
-                        'gh', 'release', 'create', new_tag,
-                        '--title', f"Release {new_tag}",
-                        '--notes', f"Automated release for version {gem_version}"
-                    ]
-                    if is_prerelease:
-                        release_command.append('--prerelease')
-                    try:
-                        subprocess.run(release_command, check=True)
-                        print_colored(f"Created GitHub release {new_tag}", color='green')
-                    except subprocess.CalledProcessError as e:
-                        print_colored(f"Failed to create GitHub release: {e}", color='red')
-
-                    # Instructions for publishing the gem to GitHub Packages
-                    print_colored("\nTo publish the gem to GitHub Packages:", color='cyan')
-                    print_colored("1. Build the gem: gem build your_gem.gemspec", color='white')
-                    print_colored("2. Push the gem:", color='white')
-                    print_colored("   gem push --key github --host https://rubygems.pkg.github.com/YOUR_GITHUB_USERNAME your_gem-0.1.0.gem", color='white')
-                    print_colored("Make sure to authenticate with GitHub Packages using a personal access token.", color='white')
-
-                    print_colored("Code generation completed successfully.", color='green')
-                else:
-                    print_colored("Generation failed. No changes have been made.", color='red')
+            else:
+                print_colored("Generation failed. No changes have been made.", color='red')
 
 if __name__ == '__main__':
     main()
