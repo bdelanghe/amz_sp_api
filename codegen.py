@@ -94,6 +94,8 @@ def check_dependencies():
         raise EnvironmentError(f"{SWAGGER_CODEGEN_COMMAND} is not installed or not found in PATH.")
     if not shutil.which('git'):
         raise EnvironmentError("git is not installed or not found in PATH.")
+    if not shutil.which('gh'):
+        raise EnvironmentError("GitHub CLI 'gh' is not installed or not found in PATH.")
 
 def parse_command_line_arguments():
     """
@@ -102,6 +104,8 @@ def parse_command_line_arguments():
     parser = argparse.ArgumentParser(description='Generate API clients from Swagger JSON files.')
     parser.add_argument('--dry-run', action='store_true', help='Perform a dry run without making any changes.')
     parser.add_argument('--interactive', action='store_true', help='Run the script in interactive mode, prompting for confirmation at each step.')
+    parser.add_argument('--prerelease', action='store_true', help='Mark the release as a prerelease.')
+    parser.add_argument('--prerelease-label', type=str, default='', help='Label for the prerelease (e.g., alpha, beta).')
     return parser.parse_args()
 
 def read_models_json(file_path):
@@ -361,7 +365,6 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
             version_info = f"Version: {model['version']}"
             if model['has_multiple_versions'] and model['is_latest']:
                 version_info += " [latest]"
-                version_info = f"{version_info}"
             print_colored(f"- {version_info}", color='white')
             print_colored(f"  Module Name: {model['module_name']}", color='white')
         print_colored(f"\nTotal New Models: {len(models_status['added'])}", color='green')
@@ -389,19 +392,66 @@ def generate_dry_run_report(models_to_generate, previous_models_dict, current_mo
 
     print_colored(f"\nGem Version: {gem_version}", color='cyan')
 
-def get_next_version(current_version):
+def get_latest_git_tag():
+    """
+    Get the latest Git tag that matches semantic versioning.
+    """
+    try:
+        tags = subprocess.check_output(['git', 'tag']).decode('utf-8').strip().split('\n')
+        version_tags = [tag for tag in tags if re.match(r'^v\d+\.\d+\.\d+(-\w+(\.\d+)?)?$', tag)]
+        if version_tags:
+            # Sort the tags based on version numbers
+            def version_key(s):
+                s = s.lstrip('v')
+                main_version, *prerelease = s.split('-')
+                nums = list(map(int, main_version.split('.')))
+                if prerelease:
+                    prerelease = prerelease[0]
+                    label, *pre_num = prerelease.split('.')
+                    pre_num = int(pre_num[0]) if pre_num else 0
+                    nums.append(pre_num)
+                else:
+                    nums.append(float('inf'))  # Non-prerelease versions come after prereleases
+                return nums
+            version_tags.sort(key=version_key)
+            return version_tags[-1]
+        else:
+            return None
+    except subprocess.CalledProcessError:
+        return None
+
+def increment_version(current_version, prerelease_label=None):
     """
     Increment the version number.
 
     Args:
         current_version (str): The current version string.
+        prerelease_label (str): The prerelease label (e.g., 'alpha', 'beta').
 
     Returns:
         str: The next version string.
     """
-    major, minor, patch = map(int, current_version.split('.'))
-    patch += 1
-    return f"{major}.{minor}.{patch}"
+    # Parse current version
+    match = re.match(r'^(\d+)\.(\d+)\.(\d+)(?:-(\w+)(?:\.(\d+))?)?$', current_version)
+    if not match:
+        raise ValueError(f"Invalid version format: {current_version}")
+    major, minor, patch, label, pre_num = match.groups()
+    major, minor, patch = int(major), int(minor), int(patch)
+    pre_num = int(pre_num) if pre_num else 0
+
+    if prerelease_label:
+        # If it's already a prerelease with the same label, increment prerelease number
+        if label == prerelease_label:
+            pre_num += 1
+        else:
+            pre_num = 1
+        new_version = f"{major}.{minor}.{patch}-{prerelease_label}.{pre_num}"
+    else:
+        # Increment patch version
+        patch += 1
+        new_version = f"{major}.{minor}.{patch}"
+
+    return new_version
 
 def copy_and_modify_config_template(source_config_path, destination_config_path, config_replacements):
     """
@@ -486,6 +536,8 @@ def main():
     args = parse_command_line_arguments()
     is_dry_run = args.dry_run
     is_interactive = args.interactive
+    is_prerelease = args.prerelease
+    prerelease_label = args.prerelease_label
 
     api_files_dict = collect_api_files(MODELS_DIRECTORY)
 
@@ -493,18 +545,17 @@ def main():
         previous_models_dict = read_models_json(previous_models_filename)
         models_to_generate, current_models_dict = process_api_files(api_files_dict)
 
-        # Determine GEMVERSION
-        initial_version = '0.1.0'
-        if os.path.exists(VERSION_FILE):
-            with open(VERSION_FILE, 'r') as vf:
-                current_version = vf.read().strip()
+        # Determine GEMVERSION using Git tags
+        latest_git_tag = get_latest_git_tag()
+        if latest_git_tag:
+            current_version = latest_git_tag.lstrip('v')
         else:
-            current_version = initial_version
+            current_version = '0.1.0'  # Default initial version
 
         # Check if there are changes
         new_models, removed_models, changed_defaults = compare_model_versions(previous_models_dict, current_models_dict)
         if new_models or removed_models or changed_defaults:
-            gem_version = get_next_version(current_version)
+            gem_version = increment_version(current_version, prerelease_label if is_prerelease else None)
         else:
             gem_version = current_version
 
@@ -543,7 +594,10 @@ def main():
                     print_colored(f"{key}: {value}", color='white')
 
             if is_interactive:
-                if not prompt_confirmation("Do you want to proceed with code generation?"):
+                print_colored(f"\nDetermined Gem Version: {gem_version}", color='cyan')
+                if is_prerelease:
+                    print_colored(f"This will be marked as a prerelease: {prerelease_label}", color='yellow')
+                if not prompt_confirmation(f"Proceed with Gem Version {gem_version}?"):
                     print_colored("Operation cancelled by user.", color='red')
                     return
 
@@ -612,6 +666,47 @@ def main():
 
                     with open(VERSION_FILE, 'w') as vf:
                         vf.write(gem_version)
+
+                    # Commit changes
+                    subprocess.run(['git', 'add', '.'], check=True)
+                    commit_message = f"Update generated code to version {gem_version}"
+                    subprocess.run(['git', 'commit', '-m', commit_message], check=True)
+                    print_colored(f"Committed changes with message: '{commit_message}'", color='green')
+
+                    # Create a new Git tag
+                    new_tag = f"v{gem_version}"
+                    try:
+                        subprocess.run(['git', 'tag', new_tag], check=True)
+                        print_colored(f"Created new Git tag: {new_tag}", color='green')
+                        if is_interactive:
+                            if prompt_confirmation("Do you want to push the changes and the new tag to the remote repository?"):
+                                subprocess.run(['git', 'push'], check=True)
+                                subprocess.run(['git', 'push', 'origin', new_tag], check=True)
+                                print_colored(f"Pushed changes and tag {new_tag} to remote repository.", color='green')
+                    except subprocess.CalledProcessError as e:
+                        print_colored(f"Failed to create or push Git tag: {e}", color='red')
+
+                    # Create a GitHub release
+                    release_command = [
+                        'gh', 'release', 'create', new_tag,
+                        '--title', f"Release {new_tag}",
+                        '--notes', f"Automated release for version {gem_version}"
+                    ]
+                    if is_prerelease:
+                        release_command.append('--prerelease')
+                    try:
+                        subprocess.run(release_command, check=True)
+                        print_colored(f"Created GitHub release {new_tag}", color='green')
+                    except subprocess.CalledProcessError as e:
+                        print_colored(f"Failed to create GitHub release: {e}", color='red')
+
+                    # Instructions for publishing the gem to GitHub Packages
+                    print_colored("\nTo publish the gem to GitHub Packages:", color='cyan')
+                    print_colored("1. Build the gem: gem build your_gem.gemspec", color='white')
+                    print_colored("2. Push the gem:", color='white')
+                    print_colored("   gem push --key github --host https://rubygems.pkg.github.com/YOUR_GITHUB_USERNAME your_gem-0.1.0.gem", color='white')
+                    print_colored("Make sure to authenticate with GitHub Packages using a personal access token.", color='white')
+
                     print_colored("Code generation completed successfully.", color='green')
                 else:
                     print_colored("Generation failed. No changes have been made.", color='red')
