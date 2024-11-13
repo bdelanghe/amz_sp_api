@@ -1,225 +1,113 @@
-## utils/models_utils.py
-
 import os
 import re
 import json
 from glob import glob
-from utils.interactive_utils import print_dry_run_report
 
-def process_api_files_core(api_files_dict, lib_directory, config_template_filename):
-    """
-    Core processing logic to prepare data structures for versioned models for all versions.
+class Models:
+    _instance = None
 
-    Args:
-        api_files_dict (dict): Dictionary mapping API names to lists of JSON file paths.
-        lib_directory (str): Directory where the generated libraries will be stored.
-        config_template_filename (str): Template configuration filename.
+    def __new__(cls, models_directory: str, lib_directory: str, config_template_filename: str):
+        if cls._instance is None:
+            cls._instance = super(Models, cls).__new__(cls)
+            cls._instance._initialize(models_directory, lib_directory, config_template_filename)
+        return cls._instance
 
-    Returns:
-        tuple: A tuple containing the list of models to generate and the current models dictionary.
-    """
-    models_to_generate = []
-    current_models_dict = {}
+    def _initialize(self, models_directory: str, lib_directory: str, config_template_filename: str):
+        self.models_directory = models_directory
+        self.lib_directory = lib_directory
+        self.config_template_filename = config_template_filename
+        self.api_files = self._collect_api_files()
+        self.overview, self.models_to_generate = self._generate_model_overview()
 
-    for api_name, api_file_list in api_files_dict.items():
-        module_name = extract_module_name(api_name)
+    def _collect_api_files(self) -> dict[str, list[str]]:
+        json_file_paths = glob(os.path.join(self.models_directory, '**', '*.json'), recursive=True)
+        api_files = {}
+        for json_file_path in json_file_paths:
+            api_name = self._extract_api_name_from_path(json_file_path)
+            if api_name is not None:
+                api_files.setdefault(api_name, []).append(json_file_path)
+        return api_files
 
-        # Determine the latest version
-        latest_version_file = get_latest_version(api_file_list)
-        latest_version = extract_version_from_filename(os.path.basename(latest_version_file))
+    def _generate_model_overview(self) -> tuple[dict, list[dict]]:
+        overview = {
+            "total_apis": len(self.api_files),
+            "duplicates": [],
+            "api_details": []
+        }
+        models_to_generate = []
+        seen_versions = {}
 
-        processed_versions = set()
-        has_multiple_versions = len(api_file_list) > 1
-
-        for api_file in api_file_list:
-            file_name = os.path.basename(api_file)
-            version = extract_version_from_filename(file_name)
-
-            if version in processed_versions:
-                continue  # Avoid processing the same version multiple times
-            processed_versions.add(version)
-
-            versioned_module_name = f"AmzSpApi::{module_name}::V{version}"
-            versioned_api_name = f"{api_name}_V{version}"
-            model_identifier = f"{api_name} V{version}"
-            current_models_dict[model_identifier] = version
-
-            is_latest = version == latest_version
-
-            # Collect information for versioned model
-            models_to_generate.append({
-                "api_file": api_file,
-                "gem_name": versioned_api_name,
-                "module_name": versioned_module_name,
-                "lib_dir": os.path.join(lib_directory, api_name, f"v{version}"),
-                "config_path": os.path.join(lib_directory, api_name, f"v{version}", config_template_filename),
-                "version": version,
+        for api_name, api_file_list in self.api_files.items():
+            module_name = self._extract_module_name(api_name)
+            api_detail = {
                 "api_name": api_name,
-                "is_latest": is_latest,
-                "has_multiple_versions": has_multiple_versions
-            })
+                "file_count": len(api_file_list),
+                "versions": [],
+                "processed_versions": set()
+            }
 
-    return models_to_generate, current_models_dict
+            for api_file in api_file_list:
+                file_name = os.path.basename(api_file)
+                version = self._extract_version_from_filename(file_name)
 
-def generate_dry_run_report(api_files_dict, lib_directory, config_template_filename, previous_models_dict, gem_version):
-    """
-    Generate a dry-run report summarizing the changes.
+                if version in api_detail["processed_versions"]:
+                    overview["duplicates"].append({
+                        "api_name": api_name,
+                        "duplicate_version": version,
+                        "file_names": [f for f in api_file_list if version in f]
+                    })
+                    continue
 
-    Args:
-        api_files_dict: Dictionary mapping API names to lists of JSON file paths.
-        lib_directory: Directory where the generated libraries will be stored.
-        config_template_filename: Template configuration filename.
-        previous_models_dict: Dictionary of previous model identifiers and versions.
-        gem_version: The gem version.
+                if (api_name, version) in seen_versions:
+                    overview["duplicates"].append({
+                        "api_name": api_name,
+                        "duplicate_version": version,
+                        "file_names": [seen_versions[(api_name, version)], api_file]
+                    })
+                else:
+                    seen_versions[(api_name, version)] = api_file
 
-    Returns:
-        A dictionary summarizing the changes for dry-run purposes.
-    """
-    # Use the core processing logic to get models to generate and the current model versions.
-    models_to_generate, current_models_dict = process_api_files_core(api_files_dict, lib_directory, config_template_filename)
+                api_detail["versions"].append({
+                    "version": version,
+                    "file_name": file_name
+                })
 
-    # Initialize the report dictionary to track added, updated, and removed models
-    report = {
-        "sdk_upgrade_summary": {
-            "added": [],
-            "updated": [],
-            "removed": []
-        },
-        "gem_version": gem_version
-    }
+                models_to_generate.append({
+                    "api_file": api_file,
+                    "gem_name": f"{api_name}_V{version}",
+                    "module_name": f"AmzSpApi::{module_name}::V{version}",
+                    "lib_dir": os.path.join(self.lib_directory, api_name, f"v{version}"),
+                    "config_path": os.path.join(self.lib_directory, api_name, f"v{version}", self.config_template_filename),
+                    "version": version,
+                    "api_name": api_name,
+                    "is_latest": False,
+                    "has_multiple_versions": len(api_file_list) > 1
+                })
 
-    # Compare models to find new, updated, and removed models
-    new_models = set(current_models_dict.keys()) - set(previous_models_dict.keys())
-    removed_models = set(previous_models_dict.keys()) - set(current_models_dict.keys())
-    changed_defaults = {
-        model for model in current_models_dict
-        if model in previous_models_dict and current_models_dict[model] != previous_models_dict[model]
-    }
+            overview["api_details"].append(api_detail)
 
-    # Append added and updated models to the report
-    for model in models_to_generate:
-        model_identifier = f"{model['api_name']} V{model['version']}"
-        if model_identifier in new_models:
-            report["sdk_upgrade_summary"]["added"].append({
-                'api_name': model['api_name'],
-                'version': model['version']
-            })
-        elif model_identifier in changed_defaults:
-            report["sdk_upgrade_summary"]["updated"].append({
-                'api_name': model['api_name'],
-                'version': model['version']
-            })
+        return overview, models_to_generate
 
-    # Append removed models to the report
-    for model_identifier in removed_models:
-        api_name, version = model_identifier.rsplit(' V', 1)
-        report["sdk_upgrade_summary"]["removed"].append({
-            'api_name': api_name,
-            'version': version
-        })
+    def _extract_api_name_from_path(self, file_path: str) -> str | None:
+        path_parts = file_path.split(os.sep)
+        if 'models' not in path_parts:
+            return None
+        models_index = path_parts.index('models')
+        if models_index + 1 >= len(path_parts):
+            return None
+        return path_parts[models_index + 1]
 
-    return report
+    def _extract_module_name(self, api_name: str) -> str:
+        return ''.join(word.capitalize() for word in re.split('[-_]', api_name))
 
+    def _extract_version_from_filename(self, file_name: str) -> str:
+        match_version = re.search(r'V(\d+)', file_name, re.IGNORECASE)
+        if match_version:
+            return match_version.group(1)
+        match_date = re.search(r'(\d{4}-\d{2}-\d{2})', file_name)
+        if match_date:
+            return match_date.group(1).replace('-', '')
+        return '0'
 
-
-def collect_api_files(models_directory: str) -> dict:
-    """
-    Collect JSON files grouped by API name.
-
-    Args:
-        models_directory: Path to the models directory.
-
-    Returns:
-        A dictionary mapping API names to lists of JSON file paths.
-    """
-    json_file_paths = glob(os.path.join(models_directory, '**', '*.json'), recursive=True)
-    api_files = {}
-    for json_file_path in json_file_paths:
-        api_name = extract_api_name_from_path(json_file_path)
-        if api_name is None:
-            continue
-        api_files.setdefault(api_name, []).append(json_file_path)
-    return api_files
-
-def extract_api_name_from_path(file_path: str) -> str | None:
-    """
-    Extract the API name from the file path.
-
-    Args:
-        file_path: The path to the JSON file.
-
-    Returns:
-        The extracted API name, or None if not found.
-    """
-    path_parts = file_path.split(os.sep)
-    if 'models' not in path_parts:
-        return None
-    models_index = path_parts.index('models')
-    if models_index + 1 >= len(path_parts):
-        return None
-    return path_parts[models_index + 1]
-
-def read_models_json(file_path: str) -> dict:
-    """
-    Read the models from a JSON file.
-
-    Args:
-        file_path: Path to the models JSON file.
-
-    Returns:
-        A dictionary with model identifiers and their versions.
-    """
-    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
-        return {}
-    try:
-        with open(file_path, 'r') as file:
-            return json.load(file)
-    except json.JSONDecodeError:
-        print(f"Warning: Failed to parse JSON from {file_path}. Initializing as empty.")
-        return {}
-
-def extract_module_name(api_name: str) -> str:
-    """
-    Convert the API name to a module name by capitalizing letters after hyphens or underscores.
-
-    Args:
-        api_name: The API name.
-
-    Returns:
-        The module name.
-    """
-    return ''.join(word.capitalize() for word in re.split('[-_]', api_name))
-
-def get_latest_version(api_file_list: list) -> str:
-    """
-    Get the latest version from a list of API files based on date or version.
-
-    Args:
-        api_file_list: List of JSON file paths.
-
-    Returns:
-        The path to the file with the most recent version.
-    """
-    def version_key(file_path):
-        version = extract_version_from_filename(os.path.basename(file_path))
-        return int(version)  # Assumes all versions can be compared numerically
-
-    return max(api_file_list, key=version_key)
-
-def extract_version_from_filename(file_name: str) -> str:
-    """
-    Extract the version from the file name.
-
-    Args:
-        file_name: The JSON file name.
-
-    Returns:
-        The extracted version number as a string.
-    """
-    match_date = re.search(r'(\d{4}-\d{2}-\d{2})$', file_name)
-
-    if match_date:
-        version = match_date.group(1).replace('-', '')  # Remove dashes
-    else:
-        version = '0'  # Default version number
-    return version
+    def get_overview(self) -> dict:
+        return self.overview

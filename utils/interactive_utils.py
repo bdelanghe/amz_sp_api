@@ -4,7 +4,6 @@ import json
 __all__ = [
     'prompt_confirmation',
     'print_config',
-    'print_dry_run_report',
     'print_error',
     'print_info',
     'print_warning'
@@ -63,37 +62,39 @@ def print_config(config: dict, format_type: str = 'pretty') -> None:
             formatted_key = _format_key_value_pair(key, value, source)
             _print_colored(formatted_key, color=None, indent=2)
 
-def print_dry_run_report(report: dict, format_type: str = 'pretty') -> None:
+def print_model_overview(overview: dict, format_type: str = 'pretty', indent: int = 0) -> None:
     """
-    Print the dry-run report based on the provided JSON dictionary.
+    Print a detailed model overview in a readable format or as JSON.
 
     Args:
-        report: A dictionary summarizing the changes for dry-run purposes.
+        overview: The overview dictionary containing model details.
         format_type: The format in which to print the output ('pretty' or 'json').
+        indent: Number of spaces to indent the printed output.
     """
     if format_type == 'json':
-        print(json.dumps(report, indent=2))
+        print(json.dumps(overview, indent=2))
     else:
-        # Print the summary at the top
-        _print_section_title("SDK Upgrade Summary")
+        _print_section_title("Model Overview", indent=indent)
+        _print_colored(f"Total APIs: {overview['total_apis']}", color='cyan', indent=indent)
 
-        # Extract summaries
-        added_models = report["sdk_upgrade_summary"]["added"]
-        updated_models = report["sdk_upgrade_summary"]["updated"]
-        removed_models = report["sdk_upgrade_summary"]["removed"]
+        if overview['duplicates']:
+            _print_colored("Duplicates found:", color='red', indent=indent)
+            for duplicate in overview['duplicates']:
+                _print_colored(
+                    f"  API: {duplicate['api_name']} - Duplicate version: V{duplicate['duplicate_version']} - Files: {', '.join(duplicate['file_names'])}",
+                    color='yellow',
+                    indent=indent + 2
+                )
 
-        # Print summaries using a helper
-        _print_summary_section("Added Models", added_models, 'green')
-        _print_summary_section("Updated Models", updated_models, 'yellow')
-        _print_summary_section("Removed Models", removed_models, 'red')
-
-        # Gem version summary
-        _print_colored(f"Gem Version: {report['gem_version']}", color='\033[96m')
-
-        # Print detailed information for added, updated, and removed models, sorted alphabetically
-        _print_detailed_model_section("New Models Added", sorted(added_models, key=lambda x: x['api_name']), 'green', True)
-        _print_detailed_model_section("Models Updated", sorted(updated_models, key=lambda x: x['api_name']), 'yellow', True)
-        _print_detailed_model_section("Models Removed", sorted(removed_models, key=lambda x: x['api_name']), 'red', True)
+        for api in overview["api_details"]:
+            _print_colored(f"\nAPI Name: {api['api_name']}", color='green', indent=indent)
+            _print_colored(f"  File count: {api['file_count']}", color='white', indent=indent + 2)
+            for version_info in api["versions"]:
+                _print_colored(f"    Version: V{version_info['version']} - File: {version_info['file_name']}", color='white', indent=indent + 4)
+                if version_info['params']:
+                    _print_colored(f"      Params: {', '.join(version_info['params'])}", color='white', indent=indent + 6)
+                else:
+                    _print_colored("      Params: None", color='white', indent=indent + 6)
 
 def print_error(message: str) -> None:
     """
