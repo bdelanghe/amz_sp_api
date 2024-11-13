@@ -72,6 +72,8 @@ class Models:
                     "file_name": file_name
                 })
 
+                api_detail["processed_versions"].add(version)  # Keep as a set for internal use
+
                 models_to_generate.append({
                     "api_file": api_file,
                     "gem_name": f"{api_name}_V{version}",
@@ -84,6 +86,8 @@ class Models:
                     "has_multiple_versions": len(api_file_list) > 1
                 })
 
+            # Convert processed_versions set to a list for JSON serialization
+            api_detail["processed_versions"] = list(api_detail["processed_versions"])
             overview["api_details"].append(api_detail)
 
         return overview, models_to_generate
