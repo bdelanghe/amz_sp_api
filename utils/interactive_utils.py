@@ -44,21 +44,23 @@ def prompt_confirmation(message: str) -> bool:
         elif response in ('n', 'no'):
             return False
 
-def print_config(config: dict, source_info: dict, format_type: str = 'pretty') -> None:
+def print_config(config: dict, format_type: str = 'pretty') -> None:
     """
     Print the configuration information with appropriate formatting or as JSON.
 
     Args:
-        config: Dictionary containing the configuration values.
-        source_info: Dictionary containing the source of each configuration value.
+        config: Dictionary containing the configuration values and their sources.
         format_type: The format in which to print the output ('pretty' or 'json').
     """
     if format_type == 'json':
+        # Print as JSON, including both value and source
         print(json.dumps(config, indent=2))
     else:
         _print_section_title("Configuration Information")
-        for key, value in config.items():
-            formatted_key = _format_key_value_pair(key, value, source_info)
+        for key, entry in config.items():
+            value = entry['value']
+            source = entry['source']
+            formatted_key = _format_key_value_pair(key, value, source)
             _print_colored(formatted_key, color=None, indent=2)
 
 def print_dry_run_report(report: dict, format_type: str = 'pretty') -> None:
@@ -177,11 +179,18 @@ def _print_detailed_model_section(title: str, models: list, color: str, show_ver
             version_str = f" (V{model.get('version', 'N/A')})" if show_version else ""
             _print_colored(f"  {model['api_name']}{version_str}", color='white', indent=2)
 
-def _format_key_value_pair(key: str, value: str, source_info: dict) -> str:
+def _format_key_value_pair(key: str, value: str, source: str) -> str:
     """
     Format key-value pairs with color and source information.
+
+    Args:
+        key: The key to format.
+        value: The value associated with the key.
+        source: The source of the value.
+
+    Returns:
+        str: The formatted key-value pair string.
     """
-    source = source_info.get(key, 'unknown')
     source_color = SOURCE_COLORS.get(source, SOURCE_COLORS['unknown'])
 
     # Bold the key for better readability

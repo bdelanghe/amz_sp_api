@@ -42,7 +42,7 @@ def main() -> None:
 
     # Print configuration if flag is set
     if print_config_flag:
-        print_config(config.get_all(), config.get_sources(), format_type='json' if json_output else 'pretty', no_color=no_color)
+        config.print_config(format_type='json' if json_output else 'pretty')
         return
 
     # Collect API files
@@ -62,11 +62,11 @@ def main() -> None:
                 lib_directory=config.get('libDirectory'),
                 config_template_filename=config.get('configTemplateFilename')
             )
-            print_dry_run_report(report, format_type='json' if json_output else 'pretty', no_color=no_color)
+            print_dry_run_report(report, format_type='json' if json_output else 'pretty')
 
     else:
         # Print configuration information for non-dry-run scenario
-        print_config(config.get_all(), config.get_sources(), format_type='json' if json_output else 'pretty', no_color=no_color)
+        config.print_config(format_type='json' if json_output else 'pretty')
 
         if is_interactive:
             if not prompt_confirmation("Proceed with this configuration?"):
