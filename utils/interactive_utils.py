@@ -85,12 +85,12 @@ def print_model_overview(overview: dict, format_type: str = 'pretty', indent: in
                 )
 
         for api_name, api_details in overview["api_details"].items():
-            _print_colored(_format_config_entry("API Name", api_name), color='cyan', indent=indent)
+            _print_colored(_make_bold(api_name), color='cyan', indent=indent)
 
             for version, version_info in api_details["versions"].items():
                 # Colorize the version number based on the "is_latest" flag
                 is_latest_color = 'green' if version_info['is_latest'] else 'red'
-                _print_colored(_format_config_entry("Version", f"V{version}"), color=is_latest_color, indent=indent + 4)
+                _print_colored(_make_bold(f"V{version}"), color=is_latest_color, indent=indent + 4)
                 _print_colored(_format_config_entry("File", version_info['api_file']), color='white', indent=indent + 6)
 
                 # No colors for these details, but keys are bold
