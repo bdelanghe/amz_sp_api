@@ -95,15 +95,25 @@ def process_and_generate_models(models_overview: dict, config, is_dry_run: bool 
             print_info(f"Processing API: {api_name}")
             for version, version_info in api_details["versions"].items():
                 # Generate the versioned model
-                print_info(f"Generating model for API {api_name} Version V{version}")
+                module_name = version_info["module_name"]
+                gem_name = version_info["gem_name"]
                 output_dir = version_info["lib_dir"]
 
-                generate_model(
-                    api_file_path=version_info["api_file"],
-                    config_file_path=config.get('configTemplateFilename'),
-                    output_directory=output_dir,
-                    dry_run=is_dry_run
-                )
+                # Create a temporary config file with the updated module name
+                temp_config_path = config.create_temp_config_with_module(gem_name, module_name)
+
+                if is_dry_run:
+                    print_info(f"Dry run: Would generate model from {version_info['api_file']} with config {temp_config_path} to {output_dir}")
+                else:
+                    try:
+                        generate_model(
+                            api_file_path=version_info["api_file"],
+                            config_file_path=temp_config_path,
+                            output_directory=output_dir,
+                            dry_run=is_dry_run
+                        )
+                    finally:
+                        os.remove(temp_config_path)
 
                 if is_interactive:
                     if not prompt_confirmation(f"Model for API {api_name} Version V{version} generated. Proceed to the next?"):
@@ -115,12 +125,20 @@ def process_and_generate_models(models_overview: dict, config, is_dry_run: bool 
                     unversioned_output_dir = os.path.join(config.get('libDirectory'), api_name)
                     print_info(f"Generating unversioned model for API {api_name} (latest version V{version})")
 
-                    generate_model(
-                        api_file_path=version_info["api_file"],
-                        config_file_path=config.get('configTemplateFilename'),
-                        output_directory=unversioned_output_dir,
-                        dry_run=is_dry_run
-                    )
+                    temp_config_path = config.create_temp_config_with_module(gem_name, module_name)
+
+                    if is_dry_run:
+                        print_info(f"Dry run: Would generate unversioned model from {version_info['api_file']} with config {temp_config_path} to {unversioned_output_dir}")
+                    else:
+                        try:
+                            generate_model(
+                                api_file_path=version_info["api_file"],
+                                config_file_path=temp_config_path,
+                                output_directory=unversioned_output_dir,
+                                dry_run=is_dry_run
+                            )
+                        finally:
+                            os.remove(temp_config_path)
 
                     if is_interactive:
                         if not prompt_confirmation(f"Unversioned model for API {api_name} generated. Proceed to the next?"):
