@@ -94,10 +94,10 @@ def process_and_generate_models(models_overview: dict, config, is_dry_run: bool 
         for api_name, api_details in models_overview["api_details"].items():
             print_info(f"Processing API: {api_name}")
             for version, version_info in api_details["versions"].items():
+                # Generate the versioned model
                 print_info(f"Generating model for API {api_name} Version V{version}")
                 output_dir = version_info["lib_dir"]
 
-                # Call generate_model with dry_run flag
                 generate_model(
                     api_file_path=version_info["api_file"],
                     config_file_path=config.get('configTemplateFilename'),
@@ -109,3 +109,20 @@ def process_and_generate_models(models_overview: dict, config, is_dry_run: bool 
                     if not prompt_confirmation(f"Model for API {api_name} Version V{version} generated. Proceed to the next?"):
                         print_error("Operation cancelled by user.")
                         return
+
+                # Check if the current version is the latest and generate an unversioned model
+                if version_info['is_latest']:
+                    unversioned_output_dir = os.path.join(config.get('libDirectory'), api_name)
+                    print_info(f"Generating unversioned model for API {api_name} (latest version V{version})")
+
+                    generate_model(
+                        api_file_path=version_info["api_file"],
+                        config_file_path=config.get('configTemplateFilename'),
+                        output_directory=unversioned_output_dir,
+                        dry_run=is_dry_run
+                    )
+
+                    if is_interactive:
+                        if not prompt_confirmation(f"Unversioned model for API {api_name} generated. Proceed to the next?"):
+                            print_error("Operation cancelled by user.")
+                            return
