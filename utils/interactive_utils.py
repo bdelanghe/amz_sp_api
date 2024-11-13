@@ -1,3 +1,5 @@
+import json
+
 # Public functions to be exported when using `from module import *`
 __all__ = [
     'prompt_confirmation',
@@ -42,47 +44,54 @@ def prompt_confirmation(message: str) -> bool:
         elif response in ('n', 'no'):
             return False
 
-def print_config(config: dict, source_info: dict) -> None:
+def print_config(config: dict, source_info: dict, format_type: str = 'pretty') -> None:
     """
-    Print the configuration information with appropriate formatting.
+    Print the configuration information with appropriate formatting or as JSON.
 
     Args:
         config: Dictionary containing the configuration values.
         source_info: Dictionary containing the source of each configuration value.
+        format_type: The format in which to print the output ('pretty' or 'json').
     """
-    _print_section_title("Configuration Information")
+    if format_type == 'json':
+        print(json.dumps(config, indent=2))
+    else:
+        _print_section_title("Configuration Information")
+        for key, value in config.items():
+            formatted_key = _format_key_value_pair(key, value, source_info)
+            _print_colored(formatted_key, color=None, indent=2)
 
-    for key, value in config.items():
-        formatted_key = _format_key_value_pair(key, value, source_info)
-        _print_colored(formatted_key, color=None, indent=2)
-
-def print_dry_run_report(report: dict) -> None:
+def print_dry_run_report(report: dict, format_type: str = 'pretty') -> None:
     """
     Print the dry-run report based on the provided JSON dictionary.
 
     Args:
         report: A dictionary summarizing the changes for dry-run purposes.
+        format_type: The format in which to print the output ('pretty' or 'json').
     """
-    # Print the summary at the top
-    _print_section_title("SDK Upgrade Summary")
+    if format_type == 'json':
+        print(json.dumps(report, indent=2))
+    else:
+        # Print the summary at the top
+        _print_section_title("SDK Upgrade Summary")
 
-    # Extract summaries
-    added_models = report["sdk_upgrade_summary"]["added"]
-    updated_models = report["sdk_upgrade_summary"]["updated"]
-    removed_models = report["sdk_upgrade_summary"]["removed"]
+        # Extract summaries
+        added_models = report["sdk_upgrade_summary"]["added"]
+        updated_models = report["sdk_upgrade_summary"]["updated"]
+        removed_models = report["sdk_upgrade_summary"]["removed"]
 
-    # Print summaries using a helper
-    _print_summary_section("Added Models", added_models, 'green')
-    _print_summary_section("Updated Models", updated_models, 'yellow')
-    _print_summary_section("Removed Models", removed_models, 'red')
+        # Print summaries using a helper
+        _print_summary_section("Added Models", added_models, 'green')
+        _print_summary_section("Updated Models", updated_models, 'yellow')
+        _print_summary_section("Removed Models", removed_models, 'red')
 
-    # Gem version summary
-    _print_colored(f"Gem Version: {report['gem_version']}", color='\033[96m')
+        # Gem version summary
+        _print_colored(f"Gem Version: {report['gem_version']}", color='\033[96m')
 
-    # Print detailed information for added, updated, and removed models, sorted alphabetically
-    _print_detailed_model_section("New Models Added", sorted(added_models, key=lambda x: x['api_name']), 'green')
-    _print_detailed_model_section("Models Updated", sorted(updated_models, key=lambda x: x['api_name']), 'yellow', True)
-    _print_detailed_model_section("Models Removed", sorted(removed_models, key=lambda x: x['api_name']), 'red', True)
+        # Print detailed information for added, updated, and removed models, sorted alphabetically
+        _print_detailed_model_section("New Models Added", sorted(added_models, key=lambda x: x['api_name']), 'green', True)
+        _print_detailed_model_section("Models Updated", sorted(updated_models, key=lambda x: x['api_name']), 'yellow', True)
+        _print_detailed_model_section("Models Removed", sorted(removed_models, key=lambda x: x['api_name']), 'red', True)
 
 def print_error(message: str) -> None:
     """

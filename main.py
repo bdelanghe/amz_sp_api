@@ -2,10 +2,11 @@
 
 import tempfile
 import os
+import json
 from config.config import Config
 from utils.codegen_utils import check_dependencies, generate_model
 from utils.models_utils import collect_api_files
-from utils.interactive_utils import print_error, print_info, prompt_confirmation, print_dry_run_report
+from utils.interactive_utils import print_error, print_info, prompt_confirmation, print_dry_run_report, print_config
 
 def main() -> None:
     """
@@ -17,11 +18,17 @@ def main() -> None:
     parser.add_argument('--dry-run', action='store_true', help='Perform a dry run without making any changes.')
     parser.add_argument('--interactive', action='store_true', help='Run the script in interactive mode, prompting for confirmation at each step.')
     parser.add_argument('--print-config', action='store_true', help='Print the configuration and exit.')
+    parser.add_argument('--json-output', action='store_true', help='Output the results in JSON format.')
+    parser.add_argument('--no-pretty', action='store_true', help='Disable pretty printing for terminal output.')
+    parser.add_argument('--no-color', action='store_true', help='Disable color in the output.')
     args = parser.parse_args()
 
     is_dry_run = args.dry_run
     is_interactive = args.interactive
-    print_config = args.print_config
+    print_config_flag = args.print_config
+    json_output = args.json_output
+    no_pretty = args.no_pretty
+    no_color = args.no_color
 
     # Ensure dry-run and interactive aren't used together
     if is_dry_run and is_interactive:
@@ -34,8 +41,8 @@ def main() -> None:
     config = Config()
 
     # Print configuration if flag is set
-    if print_config:
-        config.print_config()
+    if print_config_flag:
+        print_config(config.get_all(), config.get_sources(), format_type='json' if json_output else 'pretty', no_color=no_color)
         return
 
     # Collect API files
@@ -55,11 +62,11 @@ def main() -> None:
                 lib_directory=config.get('libDirectory'),
                 config_template_filename=config.get('configTemplateFilename')
             )
-            print_dry_run_report(report)
+            print_dry_run_report(report, format_type='json' if json_output else 'pretty', no_color=no_color)
 
     else:
         # Print configuration information for non-dry-run scenario
-        config.print_config()
+        print_config(config.get_all(), config.get_sources(), format_type='json' if json_output else 'pretty', no_color=no_color)
 
         if is_interactive:
             if not prompt_confirmation("Proceed with this configuration?"):
