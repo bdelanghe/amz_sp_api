@@ -85,14 +85,18 @@ def print_model_overview(overview: dict, format_type: str = 'pretty', indent: in
                     indent=indent + 2
                 )
 
-        for api in overview["api_details"]:
-            _print_colored(f"\nAPI Name: {api['api_name']}", color='green', indent=indent)
-            _print_colored(f"File count: {api['file_count']}", color='white', indent=indent + 2)
-            for version_info in api["versions"]:
-                _print_colored(f"Version: V{version_info['version']} - File: {version_info['file_name']}", color='white', indent=indent + 4)
-                model_name = f"amz_sp_api_{api['api_name']}_V{version_info['version']}"
-                _print_colored(f"Generated Model Name: {model_name}", color='cyan', indent=indent + 6)
-                # Removed params as they aren't used here; add if needed later
+        for api_name, api_details in overview["api_details"].items():
+            _print_colored(f"\nAPI Name: {api_name}", color='green', indent=indent)
+            _print_colored(f"File count: {api_details['file_count']}", color='white', indent=indent + 2)
+
+            for version, version_info in api_details["versions"].items():
+                _print_colored(f"Version: V{version} - File: {version_info['api_file']}", color='white', indent=indent + 4)
+                _print_colored(f"Generated Gem Name: {version_info['gem_name']}", color='cyan', indent=indent + 6)
+                _print_colored(f"Module Name: {version_info['module_name']}", color='cyan', indent=indent + 6)
+                _print_colored(f"Library Directory: {version_info['lib_dir']}", color='white', indent=indent + 6)
+                _print_colored(f"Config Path: {version_info['config_path']}", color='white', indent=indent + 6)
+                _print_colored(f"Is Latest Version: {'Yes' if version_info['is_latest'] else 'No'}", color='yellow', indent=indent + 6)
+                _print_colored(f"Has Multiple Versions: {'Yes' if version_info['has_multiple_versions'] else 'No'}", color='yellow', indent=indent + 6)
 
 def print_error(message: str) -> None:
     """Print an error message in red."""

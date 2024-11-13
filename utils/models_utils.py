@@ -29,51 +29,50 @@ class Models:
                 api_files.setdefault(api_name, []).append(json_file_path)
         return api_files
 
-def _generate_model_overview(self) -> dict:
-    overview = {
-        "total_apis": len(self.api_files),
-        "duplicates": [],
-        "api_details": {}
-    }
-    seen_versions = {}
-
-    for api_name, api_file_list in self.api_files.items():
-        module_name = self._extract_module_name(api_name)
-        api_detail = {
-            "file_count": len(api_file_list),
-            "versions": {}
+    def _generate_model_overview(self) -> dict:
+        overview = {
+            "total_apis": len(self.api_files),
+            "duplicates": [],
+            "api_details": {}
         }
+        seen_versions = {}
 
-        for api_file in api_file_list:
-            file_name = os.path.basename(api_file)
-            version = self._extract_version_from_filename(file_name)
-
-            if version in api_detail["versions"]:
-                overview["duplicates"].append({
-                    "api_name": api_name,
-                    "duplicate_version": version,
-                    "file_names": [f for f in api_file_list if version in f]
-                })
-                continue
-
-            is_latest = version == max(api_detail["versions"].keys(), default=version)
-
-            api_detail["versions"][version] = {
-                "api_file": api_file,
-                "gem_name": f"amz_sp_api_{api_name}_V{version}",
-                "module_name": f"AmzSpApi::{module_name}::V{version}",
-                "lib_dir": os.path.join(self.lib_directory, api_name, f"v{version}"),
-                "config_path": os.path.join(self.lib_directory, api_name, f"v{version}", self.config_template_filename),
-                "is_latest": is_latest,
-                "has_multiple_versions": len(api_file_list) > 1,
-                "is_processed": True  # Adding the is_processed flag directly here
+        for api_name, api_file_list in self.api_files.items():
+            module_name = self._extract_module_name(api_name)
+            api_detail = {
+                "file_count": len(api_file_list),
+                "versions": {}
             }
 
-            seen_versions[(api_name, version)] = api_file
+            for api_file in api_file_list:
+                file_name = os.path.basename(api_file)
+                version = self._extract_version_from_filename(file_name)
 
-        overview["api_details"][api_name] = api_detail
+                if version in api_detail["versions"]:
+                    overview["duplicates"].append({
+                        "api_name": api_name,
+                        "duplicate_version": version,
+                        "file_names": [f for f in api_file_list if version in f]
+                    })
+                    continue
 
-    return overview
+                is_latest = version == max(api_detail["versions"].keys(), default=version)
+
+                api_detail["versions"][version] = {
+                    "api_file": api_file,
+                    "gem_name": f"amz_sp_api_{api_name}_V{version}",
+                    "module_name": f"AmzSpApi::{module_name}::V{version}",
+                    "lib_dir": os.path.join(self.lib_directory, api_name, f"v{version}"),
+                    "config_path": os.path.join(self.lib_directory, api_name, f"v{version}", self.config_template_filename),
+                    "is_latest": is_latest,
+                    "has_multiple_versions": len(api_file_list) > 1,
+                }
+
+                seen_versions[(api_name, version)] = api_file
+
+            overview["api_details"][api_name] = api_detail
+
+        return overview
 
     def _extract_api_name_from_path(self, file_path: str) -> str | None:
         path_parts = file_path.split(os.sep)
