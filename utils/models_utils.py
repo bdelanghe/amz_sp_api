@@ -29,65 +29,51 @@ class Models:
                 api_files.setdefault(api_name, []).append(json_file_path)
         return api_files
 
-    def _generate_model_overview(self) -> dict:
-        overview = {
-            "total_apis": len(self.api_files),
-            "duplicates": [],
-            "api_details": []
-        }
-        seen_versions = {}
+def _generate_model_overview(self) -> dict:
+    overview = {
+        "total_apis": len(self.api_files),
+        "duplicates": [],
+        "api_details": {}
+    }
+    seen_versions = {}
 
-        for api_name, api_file_list in self.api_files.items():
-            module_name = self._extract_module_name(api_name)
-            api_detail = {
-                "api_name": api_name,
-                "file_count": len(api_file_list),
-                "versions": [],
-                "processed_versions": set()
+    for api_name, api_file_list in self.api_files.items():
+        module_name = self._extract_module_name(api_name)
+        api_detail = {
+            "file_count": len(api_file_list),
+            "versions": {}
+        }
+
+        for api_file in api_file_list:
+            file_name = os.path.basename(api_file)
+            version = self._extract_version_from_filename(file_name)
+
+            if version in api_detail["versions"]:
+                overview["duplicates"].append({
+                    "api_name": api_name,
+                    "duplicate_version": version,
+                    "file_names": [f for f in api_file_list if version in f]
+                })
+                continue
+
+            is_latest = version == max(api_detail["versions"].keys(), default=version)
+
+            api_detail["versions"][version] = {
+                "api_file": api_file,
+                "gem_name": f"amz_sp_api_{api_name}_V{version}",
+                "module_name": f"AmzSpApi::{module_name}::V{version}",
+                "lib_dir": os.path.join(self.lib_directory, api_name, f"v{version}"),
+                "config_path": os.path.join(self.lib_directory, api_name, f"v{version}", self.config_template_filename),
+                "is_latest": is_latest,
+                "has_multiple_versions": len(api_file_list) > 1,
+                "is_processed": True  # Adding the is_processed flag directly here
             }
 
-            for api_file in api_file_list:
-                file_name = os.path.basename(api_file)
-                version = self._extract_version_from_filename(file_name)
+            seen_versions[(api_name, version)] = api_file
 
-                if version in api_detail["processed_versions"]:
-                    overview["duplicates"].append({
-                        "api_name": api_name,
-                        "duplicate_version": version,
-                        "file_names": [f for f in api_file_list if version in f]
-                    })
-                    continue
+        overview["api_details"][api_name] = api_detail
 
-                if (api_name, version) in seen_versions:
-                    overview["duplicates"].append({
-                        "api_name": api_name,
-                        "duplicate_version": version,
-                        "file_names": [seen_versions[(api_name, version)], api_file]
-                    })
-                else:
-                    seen_versions[(api_name, version)] = api_file
-
-                model_entry = {
-                    "api_file": api_file,
-                    "gem_name": f"amz_sp_api_{api_name}_V{version}",
-                    "module_name": f"AmzSpApi::{module_name}::V{version}",
-                    "lib_dir": os.path.join(self.lib_directory, api_name, f"v{version}"),
-                    "config_path": os.path.join(self.lib_directory, api_name, f"v{version}", self.config_template_filename),
-                    "version": version,
-                    "api_name": api_name,
-                    "is_latest": False,
-                    "has_multiple_versions": len(api_file_list) > 1
-                }
-
-                # Unpack model_entry into the version detail for easier integration
-                api_detail["versions"].append({**model_entry})
-                api_detail["processed_versions"].add(version)
-
-            # Convert processed_versions set to a list for JSON serialization
-            api_detail["processed_versions"] = list(api_detail["processed_versions"])
-            overview["api_details"].append(api_detail)
-
-        return overview
+    return overview
 
     def _extract_api_name_from_path(self, file_path: str) -> str | None:
         path_parts = file_path.split(os.sep)
