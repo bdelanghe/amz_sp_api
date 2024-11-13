@@ -112,11 +112,11 @@ def print_dry_run_info(api_file_path: str, config_file_path: str, module_name: s
         output_directory: Output directory for generated files.
         indent: Number of spaces to indent the printed output.
     """
-    _print_header("Dry Run Information", indent=indent)
+    _print_colored(_format_config_entry("Module Name", module_name), color='cyan', indent=indent + 2)
     _print_colored(_format_config_entry("API File Path", api_file_path), color='white', indent=indent + 2)
     _print_colored(_format_config_entry("Config File Path", config_file_path), color='white', indent=indent + 2)
-    _print_colored(_format_config_entry("Module Name", module_name), color='cyan', indent=indent + 2)
     _print_colored(_format_config_entry("Output Directory", output_directory), color='white', indent=indent + 2)
+    print()
 
 def print_error(message: str) -> None:
     """Print an error message in red."""
