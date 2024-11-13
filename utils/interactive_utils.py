@@ -60,7 +60,6 @@ def print_config(config: dict, format_type: str = 'pretty') -> None:
             source = entry['source']
             formatted_entry = _format_config_entry(key, value, source)
             _print_colored(formatted_entry, color=None, indent=2)
-
 def print_model_overview(overview: dict, format_type: str = 'pretty', indent: int = 0) -> None:
     """
     Print a detailed model overview in a readable format or as JSON.
@@ -74,7 +73,7 @@ def print_model_overview(overview: dict, format_type: str = 'pretty', indent: in
         print(json.dumps(overview, indent=2))
     else:
         _print_header("Model Overview", indent=indent)
-        _print_colored(f"Total APIs: {overview['total_apis']}", color='cyan', indent=indent)
+        _print_colored(_format_config_entry("Total APIs", overview['total_apis']), color='cyan', indent=indent)
 
         if overview['duplicates']:
             _print_colored("Duplicates found:", color='red', indent=indent)
@@ -86,27 +85,20 @@ def print_model_overview(overview: dict, format_type: str = 'pretty', indent: in
                 )
 
         for api_name, api_details in overview["api_details"].items():
-            _print_colored(f"\nAPI Name: {api_name}", color='green', indent=indent)
-            _print_colored(f"File count: {api_details['file_count']}", color='white', indent=indent + 2)
+            _print_colored(_format_config_entry("API Name", api_name), color='cyan', indent=indent)
 
             for version, version_info in api_details["versions"].items():
-                # Colorize the version number
-                _print_colored(f"Version: V{version}", color='cyan', indent=indent + 4)
-                
-                 # Apply color to "Yes" and "No" responses
-                is_latest_colored = 'Yes' if version_info['is_latest'] else 'No'
+                # Colorize the version number based on the "is_latest" flag
                 is_latest_color = 'green' if version_info['is_latest'] else 'red'
-                _print_colored(f"Is Latest Version: {is_latest_colored}", color=is_latest_color, indent=indent + 6)
+                _print_colored(_format_config_entry("Version", f"V{version}"), color=is_latest_color, indent=indent + 4)
+                _print_colored(_format_config_entry("File", version_info['api_file']), color='white', indent=indent + 6)
 
-                _print_colored(f"File: {version_info['api_file']}", color='white', indent=indent + 6)
-                
-                # No colors for these details
-                _print_colored(f"Generated Gem Name: {version_info['gem_name']}", color=None, indent=indent + 6)
-                _print_colored(f"Module Name: {version_info['module_name']}", color=None, indent=indent + 6)
-                _print_colored(f"Library Directory: {version_info['lib_dir']}", color='white', indent=indent + 6)
-                _print_colored(f"Config Path: {version_info['config_path']}", color='white', indent=indent + 6)
+                # No colors for these details, but keys are bold
+                _print_colored(_format_config_entry("Generated Gem Name", version_info['gem_name']), color=None, indent=indent + 6)
+                _print_colored(_format_config_entry("Module Name", version_info['module_name']), color=None, indent=indent + 6)
+                _print_colored(_format_config_entry("Library Directory", version_info['lib_dir']), color='white', indent=indent + 6)
+                _print_colored(_format_config_entry("Config Path", version_info['config_path']), color='white', indent=indent + 6)
 
-               
 def print_error(message: str) -> None:
     """Print an error message in red."""
     _print_colored(f"Error: {message}", color='red')
@@ -151,20 +143,24 @@ def _print_header(title: str, color: str = '\033[96m', underline_char: str = '='
     _print_colored(title, color=color, indent=indent)
     _print_colored(underline_char * len(title), color=color, indent=indent)
 
-def _format_config_entry(key: str, value: str, source: str) -> str:
+def _format_config_entry(key: str, value: str, source: str | None = None) -> str:
     """
-    Format a key-value pair for configuration output with source information.
-    
+    Format a key-value pair for output with optional source information.
+
     Args:
         key: The key to format.
         value: The value associated with the key.
-        source: The source of the value.
-    
+        source: The source of the value (optional).
+
     Returns:
         str: The formatted key-value pair string.
     """
-    source_color = SOURCE_COLORS.get(source, SOURCE_COLORS['unknown'])
-    return f"{_make_bold(key)}: {value} {_format_source(source, source_color)}"
+    formatted_key = _make_bold(key)
+    if source:
+        source_color = SOURCE_COLORS.get(source, SOURCE_COLORS['unknown'])
+        return f"{formatted_key}: {value} {_format_source(source, source_color)}"
+    else:
+        return f"{formatted_key}: {value}"
 
 def _make_bold(text: str) -> str:
     """Return the text formatted in bold."""
