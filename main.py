@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
-import tempfile
 import os
 from config.config import Config
-from utils.codegen_utils import check_dependencies, generate_model
+from utils.codegen_utils import check_dependencies, process_and_generate_models
 from utils.models_utils import Models
 from utils.interactive_utils import print_error, print_info, prompt_confirmation, print_model_overview
-
 
 def main() -> None:
     # Parse command-line arguments
@@ -43,14 +41,7 @@ def main() -> None:
         return
 
     # Step 4: Dry Run or Generate Models
-    if not is_dry_run:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            for api_name, api_files in models.api_files.items():
-                print_info(f"Generating model for API: {api_name}")
-                generate_model(api_files[0], config.get('configTemplateFilename'), os.path.join(temp_dir, 'output'))
-                if is_interactive and not prompt_confirmation(f"Model for API {api_name} generated. Proceed to the next?"):
-                    print_error("Operation cancelled by user.")
-                    return
+    process_and_generate_models(models.get_overview(), config, is_dry_run, is_interactive)
 
 if __name__ == '__main__':
     main()
