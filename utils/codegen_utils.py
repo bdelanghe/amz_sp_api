@@ -4,7 +4,7 @@ import subprocess
 import shutil
 import os
 import tempfile
-from utils.interactive_utils import print_info, print_error, prompt_confirmation
+from utils.interactive_utils import print_info, print_error, prompt_confirmation, print_dry_run_info
 
 SWAGGER_CODEGEN_COMMAND = 'swagger-codegen'
 
@@ -31,10 +31,7 @@ def generate_model(api_file_path: str, config_file_path: str, output_directory: 
         dry_run: If True, only simulate the generation without creating files.
     """
     if dry_run:
-        print_info(
-            f"Dry run: Would generate model from {api_file_path} "
-            f"with config {config_file_path} (module: {module_name}) to {output_directory}"
-        )
+        print_dry_run_info(api_file_path, config_file_path, module_name, output_directory)
         return
 
     run_swagger_codegen(api_file_path, config_file_path, output_directory)
@@ -106,22 +103,16 @@ def process_and_generate_models(models_overview: dict, config, is_dry_run: bool 
                 # Create a temporary config file with the updated module name
                 temp_config_path = config.create_temp_config_with_module(gem_name, module_name)
 
-                if is_dry_run:
-                    print_info(
-                        f"Dry run: Would generate model from {version_info['api_file']} with config {temp_config_path} "
-                        f"(module: {module_name}) to {output_dir}"
+                try:
+                    generate_model(
+                        api_file_path=version_info["api_file"],
+                        config_file_path=temp_config_path,
+                        output_directory=output_dir,
+                        module_name=module_name,
+                        dry_run=is_dry_run
                     )
-                else:
-                    try:
-                        generate_model(
-                            api_file_path=version_info["api_file"],
-                            config_file_path=temp_config_path,
-                            output_directory=output_dir,
-                            module_name=module_name,
-                            dry_run=is_dry_run
-                        )
-                    finally:
-                        os.remove(temp_config_path)
+                finally:
+                    os.remove(temp_config_path)
 
                 if is_interactive:
                     if not prompt_confirmation(f"Model for API {api_name} Version V{version} generated. Proceed to the next?"):
@@ -135,22 +126,16 @@ def process_and_generate_models(models_overview: dict, config, is_dry_run: bool 
 
                     temp_config_path = config.create_temp_config_with_module(gem_name, module_name)
 
-                    if is_dry_run:
-                        print_info(
-                            f"Dry run: Would generate unversioned model from {version_info['api_file']} with config {temp_config_path} "
-                            f"(module: {module_name}) to {unversioned_output_dir}"
+                    try:
+                        generate_model(
+                            api_file_path=version_info["api_file"],
+                            config_file_path=temp_config_path,
+                            output_directory=unversioned_output_dir,
+                            module_name=module_name,
+                            dry_run=is_dry_run
                         )
-                    else:
-                        try:
-                            generate_model(
-                                api_file_path=version_info["api_file"],
-                                config_file_path=temp_config_path,
-                                output_directory=unversioned_output_dir,
-                                module_name=module_name,
-                                dry_run=is_dry_run
-                            )
-                        finally:
-                            os.remove(temp_config_path)
+                    finally:
+                        os.remove(temp_config_path)
 
                     if is_interactive:
                         if not prompt_confirmation(f"Unversioned model for API {api_name} generated. Proceed to the next?"):

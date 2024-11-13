@@ -7,7 +7,8 @@ __all__ = [
     'print_error',
     'print_info',
     'print_warning',
-    'print_model_overview'
+    'print_model_overview',
+    'print_dry_run_info'
 ]
 
 # ANSI escape codes for colors and text styles
@@ -60,6 +61,7 @@ def print_config(config: dict, format_type: str = 'pretty') -> None:
             source = entry['source']
             formatted_entry = _format_config_entry(key, value, source)
             _print_colored(formatted_entry, color=None, indent=2)
+
 def print_model_overview(overview: dict, format_type: str = 'pretty', indent: int = 0) -> None:
     """
     Print a detailed model overview in a readable format or as JSON.
@@ -98,6 +100,23 @@ def print_model_overview(overview: dict, format_type: str = 'pretty', indent: in
                 _print_colored(_format_config_entry("Module Name", version_info['module_name']), color=None, indent=indent + 6)
                 _print_colored(_format_config_entry("Library Directory", version_info['lib_dir']), color='white', indent=indent + 6)
                 _print_colored(_format_config_entry("Config Path", version_info['config_path']), color='white', indent=indent + 6)
+
+def print_dry_run_info(api_file_path: str, config_file_path: str, module_name: str, output_directory: str, indent: int = 0) -> None:
+    """
+    Print detailed information for a dry run of model generation.
+
+    Args:
+        api_file_path: Path to the API JSON file.
+        config_file_path: Path to the config file.
+        module_name: The module name to be generated.
+        output_directory: Output directory for generated files.
+        indent: Number of spaces to indent the printed output.
+    """
+    _print_header("Dry Run Information", indent=indent)
+    _print_colored(_format_config_entry("API File Path", api_file_path), color='white', indent=indent + 2)
+    _print_colored(_format_config_entry("Config File Path", config_file_path), color='white', indent=indent + 2)
+    _print_colored(_format_config_entry("Module Name", module_name), color='cyan', indent=indent + 2)
+    _print_colored(_format_config_entry("Output Directory", output_directory), color='white', indent=indent + 2)
 
 def print_error(message: str) -> None:
     """Print an error message in red."""
