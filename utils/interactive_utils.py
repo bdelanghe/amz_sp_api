@@ -90,13 +90,24 @@ def print_model_overview(overview: dict, format_type: str = 'pretty', indent: in
             _print_colored(f"File count: {api_details['file_count']}", color='white', indent=indent + 2)
 
             for version, version_info in api_details["versions"].items():
-                _print_colored(f"Version: V{version} - File: {version_info['api_file']}", color='white', indent=indent + 4)
-                _print_colored(f"Generated Gem Name: {version_info['gem_name']}", color='cyan', indent=indent + 6)
-                _print_colored(f"Module Name: {version_info['module_name']}", color='cyan', indent=indent + 6)
+                # Colorize the version number
+                _print_colored(f"Version: V{version}", color='cyan', indent=indent + 4)
+                _print_colored(f"File: {version_info['api_file']}", color='white', indent=indent + 6)
+                
+                # No colors for these details
+                _print_colored(f"Generated Gem Name: {version_info['gem_name']}", color=None, indent=indent + 6)
+                _print_colored(f"Module Name: {version_info['module_name']}", color=None, indent=indent + 6)
                 _print_colored(f"Library Directory: {version_info['lib_dir']}", color='white', indent=indent + 6)
                 _print_colored(f"Config Path: {version_info['config_path']}", color='white', indent=indent + 6)
-                _print_colored(f"Is Latest Version: {'Yes' if version_info['is_latest'] else 'No'}", color='yellow', indent=indent + 6)
-                _print_colored(f"Has Multiple Versions: {'Yes' if version_info['has_multiple_versions'] else 'No'}", color='yellow', indent=indent + 6)
+
+                # Apply color to "Yes" and "No" responses
+                is_latest_colored = 'Yes' if version_info['is_latest'] else 'No'
+                is_latest_color = 'green' if version_info['is_latest'] else 'red'
+                _print_colored(f"Is Latest Version: {is_latest_colored}", color=is_latest_color, indent=indent + 6)
+
+                has_multiple_colored = 'Yes' if version_info['has_multiple_versions'] else 'No'
+                has_multiple_color = 'green' if version_info['has_multiple_versions'] else 'red'
+                _print_colored(f"Has Multiple Versions: {has_multiple_colored}", color=has_multiple_color, indent=indent + 6)
 
 def print_error(message: str) -> None:
     """Print an error message in red."""
