@@ -2,6 +2,7 @@ import os
 import re
 import json
 from glob import glob
+from utils.interactive_utils import print_model_overview
 
 class Models:
     _instance = None
@@ -115,3 +116,12 @@ class Models:
 
     def get_overview(self) -> dict:
         return self.overview
+
+    def print_overview(self, format_type: str = 'pretty') -> None:
+        """
+        Print the model overview using the provided format type.
+
+        Args:
+            format_type: The format in which to print the overview ('pretty' or 'json').
+        """
+        print_model_overview(self.overview, format_type=format_type)
