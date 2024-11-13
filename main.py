@@ -43,14 +43,7 @@ def main() -> None:
         return
 
     # Step 4: Dry Run or Generate Models
-    if is_dry_run:
-        print_info("Dry run mode: Listing models to be generated...")
-        for model in models.models_to_generate:
-            print_info(f"Would generate model: {model['api_name']} V{model['version']} - Output directory: {model['lib_dir']}")
-        if is_interactive and not prompt_confirmation("Dry run completed. Proceed to actual generation?"):
-            print_error("Operation cancelled by user.")
-            return
-    else:
+    if not is_dry_run:
         with tempfile.TemporaryDirectory() as temp_dir:
             for api_name, api_files in models.api_files.items():
                 print_info(f"Generating model for API: {api_name}")
