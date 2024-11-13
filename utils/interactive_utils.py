@@ -10,16 +10,15 @@ __all__ = [
     'print_model_overview'
 ]
 
-# Constants for suffixes and colors with actual ANSI codes
+# ANSI escape codes for colors and text styles
 SOURCE_COLORS = {
-    'config': '\033[96m',   # cyan
-    'env': '\033[93m',      # yellow
-    'git': '\033[94m',      # blue
-    'GitHub': '\033[95m',   # magenta
-    'unknown': '\033[92m'   # green 
+    'config': '\033[96m',  # cyan
+    'env': '\033[93m',     # yellow
+    'git': '\033[94m',     # blue
+    'GitHub': '\033[95m',  # magenta
+    'unknown': '\033[92m'  # green
 }
 
-# ANSI escape codes for text styles
 TEXT_STYLES = {
     'bold': '\033[1m',
     'end': '\033[0m'
@@ -60,7 +59,7 @@ def print_config(config: dict, format_type: str = 'pretty') -> None:
             value = entry['value']
             source = entry['source']
             formatted_entry = _format_config_entry(key, value, source)
-            _print_with_indent(formatted_entry, color=None, indent=2)
+            _print_colored(formatted_entry, color=None, indent=2)
 
 def print_model_overview(overview: dict, format_type: str = 'pretty', indent: int = 0) -> None:
     """
@@ -75,42 +74,41 @@ def print_model_overview(overview: dict, format_type: str = 'pretty', indent: in
         print(json.dumps(overview, indent=2))
     else:
         _print_header("Model Overview", indent=indent)
-        _print_with_indent(f"Total APIs: {overview['total_apis']}", color='cyan', indent=indent)
+        _print_colored(f"Total APIs: {overview['total_apis']}", color='cyan', indent=indent)
 
         if overview['duplicates']:
-            _print_with_indent("Duplicates found:", color='red', indent=indent)
+            _print_colored("Duplicates found:", color='red', indent=indent)
             for duplicate in overview['duplicates']:
-                _print_with_indent(
+                _print_colored(
                     f"API: {duplicate['api_name']} - Duplicate version: V{duplicate['duplicate_version']} - Files: {', '.join(duplicate['file_names'])}",
                     color='yellow',
                     indent=indent + 2
                 )
 
         for api in overview["api_details"]:
-            _print_with_indent(f"\nAPI Name: {api['api_name']}", color='green', indent=indent)
-            _print_with_indent(f"File count: {api['file_count']}", color='white', indent=indent + 2)
+            _print_colored(f"\nAPI Name: {api['api_name']}", color='green', indent=indent)
+            _print_colored(f"File count: {api['file_count']}", color='white', indent=indent + 2)
             for version_info in api["versions"]:
-                _print_with_indent(f"Version: V{version_info['version']} - File: {version_info['file_name']}", color='white', indent=indent + 4)
-                if version_info.get('params'):
-                    _print_with_indent(f"Params: {', '.join(version_info['params'])}", color='white', indent=indent + 6)
-                else:
-                    _print_with_indent("Params: None", color='white', indent=indent + 6)
+                _print_colored(f"Version: V{version_info['version']} - File: {version_info['file_name']}", color='white', indent=indent + 4)
+                model_name = f"amz_sp_api_{api['api_name']}_V{version_info['version']}"
+                _print_colored(f"Generated Model Name: {model_name}", color='cyan', indent=indent + 6)
+                # Removed params as they aren't used here; add if needed later
 
 def print_error(message: str) -> None:
     """Print an error message in red."""
-    _print_with_indent(f"Error: {message}", color='red')
+    _print_colored(f"Error: {message}", color='red')
 
 def print_info(message: str) -> None:
     """Print an info message in blue."""
-    _print_with_indent(message, color='blue')
+    _print_colored(message, color='blue')
 
 def print_warning(message: str) -> None:
     """Print a warning message in yellow."""
-    _print_with_indent(f"Warning: {message}", color='yellow')
+    _print_colored(f"Warning: {message}", color='yellow')
 
 # Private methods
 
-def _print_with_indent(message: str, color: str | None = None, newline: bool = True, indent: int = 0) -> None:
+def _print_colored(message: str, color: str | None = None, newline: bool = True, indent: int = 0) -> None:
     """
     Print a message in color with optional indentation.
     
@@ -137,8 +135,8 @@ def _print_header(title: str, color: str = '\033[96m', underline_char: str = '='
         underline_char: The character to use for the underline.
         indent: Number of spaces to indent the printed output.
     """
-    _print_with_indent(title, color=color, indent=indent)
-    _print_with_indent(underline_char * len(title), color=color, indent=indent)
+    _print_colored(title, color=color, indent=indent)
+    _print_colored(underline_char * len(title), color=color, indent=indent)
 
 def _format_config_entry(key: str, value: str, source: str) -> str:
     """

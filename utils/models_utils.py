@@ -18,7 +18,7 @@ class Models:
         self.lib_directory = lib_directory
         self.config_template_filename = config_template_filename
         self.api_files = self._collect_api_files()
-        self.overview, self.models_to_generate = self._generate_model_overview()
+        self.overview = self._generate_model_overview()
 
     def _collect_api_files(self) -> dict[str, list[str]]:
         json_file_paths = glob(os.path.join(self.models_directory, '**', '*.json'), recursive=True)
@@ -29,13 +29,12 @@ class Models:
                 api_files.setdefault(api_name, []).append(json_file_path)
         return api_files
 
-    def _generate_model_overview(self) -> tuple[dict, list[dict]]:
+    def _generate_model_overview(self) -> dict:
         overview = {
             "total_apis": len(self.api_files),
             "duplicates": [],
             "api_details": []
         }
-        models_to_generate = []
         seen_versions = {}
 
         for api_name, api_file_list in self.api_files.items():
@@ -68,16 +67,9 @@ class Models:
                 else:
                     seen_versions[(api_name, version)] = api_file
 
-                api_detail["versions"].append({
-                    "version": version,
-                    "file_name": file_name
-                })
-
-                api_detail["processed_versions"].add(version)  # Keep as a set for internal use
-
-                models_to_generate.append({
+                model_entry = {
                     "api_file": api_file,
-                    "gem_name": f"{api_name}_V{version}",
+                    "gem_name": f"amz_sp_api_{api_name}_V{version}",
                     "module_name": f"AmzSpApi::{module_name}::V{version}",
                     "lib_dir": os.path.join(self.lib_directory, api_name, f"v{version}"),
                     "config_path": os.path.join(self.lib_directory, api_name, f"v{version}", self.config_template_filename),
@@ -85,13 +77,17 @@ class Models:
                     "api_name": api_name,
                     "is_latest": False,
                     "has_multiple_versions": len(api_file_list) > 1
-                })
+                }
+
+                # Unpack model_entry into the version detail for easier integration
+                api_detail["versions"].append({**model_entry})
+                api_detail["processed_versions"].add(version)
 
             # Convert processed_versions set to a list for JSON serialization
             api_detail["processed_versions"] = list(api_detail["processed_versions"])
             overview["api_details"].append(api_detail)
 
-        return overview, models_to_generate
+        return overview
 
     def _extract_api_name_from_path(self, file_path: str) -> str | None:
         path_parts = file_path.split(os.sep)
