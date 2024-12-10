@@ -4,7 +4,7 @@
 set -e
 
 FILE='../selling-partner-api-models/models/fulfillment-inbound-api-model/fulfillmentInboundV0.json'
-API_NAME=`echo $FILE | awk -F/ '{print $4}'`
+API_NAME=`echo $FILE | awk -F/ '{print $4}'`V0
 MODULE_NAME=`echo $API_NAME | perl -pe 's/(^|-)./uc($&)/ge;s/-//g'`V0
 
 rm -r lib/${API_NAME}
