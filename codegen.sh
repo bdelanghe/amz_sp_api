@@ -3,9 +3,9 @@
 # exit on error
 set -e
 
-FILE='../selling-partner-api-models/models/fulfillment-inbound-api-model/fulfillmentInbound_2024-03-20.json'
+FILE='../selling-partner-api-models/models/fulfillment-inbound-api-model/fulfillmentInboundV0.json'
 API_NAME=`echo $FILE | awk -F/ '{print $4}'`
-MODULE_NAME=`echo $API_NAME | perl -pe 's/(^|-)./uc($&)/ge;s/-//g'`
+MODULE_NAME=`echo $API_NAME | perl -pe 's/(^|-)./uc($&)/ge;s/-//g'`V0
 
 rm -r lib/${API_NAME}
 mkdir lib/$API_NAME
