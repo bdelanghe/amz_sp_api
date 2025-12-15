@@ -2,15 +2,13 @@
 set -euo pipefail
 
 MODELS_REF="${MODELS_REF:-main}"
-MODELS_REPO="$(git remote get-url upstream)"
-FORCE="${FORCE:-0}" # set FORCE=1 to allow overwriting an existing tag
+MODELS_REPO="${MODELS_REPO:-https://github.com/amzn/selling-partner-api-models.git}"
 
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 git clone --depth 1 --branch "$MODELS_REF" "$MODELS_REPO" "$TMP_DIR"
 MODELS_DIR="$TMP_DIR/models"
-
 # Resolve the exact upstream commit we used
 UPSTREAM_SHA="$(cd "$TMP_DIR" && git rev-parse HEAD)"
 TAG_NAME="upstream/selling-partner-api-models/${UPSTREAM_SHA:0:7}"
