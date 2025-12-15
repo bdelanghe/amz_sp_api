@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+FORCE="${FORCE:-0}"  # set FORCE=1 to allow overwriting an existing tag
+
 MODELS_REF="${MODELS_REF:-main}"
 MODELS_REPO="${MODELS_REPO:-https://github.com/amzn/selling-partner-api-models.git}"
 
