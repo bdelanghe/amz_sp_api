@@ -27,8 +27,9 @@ fi
 rm -rf lib
 mkdir -p lib
 
-for FILE in $(find "$MODELS_DIR" -name "*.json"); do
-  API_NAME="$(echo "$FILE" | awk -F/ '{print $4}')"
+for ABSOLUTE_FILE_PATH in $(find "$MODELS_DIR" -name "*.json"); do
+  FILE_PATH="${ABSOLUTE_FILE_PATH#$MODELS_DIR/}"
+  API_NAME="${FILE_PATH%%/*}"
 
   # Amazon Seller Central still uses Fulfillment Inbound API v0.
   # https://developer-docs.amazon.com/sp-api/docs/fulfillment-inbound-api-v0-reference
