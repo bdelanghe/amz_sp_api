@@ -1,6 +1,6 @@
 {
-  "gemName": "8d",
-  "moduleName": "AmzSpApi::8d",
+  "gemName": "fba-inbound-eligibility-api-model",
+  "moduleName": "AmzSpApi::FbaInboundEligibilityApiModel",
   "gemVersion": "0.1.0",
   "gemAuthor": "Eric Jensen",
   "gemAuthorEmail": "",
