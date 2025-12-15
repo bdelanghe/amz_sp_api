@@ -1,0 +1,7 @@
+# AmzSpApi::8d::GetSchemaResponseLinks
+
+## Properties
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**_self** | [**LinkObject**](LinkObject.md) |  | 
+
