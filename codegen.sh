@@ -168,20 +168,19 @@ record_codegen_artifact() {
 }
 
 main() {
-  if should_skip_codegen; then
-    exit 1
-  fi
-
-  local keep_tmp_dir
-  keep_tmp_dir="$(mktemp -d)"
+  # NOTE: keep_tmp_dir must not be `local` because the EXIT trap can fire after
+  # `main` returns; with `set -u`, that would make the variable "unbound".
+  KEEP_TMP_DIR="$(mktemp -d)"
 
   cleanup() {
-    restore_keep_files "$keep_tmp_dir"
-    rm -rf "$keep_tmp_dir"
+    if [[ -n "${KEEP_TMP_DIR:-}" && -d "${KEEP_TMP_DIR}" ]]; then
+      restore_keep_files "$KEEP_TMP_DIR"
+      rm -rf "$KEEP_TMP_DIR"
+    fi
   }
   trap cleanup EXIT
 
-  stash_keep_files "$keep_tmp_dir"
+  stash_keep_files "$KEEP_TMP_DIR"
 
   rm -rf "$LIB_DIR"
   mkdir -p "$LIB_DIR"
@@ -192,7 +191,7 @@ main() {
   done < <(find "$MODELS_DIR" -name "*.json" -print0)
 
   # Ensure hand-maintained entrypoints are present, then annotate generated files.
-  restore_keep_files "$keep_tmp_dir"
+  restore_keep_files "$KEEP_TMP_DIR"
   prepend_provenance_headers
 
   # Note: post-generation normalization (hoisting shared runtime) is handled separately by hoist.sh.
