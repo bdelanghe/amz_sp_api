@@ -60,6 +60,30 @@ _note() {
   printf "%s\n" "$*" >&2
 }
 
+print_models_context() {
+  _note "Models:"
+  _note "  SHA:  ${UPSTREAM_SHA}"
+  _note "  URL:  ${MODELS_URL}"
+  _note "  Dir:  ${MODELS_DIR}"
+  _note ""
+}
+
+spec_label() {
+  # Friendly label for the chosen spec (used in plan output)
+  # Prefer basename without .json.
+  local spec_path="$1"
+  basename "$spec_path" .json
+}
+
+spec_link() {
+  # Construct a GitHub link to the chosen spec under the pinned models SHA.
+  # MODELS_URL is expected to point at .../tree/<SHA>/models
+  local spec_path="$1"
+  local rel
+  rel="${spec_path#${MODELS_DIR}/}"
+  printf '%s/%s' "$MODELS_URL" "$rel"
+}
+
 should_skip_codegen() {
   # Guard: avoid regenerating when lib/ already matches the current upstream SHA,
   # unless FORCE=1 is explicitly set.
@@ -95,6 +119,7 @@ mark_seen() {
   if grep -qF "${dest}"$'\t' "$SEEN_LIST_FILE" 2>/dev/null; then
     local prev
     prev="$(grep -F "${dest}"$'\t' "$SEEN_LIST_FILE" | head -n 1 | cut -f2- || true)"
+
     _warn "possible clobber: ${dest}"
     _note "  prev: ${prev}"
     _note "  new:  ${src}"
@@ -153,6 +178,16 @@ api_module_name() {
   # Convert kebab-case API name into a Ruby ModuleName.
   # Example: "fulfillment-outbound-api-model" -> "FulfillmentOutboundApiModel"
   local api_name="$1"
+
+  # If we split an API into a V0 variant at plan-time (e.g. fulfillment-inbound-api-model-V0),
+  # keep the module name stable and explicit.
+  if [[ "$api_name" == *"-V0" ]]; then
+    local base
+    base="${api_name%-V0}"
+    printf '%sV0\n' "$(echo "$base" | perl -pe 's/(^|-)./uc($&)/ge;s/-//g')"
+    return 0
+  fi
+
   echo "$api_name" | perl -pe 's/(^|-)./uc($&)/ge;s/-//g'
 }
 
@@ -261,7 +296,6 @@ EOF
     printf "%s" "$provenance_header" > "$tmp"
     cat "$rb" >> "$tmp"
 
-    mark_seen "$rb" "prepend provenance header"
     mv "$tmp" "$rb"
   done < <(find "$LIB_DIR" -type f -name "*.rb" -print0)
 }
@@ -300,9 +334,16 @@ build_generation_plan() {
 
   # Collect: api_name <TAB> spec_path
   while IFS= read -r -d '' spec; do
-    local rel api
+    local rel api base
     rel="${spec#${MODELS_DIR}/}"
     api="${rel%%/*}"
+
+    # Plan-time split: Seller Central still uses Fulfillment Inbound V0.
+    # Treat V0 as a distinct API so we generate both without ambiguity.
+    if [[ "$api" == "fulfillment-inbound-api-model" && "$(basename "$spec")" == *V0.json ]]; then
+      api="${api}-V0"
+    fi
+
     printf '%s\t%s\n' "$api" "$spec" >> "$all_specs"
   done < <(find "$MODELS_DIR" -name "*.json" -print0)
 
@@ -322,8 +363,8 @@ build_generation_plan() {
 
   # Select exactly one spec per api folder.
   # Preference order:
-  #  1) *V0.json (matches common upstream gem output)
-  #  2) Highest YYYY-MM-DD date found in filename (lexicographic works)
+  #  1) Highest YYYY-MM-DD date found in filename (newest wins)
+  #  2) Otherwise, prefer V0.json (fallback)
   #  3) Otherwise, last filename in sort order
   LC_ALL=C sort -t $'\t' -k1,1 -k2,2 "$all_specs" | awk -F'\t' '
     function date_score(p,   d) {
@@ -336,10 +377,13 @@ build_generation_plan() {
       return 0;
     }
 
-    function spec_score(p,   s) {
-      s = 0;
-      if (p ~ /V0\.json$/) s += 1000000000;
-      s += date_score(p);
+    function spec_score(p,   s, d) {
+      # Prefer dated specs; V0 is fallback only when no dated spec exists.
+      d = date_score(p);
+      s = d;
+      if (p ~ /V0\.json$/ && d == 0) {
+        s = -1;
+      }
       return s;
     }
 
@@ -376,6 +420,9 @@ build_generation_plan() {
 
 print_generation_plan() {
   local plan_tsv="$1"
+
+  print_models_context
+
   _note "Generation plan:"
   local count
   count="$(wc -l < "$plan_tsv" | tr -d ' ')"
@@ -384,6 +431,18 @@ print_generation_plan() {
   if [[ -s "${CODEGEN_LOG_DIR}/duplicates.tsv" ]]; then
     _note "  Dups:  ${CODEGEN_LOG_DIR}/duplicates.tsv"
   fi
+  _note ""
+
+  # Show all api_name -> selected spec (basename) so it's easy to scan.
+  _note "API selections (api_name -> spec):"
+  while IFS=$'\t' read -r api_name _module_name spec _candidate_count; do
+    printf '  %-45s -> %-35s (%s)\n' "$api_name" "$(spec_label "$spec")" "$(spec_link "$spec")" >&2
+  done < "$plan_tsv"
+
+  _note ""
+  _note "Plan notes:"
+  _note "  - Each API generates: lib/<api>.rb plus lib/<api>/*"
+  _note "  - After generation, we prepend provenance headers to all generated .rb files (expected rewrite; not a clobber)"
   _note ""
 }
 
