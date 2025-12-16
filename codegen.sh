@@ -86,3 +86,7 @@ done
 
 # Note: post-generation normalization (hoisting + provenance headers)
 # is handled separately by hoist.sh.
+
+# Record provenance so subsequent runs can detect an identical upstream SHA
+mkdir -p "$(dirname "$CODEGEN_ARTIFACT_FILE")"
+echo "$UPSTREAM_SHA" > "$CODEGEN_ARTIFACT_FILE"
