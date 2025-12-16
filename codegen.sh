@@ -5,6 +5,31 @@ FORCE="${FORCE:-0}"
 MODELS_DIR="${MODELS_DIR:-}"
 UPSTREAM_SHA="${UPSTREAM_SHA:-}"
 
+# Self-discovery:
+# 1) explicit env vars
+# 2) newest snapshot in .models/
+# 3) fail loudly
+if [[ -z "$MODELS_DIR" || -z "$UPSTREAM_SHA" ]]; then
+  latest_snapshot="$(ls -1dt .models/* 2>/dev/null | head -n 1 || true)"
+
+  if [[ -n "$latest_snapshot" \
+        && -d "$latest_snapshot/models" \
+        && -f "$latest_snapshot/UPSTREAM_SHA" ]]; then
+    MODELS_DIR="$latest_snapshot/models"
+    UPSTREAM_SHA="$(cat "$latest_snapshot/UPSTREAM_SHA")"
+  else
+    echo "No models found." >&2
+    echo "Run ./pull_models.sh or set MODELS_DIR and UPSTREAM_SHA." >&2
+    exit 1
+  fi
+fi
+
+# Hard fail before find/loop
+if [[ ! -d "$MODELS_DIR" ]]; then
+  echo "MODELS_DIR is not a directory: '$MODELS_DIR'" >&2
+  exit 1
+fi
+
 TAG_NAME="upstream/selling-partner-api-models/${UPSTREAM_SHA:0:7}"
 
 # Bail if tag already exists (unless FORCE=1)
@@ -19,7 +44,8 @@ fi
 rm -rf lib
 mkdir -p lib
 
-for FILE in $(find "$MODELS_DIR" -name "*.json"); do
+# Use find safely; if find fails, script exits; handles spaces
+while IFS= read -r -d '' FILE; do
   FILE_PATH="${FILE#$MODELS_DIR/}"
   API_NAME="${FILE_PATH%%/*}"
 
@@ -51,7 +77,7 @@ for FILE in $(find "$MODELS_DIR" -name "*.json"); do
   mv "lib/${API_NAME}/lib/${API_NAME}/"* "lib/${API_NAME}"
   rm -rf "lib/${API_NAME}/lib"
   rm -f "lib/${API_NAME}/"*.gemspec
-done
+done < <(find "$MODELS_DIR" -name "*.json" -print0)
 
 # Commit only if something changed
 git add lib

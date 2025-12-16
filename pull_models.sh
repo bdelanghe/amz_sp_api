@@ -3,38 +3,43 @@ set -euo pipefail
 
 MODELS_REF="${MODELS_REF:-main}"
 MODELS_REPO="${MODELS_REPO:-https://github.com/amzn/selling-partner-api-models.git}"
-DEST=".models"
+
+ROOT_DIR="$(pwd)"
 
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-# init a new repo with an explicit initial branch matching the ref
-git init -b "$MODELS_REF" "$TMP_DIR"
+git init -b "$MODELS_REF" "$TMP_DIR" >/dev/null
 cd "$TMP_DIR"
 
 git remote add origin "$MODELS_REPO"
 
-# enable sparse checkout
-git sparse-checkout init --cone
+git sparse-checkout init --cone >/dev/null
+git sparse-checkout set models >/dev/null
 
-# only want 'models/' directory
-git sparse-checkout set models
+git fetch --depth 1 origin "$MODELS_REF" >/dev/null
+git checkout "$MODELS_REF" >/dev/null
 
-# fetch and checkout just the ref we care about
-git fetch --depth 1 origin "$MODELS_REF"
-git checkout "$MODELS_REF"
-
-# resolve the exact commit SHA
 UPSTREAM_SHA="$(git rev-parse HEAD)"
 UPSTREAM_SHORT_SHA="${UPSTREAM_SHA:0:7}"
 
-# snapshot it into your repo
-DEST_MODELS_DIR="${OLDPWD}/${DEST}/${UPSTREAM_SHORT_SHA}"
-rm -rf "$DEST_MODELS_DIR"
-mkdir -p "$DEST"
-cp -R models "$DEST_MODELS_DIR"
+DEST_DIR="${ROOT_DIR}/.models/${UPSTREAM_SHORT_SHA}"
 
-# provenance
-echo "$UPSTREAM_SHA" > "$DEST_MODELS_DIR/UPSTREAM_SHA"
+rm -rf "$DEST_DIR"
+mkdir -p "$DEST_DIR/models"
+
+# Snapshot input + provenance in the shape codegen.sh expects:
+# .models/<short>/models/<api>/...
+cp -R models/* "$DEST_DIR/models/"
+
+echo "$UPSTREAM_SHA" > "$DEST_DIR/UPSTREAM_SHA"
+
+# Write "current" env for codegen.sh to discover
+mkdir -p "${ROOT_DIR}/.models"
+cat > "${ROOT_DIR}/.models/.env" <<EOF
+MODELS_DIR=${DEST_DIR}/models
+UPSTREAM_SHA=${UPSTREAM_SHA}
+UPSTREAM_SHORT_SHA=${UPSTREAM_SHORT_SHA}
+EOF
 
 echo "$UPSTREAM_SHORT_SHA"
