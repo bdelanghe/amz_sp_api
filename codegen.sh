@@ -31,6 +31,9 @@ readonly -a KEEP_FILES=(
   "amz_sp_api_version.rb"
 )
 
+# Guard to avoid restoring keep files twice (main flow + EXIT trap)
+DID_RESTORE_KEEP_FILES=0
+
 # Provenance header (comment-only) prepended to generated Ruby files.
 readonly GENERATED_FROM_PREFIX="# NOTE: Generated from"
 readonly REGEN_NOTE="# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh"
@@ -132,6 +135,9 @@ stash_keep_files() {
 
 restore_keep_files() {
   local keep_tmp_dir="$1"
+  if [[ "${DID_RESTORE_KEEP_FILES}" == "1" ]]; then
+    return 0
+  fi
   mkdir -p "$LIB_DIR"
   local f
   for f in "${KEEP_FILES[@]}"; do
@@ -140,6 +146,7 @@ restore_keep_files() {
       cp "${keep_tmp_dir}/${f}" "${LIB_DIR}/${f}"
     fi
   done
+  DID_RESTORE_KEEP_FILES=1
 }
 
 api_module_name() {
@@ -321,7 +328,7 @@ build_generation_plan() {
   LC_ALL=C sort -t $'\t' -k1,1 -k2,2 "$all_specs" | awk -F'\t' '
     function date_score(p,   m) {
       # extract first YYYY-MM-DD in the path; return as integer YYYYMMDD
-      if (match(p, /[0-9]{4}-[0-9]{2}-[0-9]{2}/, m)) {
+      if (match(p, /[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/, m)) {
         gsub(/-/, "", m[0]);
         return m[0] + 0;
       }
