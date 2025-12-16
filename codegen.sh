@@ -137,6 +137,18 @@ else
         sed -i '' '/^module AmzSpApi::AmazonWarehousingAndDistributionModel$/d' "$dest"
         sed -i '' 's/AmzSpApi::AmazonWarehousingAndDistributionModel\.const_get(return_type)\.build_from_hash(data)/AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)/g' "$dest"
       fi
+
+      # Add explicit inline comments at patched sites in the hoisted files.
+      # Inline-only (no new lines), using sed for portability.
+      if sed --version >/dev/null 2>&1; then
+        # GNU sed
+        sed -i 's/^\(module AmzSpApi\)\s*$/\1 # NOTE: patched by codegen.sh – hoisted runtime file, removed nested API namespace/' "$dest"
+        sed -i 's/\(AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)\)/\1 # NOTE: patched by codegen.sh – resolve return_type across AmzSpApi submodules/' "$dest"
+      else
+        # BSD sed (macOS)
+        sed -i '' 's/^\(module AmzSpApi\)\s*$/\1 # NOTE: patched by codegen.sh – hoisted runtime file, removed nested API namespace/' "$dest"
+        sed -i '' 's/\(AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)\)/\1 # NOTE: patched by codegen.sh – resolve return_type across AmzSpApi submodules/' "$dest"
+      fi
     else
       echo "Warning: ${name} not found in ${FIRST_MODULE_DIR}" >&2
     fi
