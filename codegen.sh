@@ -40,6 +40,23 @@ fail() {
   exit 1
 }
 
+# Logging helpers
+_color_enabled() {
+  [[ -t 2 ]] && command -v tput >/dev/null 2>&1
+}
+
+_warn() {
+  if _color_enabled; then
+    printf "%sWARNING%s: %s\n" "$(tput setaf 1)" "$(tput sgr0)" "$*" >&2
+  else
+    printf "WARNING: %s\n" "$*" >&2
+  fi
+}
+
+_note() {
+  printf "%s\n" "$*" >&2
+}
+
 should_skip_codegen() {
   # Guard: avoid regenerating when lib/ already matches the current upstream SHA,
   # unless FORCE=1 is explicitly set.
@@ -62,6 +79,12 @@ mark_seen() {
   local dest="$1"
   local src="$2"
 
+  # Directories are expected to be touched multiple times (mkdir, then writes).
+  # Only track file-level clobbers.
+  if [[ "$dest" == */ ]]; then
+    return 0
+  fi
+
   if [[ -z "${SEEN_LIST_FILE:-}" || -z "${CLOBBER_LIST_FILE:-}" ]]; then
     return 0
   fi
@@ -69,9 +92,9 @@ mark_seen() {
   if grep -qF "${dest}"$'\t' "$SEEN_LIST_FILE" 2>/dev/null; then
     local prev
     prev="$(grep -F "${dest}"$'\t' "$SEEN_LIST_FILE" | head -n 1 | cut -f2- || true)"
-    echo "Warning: possible clobber: ${dest}" >&2
-    echo "  prev: ${prev}" >&2
-    echo "  new:  ${src}" >&2
+    _warn "possible clobber: ${dest}"
+    _note "  prev: ${prev}"
+    _note "  new:  ${src}"
     printf '%s\t%s\n' "$dest" "${prev} -> ${src}" >> "$CLOBBER_LIST_FILE"
   else
     printf '%s\t%s\n' "$dest" "$src" >> "$SEEN_LIST_FILE"
@@ -89,13 +112,11 @@ seen_summary() {
   local clobbers
   clobbers="$(wc -l < "$CLOBBER_LIST_FILE" 2>/dev/null || echo 0)"
   if [[ "$clobbers" != "0" ]]; then
-    echo "" >&2
-    echo "WARNING: detected ${clobbers} possible clobber(s)." >&2
-    echo "  See: ${clob_out}" >&2
+    _warn "detected ${clobbers} possible clobbers (see ${clob_out})"
   fi
 
-  echo "" >&2
-  echo "Seen list written to: ${seen_out}" >&2
+  _note ""
+  _note "Seen list written to: ${seen_out}"
 }
 
 stash_keep_files() {
@@ -150,14 +171,24 @@ generate_one_api() {
     api_name="${api_name}-V0"
   fi
 
+  # Some model folders contain multiple specs (e.g., finances-api-model has multiple json files).
+  # If there is more than one spec under the same folder, include the spec basename to avoid
+  # clobbering outputs within a single run.
+  local spec_basename
+  spec_basename="$(basename "$spec_file" .json)"
+  local spec_count
+  spec_count="$(find "${MODELS_DIR}/${api_name}" -maxdepth 1 -type f -name "*.json" 2>/dev/null | wc -l | tr -d ' ')"
+  if [[ "${spec_count}" != "1" ]]; then
+    api_name="${api_name}-${spec_basename}"
+  fi
+
   module_name="$(api_module_name "$api_name")"
 
   rm -rf "${LIB_DIR}/${api_name}"
   mkdir -p "${LIB_DIR}/${api_name}"
-  mark_seen "${LIB_DIR}/${api_name}/" "mkdir"
 
   cp "$CONFIG_TEMPLATE" "${LIB_DIR}/${api_name}/${CONFIG_TEMPLATE}"
-  mark_seen "${LIB_DIR}/${api_name}/${CONFIG_TEMPLATE}" "cp ${CONFIG_TEMPLATE}"
+  mark_seen "${LIB_DIR}/${api_name}/${CONFIG_TEMPLATE}" "${api_name}: cp ${CONFIG_TEMPLATE} (${spec_basename})"
 
   rewrite_config_placeholders "${LIB_DIR}/${api_name}/${CONFIG_TEMPLATE}" "$api_name" "$module_name"
 
@@ -183,10 +214,9 @@ generate_one_api() {
   fi
 
   # Hoist the top-level lib entry file and flatten the generated layout.
-  mark_seen "${LIB_DIR}/${api_name}.rb" "mv from ${LIB_DIR}/${api_name}/lib/${api_name}.rb"
+  mark_seen "${LIB_DIR}/${api_name}.rb" "${api_name}: hoist entry rb (${spec_basename})"
   mv "${LIB_DIR}/${api_name}/lib/${api_name}.rb" "$LIB_DIR/"
 
-  mark_seen "${LIB_DIR}/${api_name}/" "mv flattened files into api dir"
   mv "${LIB_DIR}/${api_name}/lib/${api_name}/"* "${LIB_DIR}/${api_name}"
 
   rm -rf "${LIB_DIR}/${api_name}/lib"
