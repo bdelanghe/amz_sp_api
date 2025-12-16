@@ -3,16 +3,9 @@ set -euo pipefail
 
 FORCE="${FORCE:-0}"  # set FORCE=1 to allow overwriting an existing tag
 
-MODELS_REF="${MODELS_REF:-main}"
-MODELS_REPO="${MODELS_REPO:-https://github.com/amzn/selling-partner-api-models.git}"
+: "${MODELS_DIR:?MODELS_DIR is required (path to models/ directory)}"
+: "${UPSTREAM_SHA:?UPSTREAM_SHA is required (40-char commit SHA)}"
 
-TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
-
-git clone --depth 1 --branch "$MODELS_REF" "$MODELS_REPO" "$TMP_DIR"
-MODELS_DIR="$TMP_DIR/models"
-# Resolve the exact upstream commit we used
-UPSTREAM_SHA="$(cd "$TMP_DIR" && git rev-parse HEAD)"
 TAG_NAME="upstream/selling-partner-api-models/${UPSTREAM_SHA:0:7}"
 
 # Bail if tag already exists (unless FORCE=1)
