@@ -48,5 +48,5 @@ EOF
 cat >&2 <<EOF
 Pulled SP-API models @ ${UPSTREAM_SHORT_SHA} (${MODELS_REF})
 → Snapshot written to .models/${UPSTREAM_SHORT_SHA}
-→ Updated .models/.env
+→ Updated .models/.env to export MODELS_DIR and UPSTREAM_SHA
 EOF
