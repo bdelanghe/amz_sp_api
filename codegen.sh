@@ -159,30 +159,12 @@ rewrite_config_placeholders() {
 }
 
 generate_one_api() {
-  local spec_file="$1"
+  local api_name="$1"
+  local module_name="$2"
+  local spec_file="$3"
 
-  local file_path api_name module_name
-  file_path="${spec_file#${MODELS_DIR}/}"
-  api_name="${file_path%%/*}"
-
-  # Amazon Seller Central still uses Fulfillment Inbound API v0.
-  # The models repo contains both v0 and v1; keep them distinct.
-  if [[ "$api_name" == "fulfillment-inbound-api-model" && "$spec_file" == *V0.json ]]; then
-    api_name="${api_name}-V0"
-  fi
-
-  # Some model folders contain multiple specs (e.g., finances-api-model has multiple json files).
-  # If there is more than one spec under the same folder, include the spec basename to avoid
-  # clobbering outputs within a single run.
   local spec_basename
   spec_basename="$(basename "$spec_file" .json)"
-  local spec_count
-  spec_count="$(find "${MODELS_DIR}/${api_name}" -maxdepth 1 -type f -name "*.json" 2>/dev/null | wc -l | tr -d ' ')"
-  if [[ "${spec_count}" != "1" ]]; then
-    api_name="${api_name}-${spec_basename}"
-  fi
-
-  module_name="$(api_module_name "$api_name")"
 
   rm -rf "${LIB_DIR}/${api_name}"
   mkdir -p "${LIB_DIR}/${api_name}"
@@ -226,13 +208,7 @@ generate_one_api() {
 }
 
 prepend_provenance_headers() {
-  local provenance_header
-  provenance_header=$(cat <<EOF
-${GENERATED_FROM_PREFIX} ${MODELS_URL}
-${REGEN_NOTE}
-
-EOF
-)
+  local plan_tsv="$1"
 
   local rb tmp
   while IFS= read -r -d '' rb; do
@@ -242,6 +218,32 @@ EOF
         continue
         ;;
     esac
+
+    # Determine API folder name from the lib path.
+    # - lib/<api>.rb => <api>
+    # - lib/<api>/*  => <api>
+    local rel api selected_spec candidate_count spec_basename
+    rel="${rb#${LIB_DIR}/}"
+    api="${rel%%/*}"
+    api="${api%.rb}"
+
+    selected_spec="$(grep -F "^${api}"$'\t' "$plan_tsv" | head -n 1 | cut -f3 || true)"
+    candidate_count="$(grep -F "^${api}"$'\t' "$plan_tsv" | head -n 1 | cut -f4 || true)"
+
+    spec_basename=""
+    if [[ -n "$selected_spec" ]]; then
+      spec_basename="$(basename "$selected_spec")"
+    fi
+
+    local provenance_header
+    provenance_header=$(cat <<EOF
+${GENERATED_FROM_PREFIX} ${MODELS_URL}
+# NOTE: Spec: ${spec_basename}
+# NOTE: Spec candidates: ${candidate_count}
+${REGEN_NOTE}
+
+EOF
+)
 
     # Avoid double-prepending.
     if head -n 1 "$rb" | grep -qF "$GENERATED_FROM_PREFIX"; then
@@ -260,6 +262,121 @@ EOF
 record_codegen_artifact() {
   mkdir -p "$(dirname "$CODEGEN_ARTIFACT_FILE")"
   echo "$UPSTREAM_SHA" > "$CODEGEN_ARTIFACT_FILE"
+}
+
+record_codegen_plan() {
+  local plan_tsv="$1"
+
+  # Persist a stable plan for diffs/review.
+  # Kept under lib/ so it versions alongside generated artifacts.
+  cp "$plan_tsv" "${LIB_DIR}/.codegen_plan.tsv"
+
+  if [[ -s "${CODEGEN_LOG_DIR}/duplicates.tsv" ]]; then
+    cp "${CODEGEN_LOG_DIR}/duplicates.tsv" "${LIB_DIR}/.codegen_plan_duplicates.tsv"
+  else
+    rm -f "${LIB_DIR}/.codegen_plan_duplicates.tsv" 2>/dev/null || true
+  fi
+}
+
+build_generation_plan() {
+  mkdir -p "$CODEGEN_LOG_DIR"
+
+  local all_specs selected_specs plan_tsv
+  all_specs="${CODEGEN_LOG_DIR}/.all_specs.tsv"
+  selected_specs="${CODEGEN_LOG_DIR}/.selected_specs.tsv"
+  plan_tsv="${CODEGEN_LOG_DIR}/.plan.tsv"
+
+  local duplicates_tsv
+  duplicates_tsv="${CODEGEN_LOG_DIR}/duplicates.tsv"
+
+  : > "$all_specs"
+
+  # Collect: api_name <TAB> spec_path
+  while IFS= read -r -d '' spec; do
+    local rel api
+    rel="${spec#${MODELS_DIR}/}"
+    api="${rel%%/*}"
+    printf '%s\t%s\n' "$api" "$spec" >> "$all_specs"
+  done < <(find "$MODELS_DIR" -name "*.json" -print0)
+
+  # Detect APIs with multiple specs.
+  : > "$duplicates_tsv"
+  LC_ALL=C cut -f1 "$all_specs" | sort | uniq -c | awk '$1 > 1 {print $2 "\t" $1}' > "${CODEGEN_LOG_DIR}/.dup_counts.tsv"
+
+  if [[ -s "${CODEGEN_LOG_DIR}/.dup_counts.tsv" ]]; then
+    while IFS=$'\t' read -r api cnt; do
+      # list candidates (basenames)
+      cands="$(grep -F "$api"$'\t' "$all_specs" | cut -f2 | xargs -n1 basename | tr '\n' ',' | sed 's/,$//')"
+      printf '%s\t%s\t%s\n' "$api" "$cnt" "$cands" >> "$duplicates_tsv"
+    done < "${CODEGEN_LOG_DIR}/.dup_counts.tsv"
+  fi
+
+  rm -f "${CODEGEN_LOG_DIR}/.dup_counts.tsv"
+
+  # Select exactly one spec per api folder.
+  # Preference order:
+  #  1) *V0.json (matches common upstream gem output)
+  #  2) Highest YYYY-MM-DD date found in filename (lexicographic works)
+  #  3) Otherwise, last filename in sort order
+  LC_ALL=C sort -t $'\t' -k1,1 -k2,2 "$all_specs" | awk -F'\t' '
+    function date_score(p,   m) {
+      # extract first YYYY-MM-DD in the path; return as integer YYYYMMDD
+      if (match(p, /[0-9]{4}-[0-9]{2}-[0-9]{2}/, m)) {
+        gsub(/-/, "", m[0]);
+        return m[0] + 0;
+      }
+      return 0;
+    }
+
+    function spec_score(p,   s) {
+      s = 0;
+      if (p ~ /V0\.json$/) s += 1000000000;
+      s += date_score(p);
+      return s;
+    }
+
+    {
+      api = $1; p = $2;
+      if (api != cur) {
+        if (cur != "") print cur "\t" best;
+        cur = api;
+        best = p;
+        bests = spec_score(p);
+      } else {
+        s = spec_score(p);
+        if (s > bests) {
+          best = p;
+          bests = s;
+        } else if (s == bests) {
+          # tie-breaker: later filename wins (we are in sorted order)
+          best = p;
+        }
+      }
+    }
+    END { if (cur != "") print cur "\t" best; }
+  ' > "$selected_specs"
+
+  : > "$plan_tsv"
+  while IFS=$'\t' read -r api spec; do
+    mod="$(api_module_name "$api")"
+    cnt="$(grep -cF "$api"$'\t' "$all_specs" 2>/dev/null || echo 1)"
+    printf '%s\t%s\t%s\t%s\n' "$api" "$mod" "$spec" "$cnt" >> "$plan_tsv"
+  done < "$selected_specs"
+
+  echo "$plan_tsv"
+}
+
+print_generation_plan() {
+  local plan_tsv="$1"
+  _note "Generation plan:"
+  local count
+  count="$(wc -l < "$plan_tsv" | tr -d ' ')"
+  _note "  APIs:  ${count}"
+  _note "  Plan:  ${plan_tsv}"
+  if [[ -s "${CODEGEN_LOG_DIR}/duplicates.tsv" ]]; then
+    _note "  Dups:  ${CODEGEN_LOG_DIR}/duplicates.tsv"
+  fi
+  _note ""
 }
 
 main() {
@@ -297,14 +414,19 @@ main() {
   : > "$SEEN_LIST_FILE"
   : > "$CLOBBER_LIST_FILE"
 
-  # Generate code for each API spec.
-  while IFS= read -r -d '' spec; do
-    generate_one_api "$spec"
-  done < <(find "$MODELS_DIR" -name "*.json" -print0)
+  # Precompute a stable plan so API_NAME/MODULE_NAME are deterministic and match upstream.
+  local plan_tsv
+  plan_tsv="$(build_generation_plan)"
+  print_generation_plan "$plan_tsv"
+
+  while IFS=$'\t' read -r api_name module_name spec candidate_count; do
+    generate_one_api "$api_name" "$module_name" "$spec"
+  done < "$plan_tsv"
 
   # Ensure hand-maintained entrypoints are present, then annotate generated files.
   restore_keep_files "$KEEP_TMP_DIR"
-  prepend_provenance_headers
+  prepend_provenance_headers "$plan_tsv"
+  record_codegen_plan "$plan_tsv"
 
   # Note: post-generation normalization (hoisting shared runtime) is handled separately by hoist.sh.
   record_codegen_artifact

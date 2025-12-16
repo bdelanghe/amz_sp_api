@@ -1,5 +1,4 @@
-# NOTE: Generated from https://github.com/amzn/selling-partner-api-models/tree/df0f6a4d062dc27a42952c07a681d937172e38d8/models
-# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh=begin
+=begin
 #Selling Partner API for Supply Sources
 
 #Manage configurations and capabilities of seller supply sources.

@@ -1,5 +1,4 @@
-# NOTE: Generated from https://github.com/amzn/selling-partner-api-models/tree/df0f6a4d062dc27a42952c07a681d937172e38d8/models
-# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh=begin
+=begin
 #Selling Partner API for Retail Procurement Shipments
 
 #The Selling Partner API for Retail Procurement Shipments provides programmatic access to retail shipping data for vendors.
