@@ -1,7 +1,5 @@
 # NOTE: Generated from https://github.com/amzn/selling-partner-api-models/tree/df0f6a4d062dc27a42952c07a681d937172e38d8/models
-# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh
-
-=begin
+# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh=begin
 #Selling Partner API for Replenishment
 
 #The Selling Partner API for Replenishment (Replenishment API) provides programmatic access to replenishment program metrics and offers. These programs provide recurring delivery of any replenishable item at a frequency chosen by the customer.  The Replenishment API is available worldwide wherever Amazon Subscribe & Save is available or is supported. The API is available to vendors and FBA selling partners.

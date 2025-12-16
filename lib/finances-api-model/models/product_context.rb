@@ -1,7 +1,5 @@
 # NOTE: Generated from https://github.com/amzn/selling-partner-api-models/tree/df0f6a4d062dc27a42952c07a681d937172e38d8/models
-# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh
-
-=begin
+# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh=begin
 #The Selling Partner API for Finances
 
 #The Selling Partner API for Finances provides financial information relevant to a seller's business. You can obtain financial events for a given order or date range without having to wait until a statement period closes.

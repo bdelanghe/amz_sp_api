@@ -1,7 +1,5 @@
 # NOTE: Generated from https://github.com/amzn/selling-partner-api-models/tree/df0f6a4d062dc27a42952c07a681d937172e38d8/models
-# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh
-
-=begin
+# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh=begin
 #Selling Partner API for Pricing
 
 #The Selling Partner API for Pricing helps you programmatically retrieve product pricing and offer pricing information for Amazon Marketplace products.  For more information, refer to the [Product Pricing v2022-05-01 Use Case Guide](https://developer-docs.amazon.com/sp-api/docs/product-pricing-api-v2022-05-01-use-case-guide).

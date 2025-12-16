@@ -19,7 +19,7 @@ require 'tempfile'
 require 'typhoeus'
 require 'uri'
 
-module AmzSpApi # NOTE: patched by hoist.sh – hoisted runtime file, normalized namespace
+module AmzSpApi
   class ApiClient
     # The Configuration object holding settings to be used in the API client.
     attr_accessor :config
@@ -239,7 +239,7 @@ module AmzSpApi # NOTE: patched by hoist.sh – hoisted runtime file, normalized
         end
       else
         # models, e.g. Pet
-        AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data) # NOTE: patched by hoist.sh – resolve return_type across AmzSpApi submodules
+        AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of(Module)}.detect{|sub| sub.const_defined(return_type)}.const_get(return_type).build_from_hash(data)
       end
     end
 
