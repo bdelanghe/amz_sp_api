@@ -328,8 +328,8 @@ build_generation_plan() {
   LC_ALL=C sort -t $'\t' -k1,1 -k2,2 "$all_specs" | awk -F'\t' '
     function date_score(p,   m) {
       # extract first YYYY-MM-DD in the path; return as integer YYYYMMDD
-      if (match(p, /[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/, m)) {
-        gsub(/-/, "", m[0]);
+      if (match(p, "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]", m)) {
+        gsub("-", "", m[0]);
         return m[0] + 0;
       }
       return 0;
