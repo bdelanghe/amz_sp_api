@@ -83,6 +83,3 @@ for f in "${KEEP_FILES[@]}"; do
     cp "$KEEP_TMP_DIR/$f" "lib/$f"
   fi
 done
-
-# Note: post-generation normalization (hoisting + provenance headers)
-# is handled separately by hoist.sh.
