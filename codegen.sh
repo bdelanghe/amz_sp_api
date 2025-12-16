@@ -144,8 +144,11 @@ else
       # deserializing return types. We rewrite those lookups to dynamically scan
       # AmzSpApi submodules and resolve the correct model class at runtime.
 
-      $SED -i '/^module AmzSpApi::AmazonWarehousingAndDistributionModel$/d' "$dest"
-      $SED -i 's/AmzSpApi::AmazonWarehousingAndDistributionModel\.const_get(return_type)\.build_from_hash(data)/AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)/g' "$dest"
+      # Remove any hardcoded nested API module namespace in hoisted runtime files
+      $SED -i -E '/^module AmzSpApi::[A-Za-z0-9_]+$/d' "$dest"
+
+      # Rewrite any hardcoded namespace-based return_type resolver to a dynamic resolver
+      $SED -i -E 's/AmzSpApi::[A-Za-z0-9_]+\.const_get\(return_type\)\.build_from_hash\(data\)/AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)/g' "$dest"
 
       # Add explicit inline comments at patched sites in the hoisted files.
       # Inline-only (no new lines), using sed for portability.
@@ -165,15 +168,18 @@ echo "$UPSTREAM_SHA" > "$CODEGEN_ARTIFACT_FILE"
 # This is intentionally lightweight and avoids editing hand-maintained files.
 PROVENANCE_HEADER="# NOTE: Generated from ${MODELS_URL}\n# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh\n\n"
 while IFS= read -r -d '' rb; do
-  base="$(basename "$rb")"
+  # Skip hand-maintained files
+  if [[ "$rb" == "lib/amz_sp_api.rb" || "$rb" == "lib/amz_sp_api_version.rb" ]]; then
+    continue
+  fi
 
-  # Skip hand-maintained and already-hoisted runtime files (they already carry a note)
-  if [[ "$base" == "amz_sp_api.rb" || "$base" == "amz_sp_api_version.rb" ]]; then
+  # Skip only the top-level hoisted runtime files (they already carry a note).
+  # Module-scoped runtime files (e.g. lib/<api>/api_client.rb) must still receive provenance headers.
+  if [[ "$rb" == "lib/api_client.rb" || "$rb" == "lib/api_error.rb" || "$rb" == "lib/configuration.rb" ]]; then
     continue
   fi
-  if [[ "$base" == "api_client.rb" || "$base" == "api_error.rb" || "$base" == "configuration.rb" ]]; then
-    continue
-  fi
+
+  base="$(basename "$rb")"
 
   # Avoid double-prepending if run manually
   if head -n 1 "$rb" | grep -q "^# NOTE: Generated from https://github.com/amzn/selling-partner-api-models/tree/"; then

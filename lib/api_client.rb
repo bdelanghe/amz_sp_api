@@ -19,7 +19,6 @@ require 'tempfile'
 require 'typhoeus'
 require 'uri'
 
-module AmzSpApi::FulfillmentOutboundApiModel
   class ApiClient
     # The Configuration object holding settings to be used in the API client.
     attr_accessor :config
@@ -239,7 +238,7 @@ module AmzSpApi::FulfillmentOutboundApiModel
         end
       else
         # models, e.g. Pet
-        AmzSpApi::FulfillmentOutboundApiModel.const_get(return_type).build_from_hash(data)
+        AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data) # NOTE: patched by codegen.sh – resolve return_type across AmzSpApi submodules
       end
     end
 
