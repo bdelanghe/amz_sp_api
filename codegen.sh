@@ -35,12 +35,6 @@ readonly -a KEEP_FILES=(
 readonly GENERATED_FROM_PREFIX="# NOTE: Generated from"
 readonly REGEN_NOTE="# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh"
 
-# Require gsed for in-place edits (portable + predictable)
-if ! command -v gsed >/dev/null 2>&1; then
-  echo "Missing gsed. Install with: brew install gnu-sed" >&2
-  exit 1
-fi
-
 fail() {
   echo "Error: $*" >&2
   exit 1
@@ -61,6 +55,49 @@ should_skip_codegen() {
   return 1
 }
 
+# Seen/clobber tracking
+# - Records dest paths we write during a run
+# - Warns if we write the same dest path twice (possible clobber)
+mark_seen() {
+  local dest="$1"
+  local src="$2"
+
+  if [[ -z "${SEEN_LIST_FILE:-}" || -z "${CLOBBER_LIST_FILE:-}" ]]; then
+    return 0
+  fi
+
+  if grep -qF "${dest}"$'\t' "$SEEN_LIST_FILE" 2>/dev/null; then
+    local prev
+    prev="$(grep -F "${dest}"$'\t' "$SEEN_LIST_FILE" | head -n 1 | cut -f2- || true)"
+    echo "Warning: possible clobber: ${dest}" >&2
+    echo "  prev: ${prev}" >&2
+    echo "  new:  ${src}" >&2
+    printf '%s\t%s\n' "$dest" "${prev} -> ${src}" >> "$CLOBBER_LIST_FILE"
+  else
+    printf '%s\t%s\n' "$dest" "$src" >> "$SEEN_LIST_FILE"
+  fi
+}
+
+seen_summary() {
+  local seen_out clob_out
+  seen_out="${CODEGEN_LOG_DIR}/seen.tsv"
+  clob_out="${CODEGEN_LOG_DIR}/clobbers.tsv"
+
+  cp "$SEEN_LIST_FILE" "$seen_out" 2>/dev/null || true
+  cp "$CLOBBER_LIST_FILE" "$clob_out" 2>/dev/null || true
+
+  local clobbers
+  clobbers="$(wc -l < "$CLOBBER_LIST_FILE" 2>/dev/null || echo 0)"
+  if [[ "$clobbers" != "0" ]]; then
+    echo "" >&2
+    echo "WARNING: detected ${clobbers} possible clobber(s)." >&2
+    echo "  See: ${clob_out}" >&2
+  fi
+
+  echo "" >&2
+  echo "Seen list written to: ${seen_out}" >&2
+}
+
 stash_keep_files() {
   local keep_tmp_dir="$1"
   mkdir -p "$keep_tmp_dir"
@@ -78,6 +115,7 @@ restore_keep_files() {
   local f
   for f in "${KEEP_FILES[@]}"; do
     if [[ -f "${keep_tmp_dir}/${f}" ]]; then
+      mark_seen "${LIB_DIR}/${f}" "restore keep file"
       cp "${keep_tmp_dir}/${f}" "${LIB_DIR}/${f}"
     fi
   done
@@ -116,7 +154,10 @@ generate_one_api() {
 
   rm -rf "${LIB_DIR}/${api_name}"
   mkdir -p "${LIB_DIR}/${api_name}"
+  mark_seen "${LIB_DIR}/${api_name}/" "mkdir"
+
   cp "$CONFIG_TEMPLATE" "${LIB_DIR}/${api_name}/${CONFIG_TEMPLATE}"
+  mark_seen "${LIB_DIR}/${api_name}/${CONFIG_TEMPLATE}" "cp ${CONFIG_TEMPLATE}"
 
   rewrite_config_placeholders "${LIB_DIR}/${api_name}/${CONFIG_TEMPLATE}" "$api_name" "$module_name"
 
@@ -142,8 +183,12 @@ generate_one_api() {
   fi
 
   # Hoist the top-level lib entry file and flatten the generated layout.
+  mark_seen "${LIB_DIR}/${api_name}.rb" "mv from ${LIB_DIR}/${api_name}/lib/${api_name}.rb"
   mv "${LIB_DIR}/${api_name}/lib/${api_name}.rb" "$LIB_DIR/"
+
+  mark_seen "${LIB_DIR}/${api_name}/" "mv flattened files into api dir"
   mv "${LIB_DIR}/${api_name}/lib/${api_name}/"* "${LIB_DIR}/${api_name}"
+
   rm -rf "${LIB_DIR}/${api_name}/lib"
   rm -f "${LIB_DIR}/${api_name}/"*.gemspec
 
@@ -176,6 +221,8 @@ EOF
     tmp="${rb}.tmp"
     printf "%s" "$provenance_header" > "$tmp"
     cat "$rb" >> "$tmp"
+
+    mark_seen "$rb" "prepend provenance header"
     mv "$tmp" "$rb"
   done < <(find "$LIB_DIR" -type f -name "*.rb" -print0)
 }
@@ -186,6 +233,10 @@ record_codegen_artifact() {
 }
 
 main() {
+  if should_skip_codegen; then
+    exit 1
+  fi
+
   # NOTE: keep_tmp_dir must not be `local` because the EXIT trap can fire after
   # `main` returns; with `set -u`, that would make the variable "unbound".
   KEEP_TMP_DIR="$(mktemp -d)"
@@ -194,6 +245,10 @@ main() {
     if [[ -n "${KEEP_TMP_DIR:-}" && -d "${KEEP_TMP_DIR}" ]]; then
       restore_keep_files "$KEEP_TMP_DIR"
       rm -rf "$KEEP_TMP_DIR"
+    fi
+
+    if [[ -n "${SEEN_LIST_FILE:-}" && -f "${SEEN_LIST_FILE}" ]]; then
+      seen_summary || true
     fi
   }
   trap cleanup EXIT
@@ -205,6 +260,12 @@ main() {
 
   rm -rf "$CODEGEN_LOG_DIR"
   mkdir -p "$CODEGEN_LOG_DIR"
+
+  # Initialize seen/clobber lists.
+  SEEN_LIST_FILE="${CODEGEN_LOG_DIR}/.seen.tmp.tsv"
+  CLOBBER_LIST_FILE="${CODEGEN_LOG_DIR}/.clobbers.tmp.tsv"
+  : > "$SEEN_LIST_FILE"
+  : > "$CLOBBER_LIST_FILE"
 
   # Generate code for each API spec.
   while IFS= read -r -d '' spec; do
