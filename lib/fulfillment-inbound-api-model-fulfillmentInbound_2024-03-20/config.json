@@ -1,9 +1,0 @@
-{
-  "gemName": "fulfillment-inbound-api-model-fulfillmentInbound_2024-03-20",
-  "moduleName": "AmzSpApi::FulfillmentInboundApiModelFulfillmentInbound_20240320",
-  "gemVersion": "0.1.0",
-  "gemAuthor": "Eric Jensen",
-  "gemAuthorEmail": "",
-  "gemHomepage": "https://github.com/ericcj/amz_sp_api",
-  "gemLicense": "Apache-2.0"
-}
