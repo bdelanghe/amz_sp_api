@@ -1,10 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-FORCE="${FORCE:-0}"  # set FORCE=1 to allow overwriting an existing tag
-
-: "${MODELS_DIR:?MODELS_DIR is required (path to models/ directory)}"
-: "${UPSTREAM_SHA:?UPSTREAM_SHA is required (40-char commit SHA)}"
+FORCE="${FORCE:-0}"
+MODELS_DIR="${MODELS_DIR:-}"
+UPSTREAM_SHA="${UPSTREAM_SHA:-}"
 
 TAG_NAME="upstream/selling-partner-api-models/${UPSTREAM_SHA:0:7}"
 
