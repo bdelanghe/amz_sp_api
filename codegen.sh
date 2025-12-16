@@ -34,7 +34,18 @@ fi
 KEEP_FILES=("amz_sp_api.rb" "amz_sp_api_version.rb")
 
 KEEP_TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$KEEP_TMP_DIR"' EXIT
+restore_keep_files() {
+  # Always attempt to restore preserved files on exit (success or failure).
+  # This prevents a partial/failed codegen run from leaving lib/ missing hand-maintained files.
+  mkdir -p lib
+  for f in "${KEEP_FILES[@]}"; do
+    if [[ -f "$KEEP_TMP_DIR/$f" ]]; then
+      cp "$KEEP_TMP_DIR/$f" "lib/$f"
+    fi
+  done
+}
+
+trap 'restore_keep_files; rm -rf "$KEEP_TMP_DIR"' EXIT
 
 for f in "${KEEP_FILES[@]}"; do
   if [[ -f "lib/$f" ]]; then
@@ -78,11 +89,7 @@ find "$MODELS_DIR" -name "*.json" -print0 | while IFS= read -r -d '' FILE; do
 done
 
 # Restore preserved files (if they existed before cleanup)
-for f in "${KEEP_FILES[@]}"; do
-  if [[ -f "$KEEP_TMP_DIR/$f" ]]; then
-    cp "$KEEP_TMP_DIR/$f" "lib/$f"
-  fi
-done
+restore_keep_files
 
 # Note: post-generation normalization (hoisting + provenance headers)
 # is handled separately by hoist.sh.
