@@ -19,11 +19,15 @@ source "./env.sh"
 : "${RUNTIME_SOURCE_DIR:?RUNTIME_SOURCE_DIR must be set by env.sh}"
 FORCE="${FORCE:-0}"
 
-# Guard: code generation is destructive/expensive; require explicit FORCE=1.
-if [[ "$FORCE" != "1" ]]; then
-  echo "Refusing to run codegen without FORCE=1" >&2
-  echo "Run: FORCE=1 ./codegen.sh" >&2
-  exit 1
+# Guard: avoid regenerating when lib/ already matches the current upstream SHA,
+# unless FORCE=1 is explicitly set.
+if [[ -f "$CODEGEN_ARTIFACT_FILE" && "$FORCE" != "1" ]]; then
+  existing_sha="$(cat "$CODEGEN_ARTIFACT_FILE" 2>/dev/null || true)"
+  if [[ "$existing_sha" == "$UPSTREAM_SHA" ]]; then
+    echo "lib/ already generated from ${MODELS_URL}; refusing to re-run codegen without FORCE=1" >&2
+    echo "Run: FORCE=1 ./codegen.sh to regenerate anyway" >&2
+    exit 1
+  fi
 fi
 
 # Start clean so deletions propagate, but preserve a couple hand-maintained files.
