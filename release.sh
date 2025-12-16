@@ -16,24 +16,7 @@ fi
 : "${UPSTREAM_SHORT_SHA:?UPSTREAM_SHORT_SHA missing in .models/.env}"
 
 TAG_NAME="amzn/selling-partner-api-models/${UPSTREAM_SHORT_SHA}"
-MSG="Run codegen.sh against amzn/selling-partner-api-models@${UPSTREAM_SHA}"
-
-# Refuse to overwrite an existing tag unless FORCE=1
-if git rev-parse -q --verify "refs/tags/${TAG_NAME}" >/dev/null; then
-  [[ "$FORCE" == "1" ]] || {
-    echo "Tag already exists: ${TAG_NAME}. Re-run with FORCE=1 to overwrite." >&2
-    exit 1
-  }
-fi
-
-# Commit only if something changed
-git add lib
-git diff --cached --quiet || git commit -m "$MSG"
-
-# Tag current HEAD
-TAG_FORCE_ARG=""
-[[ "$FORCE" == "1" ]] && TAG_FORCE_ARG="-f"
-git tag $TAG_FORCE_ARG -a "$TAG_NAME" -m "$MSG"
+MSG="Results of running codegen.sh against https://github.com/amzn/selling-partner-api-models/tree/${UPSTREAM_SHA}/models"
 
 REMOTE_NAME="${GIT_REMOTE_NAME:-origin}"
 BRANCH="${GIT_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
