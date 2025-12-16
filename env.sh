@@ -30,10 +30,13 @@ require_file() {
   }
 }
 
-# Tool prerequisites used by codegen.sh
-require_cmd gsed "Install with: brew install gnu-sed"
-require_cmd swagger-codegen
+# Tool prerequisites used by the pipeline scripts.
+require_cmd git
+require_cmd find
+require_cmd mktemp
 require_cmd perl
+require_cmd gsed "Install with: brew install gnu-sed"
+require_cmd swagger-codegen "Install swagger-codegen (3.x) and ensure it is on PATH"
 
 # Contract inputs: models checkout metadata (produced by ./pull_models.sh)
 MODELS_ENV_FILE=".models/.env"
