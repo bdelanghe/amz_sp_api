@@ -27,7 +27,18 @@ if [[ ! -d "$MODELS_DIR" ]]; then
   exit 1
 fi
 
-# Start clean so deletions propagate
+# Start clean so deletions propagate, but preserve a couple hand-maintained files.
+KEEP_FILES=("amz_sp_api.rb" "amz_sp_api_version.rb")
+
+KEEP_TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$KEEP_TMP_DIR"' EXIT
+
+for f in "${KEEP_FILES[@]}"; do
+  if [[ -f "lib/$f" ]]; then
+    cp "lib/$f" "$KEEP_TMP_DIR/$f"
+  fi
+done
+
 rm -rf lib
 mkdir -p lib
 
@@ -66,3 +77,21 @@ while IFS= read -r -d '' FILE; do
   rm -rf "lib/${API_NAME}/lib"
   rm -f "lib/${API_NAME}/"*.gemspec
 done < <(find "$MODELS_DIR" -name "*.json" -print0)
+
+# Restore preserved files (if they existed before cleanup)
+for f in "${KEEP_FILES[@]}"; do
+  if [[ -f "$KEEP_TMP_DIR/$f" ]]; then
+    cp "$KEEP_TMP_DIR/$f" "lib/$f"
+  fi
+done
+
+# Copy common runtime files into top-level lib/ (take the first match deterministically)
+COMMON_FILES=("api_client.rb" "api_error.rb" "configuration.rb")
+for name in "${COMMON_FILES[@]}"; do
+  src="$(find lib -type f -name "$name" ! -path "lib/$name" 2>/dev/null | LC_ALL=C sort | head -n 1 || true)"
+  if [[ -n "$src" ]]; then
+    cp "$src" "lib/$name"
+  else
+    echo "Warning: could not find $name under lib/ (generated output)" >&2
+  fi
+done
