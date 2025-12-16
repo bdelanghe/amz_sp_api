@@ -78,17 +78,3 @@ while IFS= read -r -d '' FILE; do
   rm -rf "lib/${API_NAME}/lib"
   rm -f "lib/${API_NAME}/"*.gemspec
 done < <(find "$MODELS_DIR" -name "*.json" -print0)
-
-# Commit only if something changed
-git add lib
-git diff --cached --quiet || \
-  git commit -m "Generated from selling-partner-api-models@${UPSTREAM_SHA}"
-
-# Tag current HEAD
-TAG_FORCE_ARG=""
-[[ "$FORCE" == "1" ]] && TAG_FORCE_ARG="-f"
-
-git tag $TAG_FORCE_ARG -a "$TAG_NAME" \
-  -m "Generated from selling-partner-api-models@${UPSTREAM_SHA}"
-
-echo "Tagged HEAD as ${TAG_NAME} (upstream ${UPSTREAM_SHA})"
