@@ -85,13 +85,25 @@ for f in "${KEEP_FILES[@]}"; do
   fi
 done
 
-# Copy common runtime files into top-level lib/ (take the first match deterministically)
-COMMON_FILES=("api_client.rb" "api_error.rb" "configuration.rb")
-for name in "${COMMON_FILES[@]}"; do
-  src="$(find lib -type f -name "$name" ! -path "lib/$name" 2>/dev/null | LC_ALL=C sort | head -n 1 || true)"
-  if [[ -n "$src" ]]; then
-    cp "$src" "lib/$name"
-  else
-    echo "Warning: could not find $name under lib/ (generated output)" >&2
-  fi
-done
+# Copy common runtime files into top-level lib/ from the first generated module
+FIRST_MODULE_DIR="$(find lib -mindepth 1 -maxdepth 1 -type d | LC_ALL=C sort | head -n 1 || true)"
+
+if [[ -z "$FIRST_MODULE_DIR" ]]; then
+  echo "Warning: no generated modules found under lib/" >&2
+else
+  COMMON_FILES=("api_client.rb" "api_error.rb" "configuration.rb")
+  for name in "${COMMON_FILES[@]}"; do
+    src="${FIRST_MODULE_DIR}/${name}"
+    dest="lib/$name"
+    if [[ -f "$src" ]]; then
+      {
+        echo "# NOTE: This file is generated and hoisted to lib/ by codegen.sh"
+        echo "# Source: ${src}"
+        echo
+        cat "$src"
+      } > "$dest"
+    else
+      echo "Warning: ${name} not found in ${FIRST_MODULE_DIR}" >&2
+    fi
+  done
+fi
