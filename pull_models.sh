@@ -50,6 +50,3 @@ Pulled SP-API models @ ${UPSTREAM_SHORT_SHA} (${MODELS_REF})
 → Snapshot written to .models/${UPSTREAM_SHORT_SHA}
 → Updated .models/.env
 EOF
-
-# Machine-readable output (stdout)
-echo "$UPSTREAM_SHORT_SHA"
