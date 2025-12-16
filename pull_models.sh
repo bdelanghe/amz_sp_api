@@ -4,19 +4,26 @@ set -euo pipefail
 MODELS_REF="${MODELS_REF:-main}"
 MODELS_REPO="${MODELS_REPO:-https://github.com/amzn/selling-partner-api-models.git}"
 
-TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
+# Resolve the commit SHA for the ref without cloning
+UPSTREAM_SHA="$(git ls-remote "$MODELS_REPO" "refs/heads/$MODELS_REF" "refs/tags/$MODELS_REF" \
+  | awk 'NR==1 {print $1}')"
 
-git clone --depth 1 --branch "$MODELS_REF" "$MODELS_REPO" "$TMP_DIR" >/dev/null
+if [[ -z "${UPSTREAM_SHA:-}" ]]; then
+  echo "Could not resolve MODELS_REF=$MODELS_REF on $MODELS_REPO" >&2
+  exit 1
+fi
 
-UPSTREAM_SHA="$(cd "$TMP_DIR" && git rev-parse HEAD)"
 UPSTREAM_SHORT_SHA="${UPSTREAM_SHA:0:7}"
-
-SRC_MODELS_DIR="$TMP_DIR/models"
 DEST_MODELS_DIR=".models/${UPSTREAM_SHORT_SHA}"
 
 rm -rf "$DEST_MODELS_DIR"
-mkdir -p ".models"
-cp -R "$SRC_MODELS_DIR" "$DEST_MODELS_DIR"
+mkdir -p "$DEST_MODELS_DIR"
+
+# Export only the models/ subtree into .models/<short_sha>/
+git archive --remote="$MODELS_REPO" "$UPSTREAM_SHA" models \
+  | tar -x -C "$DEST_MODELS_DIR"
+
+# Provenance for codegen/tag/commit messages
+echo "$UPSTREAM_SHA" > "$DEST_MODELS_DIR/UPSTREAM_SHA"
 
 echo "$UPSTREAM_SHORT_SHA"
