@@ -3,7 +3,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**expires_at** | [**Timestamp**](Timestamp.md) |  | 
-**date_range** | [**DateRange**](DateRange.md) |  | 
-**policy** | [**DeliveryPolicy**](DeliveryPolicy.md) |  | 
+**expires_at** | [**Timestamp**](Timestamp.md) |  | [optional] 
+**date_range** | [**DateRange**](DateRange.md) |  | [optional] 
+**policy** | [**DeliveryPolicy**](DeliveryPolicy.md) |  | [optional] 
 

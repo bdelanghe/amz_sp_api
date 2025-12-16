@@ -3,6 +3,6 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**payload** | [**GetDeliveryOfferingResult**](GetDeliveryOfferingResult.md) |  | [optional] 
+**payload** | [**GetDeliveryOfferingsResult**](GetDeliveryOfferingsResult.md) |  | [optional] 
 **errors** | [**ErrorList**](ErrorList.md) |  | [optional] 
 
