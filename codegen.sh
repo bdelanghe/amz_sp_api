@@ -1,6 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
+# Require GNU sed for deterministic in-place editing
+if command -v gsed >/dev/null 2>&1; then
+  SED="gsed"
+elif sed --version >/dev/null 2>&1; then
+  SED="sed"
+else
+  echo "GNU sed is required (install with: brew install gnu-sed)" >&2
+  exit 1
+fi
+
 MODELS_DIR="${MODELS_DIR:-}"
 UPSTREAM_SHA="${UPSTREAM_SHA:-}"
 FORCE="${FORCE:-0}"
@@ -100,15 +110,18 @@ for f in "${KEEP_FILES[@]}"; do
   fi
 done
 
-# Copy common runtime files into top-level lib/ from the first generated module
-FIRST_MODULE_DIR="$(find lib -mindepth 1 -maxdepth 1 -type d | LC_ALL=C sort | head -n 1 || true)"
+# Copy common runtime files into top-level lib/ from a fixed, known-good runtime source module.
+#
+# We intentionally pin this to fulfillment-outbound-api-model to avoid
+# accidental changes in hoisted runtime behavior as Amazon adds or renames APIs.
+RUNTIME_SOURCE_DIR="lib/fulfillment-outbound-api-model"
 
-if [[ -z "$FIRST_MODULE_DIR" ]]; then
+if [[ -z "$RUNTIME_SOURCE_DIR" ]]; then
   echo "Warning: no generated modules found under lib/" >&2
 else
   COMMON_FILES=("api_client.rb" "api_error.rb" "configuration.rb")
   for name in "${COMMON_FILES[@]}"; do
-    src="${FIRST_MODULE_DIR}/${name}"
+    src="${RUNTIME_SOURCE_DIR}/${name}"
     dest="lib/$name"
     if [[ -f "$src" ]]; then
       {
@@ -130,27 +143,16 @@ else
       # Additionally, api_client.rb may reference concrete model namespaces when
       # deserializing return types. We rewrite those lookups to dynamically scan
       # AmzSpApi submodules and resolve the correct model class at runtime.
-      if sed --version >/dev/null 2>&1; then
-        sed -i '/^module AmzSpApi::AmazonWarehousingAndDistributionModel$/d' "$dest"
-        sed -i 's/AmzSpApi::AmazonWarehousingAndDistributionModel\.const_get(return_type)\.build_from_hash(data)/AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)/g' "$dest"
-      else
-        sed -i '' '/^module AmzSpApi::AmazonWarehousingAndDistributionModel$/d' "$dest"
-        sed -i '' 's/AmzSpApi::AmazonWarehousingAndDistributionModel\.const_get(return_type)\.build_from_hash(data)/AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)/g' "$dest"
-      fi
+
+      $SED -i '/^module AmzSpApi::AmazonWarehousingAndDistributionModel$/d' "$dest"
+      $SED -i 's/AmzSpApi::AmazonWarehousingAndDistributionModel\.const_get(return_type)\.build_from_hash(data)/AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)/g' "$dest"
 
       # Add explicit inline comments at patched sites in the hoisted files.
       # Inline-only (no new lines), using sed for portability.
-      if sed --version >/dev/null 2>&1; then
-        # GNU sed
-        sed -i 's/^\(module AmzSpApi\)\s*$/\1 # NOTE: patched by codegen.sh – hoisted runtime file, removed nested API namespace/' "$dest"
-        sed -i 's/\(AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)\)/\1 # NOTE: patched by codegen.sh – resolve return_type across AmzSpApi submodules/' "$dest"
-      else
-        # BSD sed (macOS)
-        sed -i '' 's/^\(module AmzSpApi\)\s*$/\1 # NOTE: patched by codegen.sh – hoisted runtime file, removed nested API namespace/' "$dest"
-        sed -i '' 's/\(AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)\)/\1 # NOTE: patched by codegen.sh – resolve return_type across AmzSpApi submodules/' "$dest"
-      fi
+      $SED -i 's/^\(module AmzSpApi\)\s*$/\1 # NOTE: patched by codegen.sh – hoisted runtime file, removed nested API namespace/' "$dest"
+      $SED -i 's/\(AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)\)/\1 # NOTE: patched by codegen.sh – resolve return_type across AmzSpApi submodules/' "$dest"
     else
-      echo "Warning: ${name} not found in ${FIRST_MODULE_DIR}" >&2
+      echo "Warning: ${name} not found in ${RUNTIME_SOURCE_DIR}" >&2
     fi
   done
 fi
