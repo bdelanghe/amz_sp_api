@@ -1,4 +1,3 @@
-
 #!/bin/bash
 set -euo pipefail
 
@@ -20,14 +19,11 @@ source "./env.sh"
 : "${RUNTIME_SOURCE_DIR:?RUNTIME_SOURCE_DIR must be set by env.sh}"
 FORCE="${FORCE:-0}"
 
-# Skip if we've already generated lib/ for this upstream SHA,
-# unless FORCE=1 is explicitly set.
-if [[ -f "$CODEGEN_ARTIFACT_FILE" && "$FORCE" != "1" ]]; then
-  existing_sha="$(cat "$CODEGEN_ARTIFACT_FILE" 2>/dev/null || true)"
-  if [[ "$existing_sha" == "$UPSTREAM_SHA" ]]; then
-    echo "lib/ already generated from ${MODELS_URL}; skipping codegen (set FORCE=1 to override)" >&2
-    exit 0
-  fi
+# Guard: code generation is destructive/expensive; require explicit FORCE=1.
+if [[ "$FORCE" != "1" ]]; then
+  echo "Refusing to run codegen without FORCE=1" >&2
+  echo "Run: FORCE=1 ./codegen.sh" >&2
+  exit 1
 fi
 
 # Start clean so deletions propagate, but preserve a couple hand-maintained files.
@@ -83,3 +79,6 @@ for f in "${KEEP_FILES[@]}"; do
     cp "$KEEP_TMP_DIR/$f" "lib/$f"
   fi
 done
+
+# Note: post-generation normalization (hoisting + provenance headers)
+# is handled separately by hoist.sh.
