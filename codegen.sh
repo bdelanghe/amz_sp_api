@@ -46,7 +46,7 @@ rm -rf lib
 mkdir -p lib
 
 # Generate code for each API spec
-while IFS= read -r -d '' FILE; do
+find "$MODELS_DIR" -name "*.json" -print0 | while IFS= read -r -d '' FILE; do
   FILE_PATH="${FILE#$MODELS_DIR/}"
   API_NAME="${FILE_PATH%%/*}"
 
@@ -75,7 +75,7 @@ while IFS= read -r -d '' FILE; do
   mv "lib/${API_NAME}/lib/${API_NAME}/"* "lib/${API_NAME}"
   rm -rf "lib/${API_NAME}/lib"
   rm -f "lib/${API_NAME}/"*.gemspec
-done < <(find "$MODELS_DIR" -name "*.json" -print0)
+done
 
 # Restore preserved files (if they existed before cleanup)
 for f in "${KEEP_FILES[@]}"; do
