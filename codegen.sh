@@ -83,13 +83,9 @@ while IFS= read -r -d '' FILE; do
   mkdir -p "lib/${API_NAME}"
   cp config.json "lib/${API_NAME}/config.json"
 
-  if sed --version >/dev/null 2>&1; then
-    sed -i "s/GEMNAME/${API_NAME}/g" "lib/${API_NAME}/config.json"
-    sed -i "s/MODULENAME/${MODULE_NAME}/g" "lib/${API_NAME}/config.json"
-  else
-    sed -i '' "s/GEMNAME/${API_NAME}/g" "lib/${API_NAME}/config.json"
-    sed -i '' "s/MODULENAME/${MODULE_NAME}/g" "lib/${API_NAME}/config.json"
-  fi
+  # Fill in template values using GNU sed (required at script startup)
+  $SED -i "s/GEMNAME/${API_NAME}/g" "lib/${API_NAME}/config.json"
+  $SED -i "s/MODULENAME/${MODULE_NAME}/g" "lib/${API_NAME}/config.json"
 
   swagger-codegen generate \
     -i "$FILE" \
