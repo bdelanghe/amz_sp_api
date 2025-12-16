@@ -20,7 +20,7 @@ fi
 UPSTREAM_SHORT_SHA="${UPSTREAM_SHA:0:7}"
 
 MODELS_URL="https://github.com/amzn/selling-partner-api-models/tree/${UPSTREAM_SHA}/models"
-MSG="Run codegen.sh against ${MODELS_URL}"
+MSG="Results of running codegen.sh against ${MODELS_URL}"
 
 TAG_NAME="amzn/selling-partner-api-models/${UPSTREAM_SHORT_SHA}"
 

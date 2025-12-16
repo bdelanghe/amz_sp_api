@@ -7,11 +7,18 @@ This SDK is mechanically generated from the upstream Amazon Selling Partner API 
 specific upstream commit SHA.
 
 Generation flow:
+
+The regeneration pipeline is explicit, ordered, and shell-safe. All scripts are written for Bash
+and run with strict mode enabled.
+
+The recommended entrypoint is `run.sh`, which orchestrates the full pipeline end-to-end:
+
+Script responsibilities:
 - `pull_models.sh` snapshots the upstream `models/` directory at a specific commit.
 - `codegen.sh` runs Swagger Codegen against that snapshot and writes generated output to `lib/`.
+- `hoist.sh` normalizes shared runtime files and injects provenance headers.
 - `release.sh` commits the generated artifacts and tags the release as
-  `amzn/selling-partner-api-models/<short_sha>`, with commit and tag messages linking to the exact
-  upstream models used.
+  `amzn/selling-partner-api-models/<short_sha>`, linking back to the exact upstream models commit.
 
 All generated files include provenance comments pointing back to the exact upstream models commit.
 Hand‑maintained files are intentionally kept separate from generated output.
