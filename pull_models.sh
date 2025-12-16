@@ -9,6 +9,7 @@ ROOT_DIR="$(pwd)"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
+# Initialize sparse repo quietly
 git init -b "$MODELS_REF" "$TMP_DIR" >/dev/null
 cd "$TMP_DIR"
 
@@ -17,9 +18,10 @@ git remote add origin "$MODELS_REPO"
 git sparse-checkout init --cone >/dev/null
 git sparse-checkout set models >/dev/null
 
-git fetch --depth 1 origin "$MODELS_REF" >/dev/null
-git checkout "$MODELS_REF" >/dev/null
+git fetch --depth 1 origin "$MODELS_REF" --quiet
+git checkout "$MODELS_REF" --quiet
 
+# Resolve provenance
 UPSTREAM_SHA="$(git rev-parse HEAD)"
 UPSTREAM_SHORT_SHA="${UPSTREAM_SHA:0:7}"
 
@@ -42,4 +44,12 @@ UPSTREAM_SHA=${UPSTREAM_SHA}
 UPSTREAM_SHORT_SHA=${UPSTREAM_SHORT_SHA}
 EOF
 
+# Human-readable summary (stderr)
+cat >&2 <<EOF
+Pulled SP-API models @ ${UPSTREAM_SHORT_SHA} (${MODELS_REF})
+→ Snapshot written to .models/${UPSTREAM_SHORT_SHA}
+→ Updated .models/.env
+EOF
+
+# Machine-readable output (stdout)
 echo "$UPSTREAM_SHORT_SHA"
