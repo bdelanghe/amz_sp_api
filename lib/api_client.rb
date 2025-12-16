@@ -19,6 +19,7 @@ require 'tempfile'
 require 'typhoeus'
 require 'uri'
 
+module AmzSpApi # NOTE: patched by hoist.sh – hoisted runtime file, normalized namespace
   class ApiClient
     # The Configuration object holding settings to be used in the API client.
     attr_accessor :config
