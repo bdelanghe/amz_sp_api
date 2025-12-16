@@ -22,9 +22,22 @@ if [[ -z "$MODELS_DIR" || -z "$UPSTREAM_SHA" ]]; then
   exit 1
 fi
 
+
 if [[ ! -d "$MODELS_DIR" ]]; then
   echo "MODELS_DIR is not a directory: '$MODELS_DIR'" >&2
   exit 1
+fi
+
+MODELS_URL="https://github.com/amzn/selling-partner-api-models/tree/${UPSTREAM_SHA}/models"
+CODEGEN_ARTIFACT_FILE="lib/.codegen_models_sha"
+
+# Skip if we've already generated lib/ for this upstream SHA
+if [[ -f "$CODEGEN_ARTIFACT_FILE" ]]; then
+  existing_sha="$(cat "$CODEGEN_ARTIFACT_FILE" 2>/dev/null || true)"
+  if [[ "$existing_sha" == "$UPSTREAM_SHA" ]]; then
+    echo "lib/ already generated from ${MODELS_URL}; skipping codegen" >&2
+    exit 0
+  fi
 fi
 
 # Start clean so deletions propagate, but preserve a couple hand-maintained files.
@@ -107,3 +120,32 @@ else
     fi
   done
 fi
+
+# Record provenance so we can skip re-running codegen for the same upstream SHA
+mkdir -p lib
+echo "$UPSTREAM_SHA" > "$CODEGEN_ARTIFACT_FILE"
+
+# Add a short provenance note to the top of generated Ruby files.
+# This is intentionally lightweight and avoids editing hand-maintained files.
+PROVENANCE_HEADER="# NOTE: Generated from ${MODELS_URL}\n# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh\n\n"
+while IFS= read -r -d '' rb; do
+  base="$(basename "$rb")"
+
+  # Skip hand-maintained and already-hoisted runtime files (they already carry a note)
+  if [[ "$base" == "amz_sp_api.rb" || "$base" == "amz_sp_api_version.rb" ]]; then
+    continue
+  fi
+  if [[ "$base" == "api_client.rb" || "$base" == "api_error.rb" || "$base" == "configuration.rb" ]]; then
+    continue
+  fi
+
+  # Avoid double-prepending if run manually
+  if head -n 1 "$rb" | grep -q "^# NOTE: Generated from https://github.com/amzn/selling-partner-api-models/tree/"; then
+    continue
+  fi
+
+  tmp="${rb}.tmp"
+  printf "%b" "$PROVENANCE_HEADER" > "$tmp"
+  cat "$rb" >> "$tmp"
+  mv "$tmp" "$rb"
+done < <(find lib -type f -name "*.rb" -print0)
