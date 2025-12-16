@@ -15,8 +15,8 @@ fi
 : "${UPSTREAM_SHA:?UPSTREAM_SHA missing in .models/.env}"
 : "${UPSTREAM_SHORT_SHA:?UPSTREAM_SHORT_SHA missing in .models/.env}"
 
-TAG_NAME="upstream/selling-partner-api-models/${UPSTREAM_SHORT_SHA}"
-MSG="Generated from selling-partner-api-models@${UPSTREAM_SHA}"
+TAG_NAME="amzn/selling-partner-api-models/${UPSTREAM_SHORT_SHA}"
+MSG="Run codegen.sh against amzn/selling-partner-api-models@${UPSTREAM_SHA}"
 
 # Refuse to overwrite an existing tag unless FORCE=1
 if git rev-parse -q --verify "refs/tags/${TAG_NAME}" >/dev/null; then

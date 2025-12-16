@@ -1,8 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-FORCE="${FORCE:-0}"
-
 MODELS_DIR="${MODELS_DIR:-}"
 UPSTREAM_SHA="${UPSTREAM_SHA:-}"
 
@@ -27,16 +25,6 @@ fi
 if [[ ! -d "$MODELS_DIR" ]]; then
   echo "MODELS_DIR is not a directory: '$MODELS_DIR'" >&2
   exit 1
-fi
-
-TAG_NAME="upstream/selling-partner-api-models/${UPSTREAM_SHA:0:7}"
-
-# Bail if tag already exists (unless FORCE=1)
-if git rev-parse -q --verify "refs/tags/${TAG_NAME}" >/dev/null; then
-  if [[ "$FORCE" != "1" ]]; then
-    echo "Tag already exists: ${TAG_NAME}. Re-run with FORCE=1 to overwrite." >&2
-    exit 1
-  fi
 fi
 
 # Start clean so deletions propagate
