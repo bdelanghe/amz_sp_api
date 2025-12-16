@@ -2,7 +2,7 @@ amazon-warehousing-and-distribution-model	AmazonWarehousingAndDistributionModel	
 aplus-content-api-model	AplusContentApiModel	.models/df0f6a4/models/aplus-content-api-model/aplusContent_2020-11-01.json	1
 application-integrations-api-model	ApplicationIntegrationsApiModel	.models/df0f6a4/models/application-integrations-api-model/appIntegrations-2024-04-01.json	1
 application-management-api-model	ApplicationManagementApiModel	.models/df0f6a4/models/application-management-api-model/application_2023-11-30.json	1
-catalog-items-api-model	CatalogItemsApiModel	.models/df0f6a4/models/catalog-items-api-model/catalogItemsV0.json	3
+catalog-items-api-model	CatalogItemsApiModel	.models/df0f6a4/models/catalog-items-api-model/catalogItems_2022-04-01.json	3
 customer-feedback-api-model	CustomerFeedbackApiModel	.models/df0f6a4/models/customer-feedback-api-model/customerFeedback_2024-06-01.json	1
 data-kiosk-api-model	DataKioskApiModel	.models/df0f6a4/models/data-kiosk-api-model/dataKiosk_2023-11-15.json	1
 delivery-by-amazon	DeliveryByAmazon	.models/df0f6a4/models/delivery-by-amazon/deliveryShipmentInvoiceV2022-07-01.json	1
@@ -11,8 +11,9 @@ external-fulfillment	ExternalFulfillment	.models/df0f6a4/models/external-fulfill
 fba-inbound-eligibility-api-model	FbaInboundEligibilityApiModel	.models/df0f6a4/models/fba-inbound-eligibility-api-model/fbaInbound.json	1
 fba-inventory-api-model	FbaInventoryApiModel	.models/df0f6a4/models/fba-inventory-api-model/fbaInventory.json	1
 feeds-api-model	FeedsApiModel	.models/df0f6a4/models/feeds-api-model/feeds_2021-06-30.json	1
-finances-api-model	FinancesApiModel	.models/df0f6a4/models/finances-api-model/financesV0.json	3
-fulfillment-inbound-api-model	FulfillmentInboundApiModel	.models/df0f6a4/models/fulfillment-inbound-api-model/fulfillmentInboundV0.json	2
+finances-api-model	FinancesApiModel	.models/df0f6a4/models/finances-api-model/finances_2024-06-19.json	3
+fulfillment-inbound-api-model	FulfillmentInboundApiModel	.models/df0f6a4/models/fulfillment-inbound-api-model/fulfillmentInbound_2024-03-20.json	1
+fulfillment-inbound-api-model-V0	FulfillmentInboundApiModelV0	.models/df0f6a4/models/fulfillment-inbound-api-model/fulfillmentInboundV0.json	1
 fulfillment-outbound-api-model	FulfillmentOutboundApiModel	.models/df0f6a4/models/fulfillment-outbound-api-model/fulfillmentOutbound_2020-07-01.json	1
 invoices-api-model	InvoicesApiModel	.models/df0f6a4/models/invoices-api-model/InvoicesApiModel_2024-06-19.json	2
 listings-items-api-model	ListingsItemsApiModel	.models/df0f6a4/models/listings-items-api-model/listingsItems_2021-08-01.json	2
@@ -22,7 +23,7 @@ messaging-api-model	MessagingApiModel	.models/df0f6a4/models/messaging-api-model
 notifications-api-model	NotificationsApiModel	.models/df0f6a4/models/notifications-api-model/notifications.json	1
 orders-api-model	OrdersApiModel	.models/df0f6a4/models/orders-api-model/ordersV0.json	4
 product-fees-api-model	ProductFeesApiModel	.models/df0f6a4/models/product-fees-api-model/productFeesV0.json	1
-product-pricing-api-model	ProductPricingApiModel	.models/df0f6a4/models/product-pricing-api-model/productPricingV0.json	2
+product-pricing-api-model	ProductPricingApiModel	.models/df0f6a4/models/product-pricing-api-model/productPricing_2022-05-01.json	2
 product-type-definitions-api-model	ProductTypeDefinitionsApiModel	.models/df0f6a4/models/product-type-definitions-api-model/definitionsProductTypes_2020-09-01.json	1
 replenishment-api-model	ReplenishmentApiModel	.models/df0f6a4/models/replenishment-api-model/replenishment-2022-11-07.json	1
 reports-api-model	ReportsApiModel	.models/df0f6a4/models/reports-api-model/reports_2021-06-30.json	1

@@ -1,7 +1,6 @@
 catalog-items-api-model	3	catalogItems_2022-04-01.json,catalogItemsV0.json,catalogItems_2020-12-01.json
 external-fulfillment	3	externalFulfillmentShipments_2024-09-11.json,externalFulfillmentInventory_2024-09-11.json,externalFulfillmentReturns_2024-09-11.json
 finances-api-model	3	transfers_2024-06-01.json,financesV0.json,finances_2024-06-19.json
-fulfillment-inbound-api-model	2	fulfillmentInbound_2024-03-20.json,fulfillmentInboundV0.json
 listings-items-api-model	2	listingsItems_2020-09-01.json,listingsItems_2021-08-01.json
 product-pricing-api-model	2	productPricingV0.json,productPricing_2022-05-01.json
 shipping-api-model	2	vendorDirectFulfillmentShipping_2021-12-28.json,vendorDirectFulfillmentShippingV1.json,shipping.json,shippingV2.json
