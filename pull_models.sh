@@ -39,7 +39,7 @@ echo "$UPSTREAM_SHA" > "$DEST_DIR/UPSTREAM_SHA"
 # Write "current" env for codegen.sh to discover
 mkdir -p "${ROOT_DIR}/.models"
 cat > "${ROOT_DIR}/.models/.env" <<EOF
-MODELS_DIR=${DEST_DIR}/models
+MODELS_DIR=.models/${UPSTREAM_SHORT_SHA}/models
 UPSTREAM_SHA=${UPSTREAM_SHA}
 UPSTREAM_SHORT_SHA=${UPSTREAM_SHORT_SHA}
 EOF
