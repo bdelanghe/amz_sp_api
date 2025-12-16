@@ -3,6 +3,7 @@ set -euo pipefail
 
 MODELS_DIR="${MODELS_DIR:-}"
 UPSTREAM_SHA="${UPSTREAM_SHA:-}"
+FORCE="${FORCE:-0}"
 
 # Source repo-local models env if needed
 if [[ -z "$MODELS_DIR" || -z "$UPSTREAM_SHA" ]]; then
@@ -31,11 +32,12 @@ fi
 MODELS_URL="https://github.com/amzn/selling-partner-api-models/tree/${UPSTREAM_SHA}/models"
 CODEGEN_ARTIFACT_FILE="lib/.codegen_models_sha"
 
-# Skip if we've already generated lib/ for this upstream SHA
-if [[ -f "$CODEGEN_ARTIFACT_FILE" ]]; then
+# Skip if we've already generated lib/ for this upstream SHA,
+# unless FORCE=1 is explicitly set.
+if [[ -f "$CODEGEN_ARTIFACT_FILE" && "$FORCE" != "1" ]]; then
   existing_sha="$(cat "$CODEGEN_ARTIFACT_FILE" 2>/dev/null || true)"
   if [[ "$existing_sha" == "$UPSTREAM_SHA" ]]; then
-    echo "lib/ already generated from ${MODELS_URL}; skipping codegen" >&2
+    echo "lib/ already generated from ${MODELS_URL}; skipping codegen (set FORCE=1 to override)" >&2
     exit 0
   fi
 fi
@@ -115,6 +117,26 @@ else
         echo
         cat "$src"
       } > "$dest"
+      # Normalize module namespace for hoisted files.
+      #
+      # These files (api_client.rb, api_error.rb, configuration.rb) are hoisted
+      # into top-level lib/ so they act as shared runtime infrastructure across
+      # all generated SP-API modules.
+      #
+      # The upstream swagger generator hardcodes the first API's module namespace
+      # (e.g. AmzSpApi::AmazonWarehousingAndDistributionModel) into these files.
+      # Once hoisted, that namespace is incorrect and must be removed.
+      #
+      # Additionally, api_client.rb may reference concrete model namespaces when
+      # deserializing return types. We rewrite those lookups to dynamically scan
+      # AmzSpApi submodules and resolve the correct model class at runtime.
+      if sed --version >/dev/null 2>&1; then
+        sed -i '/^module AmzSpApi::AmazonWarehousingAndDistributionModel$/d' "$dest"
+        sed -i 's/AmzSpApi::AmazonWarehousingAndDistributionModel\.const_get(return_type)\.build_from_hash(data)/AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)/g' "$dest"
+      else
+        sed -i '' '/^module AmzSpApi::AmazonWarehousingAndDistributionModel$/d' "$dest"
+        sed -i '' 's/AmzSpApi::AmazonWarehousingAndDistributionModel\.const_get(return_type)\.build_from_hash(data)/AmzSpApi.constants.map{|c| AmzSpApi.const_get(c)}.select{|sub| sub.kind_of?(Module)}.detect{|sub| sub.const_defined?(return_type)}.const_get(return_type).build_from_hash(data)/g' "$dest"
+      fi
     else
       echo "Warning: ${name} not found in ${FIRST_MODULE_DIR}" >&2
     fi
