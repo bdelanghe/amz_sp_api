@@ -326,11 +326,12 @@ build_generation_plan() {
   #  2) Highest YYYY-MM-DD date found in filename (lexicographic works)
   #  3) Otherwise, last filename in sort order
   LC_ALL=C sort -t $'\t' -k1,1 -k2,2 "$all_specs" | awk -F'\t' '
-    function date_score(p,   m) {
+    function date_score(p,   d) {
       # extract first YYYY-MM-DD in the path; return as integer YYYYMMDD
-      if (match(p, "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]", m)) {
-        gsub("-", "", m[0]);
-        return m[0] + 0;
+      if (match(p, "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]")) {
+        d = substr(p, RSTART, RLENGTH);
+        gsub("-", "", d);
+        return d + 0;
       }
       return 0;
     }
