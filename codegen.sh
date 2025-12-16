@@ -24,6 +24,7 @@ FORCE="${FORCE:-0}"
 readonly LIB_DIR="lib"
 readonly CONFIG_TEMPLATE="config.json"
 readonly CODEGEN_LOG_DIR=".codegen-logs"
+readonly STATUS_TSV_BASENAME="status.tsv"
 
 # Hand-maintained entrypoints we must never rewrite.
 readonly -a KEEP_FILES=(
@@ -75,13 +76,51 @@ spec_label() {
   basename "$spec_path" .json
 }
 
-spec_link() {
-  # Construct a GitHub link to the chosen spec under the pinned models SHA.
-  # MODELS_URL is expected to point at .../tree/<SHA>/models
-  local spec_path="$1"
-  local rel
-  rel="${spec_path#${MODELS_DIR}/}"
-  printf '%s/%s' "$MODELS_URL" "$rel"
+status_set() {
+  local api="$1"
+  local status="$2"
+
+  if [[ -z "${STATUS_TSV:-}" ]]; then
+    return 0
+  fi
+
+  # Remove any existing line for this api, then append the new status.
+  if [[ -f "$STATUS_TSV" ]]; then
+    # Use a temp file to stay portable.
+    local tmp
+    tmp="${STATUS_TSV}.tmp"
+    grep -vF "^${api}"$'\t' "$STATUS_TSV" > "$tmp" 2>/dev/null || true
+    mv "$tmp" "$STATUS_TSV"
+  fi
+
+  printf '%s\t%s\n' "$api" "$status" >> "$STATUS_TSV"
+}
+
+status_get() {
+  local api="$1"
+  local status
+
+  if [[ -z "${STATUS_TSV:-}" || ! -f "$STATUS_TSV" ]]; then
+    echo "-"
+    return 0
+  fi
+
+  status="$(grep -F "^${api}"$'\t' "$STATUS_TSV" | tail -n 1 | cut -f2 || true)"
+  if [[ -z "${status}" ]]; then
+    echo "-"
+  else
+    echo "$status"
+  fi
+}
+
+print_status_table() {
+  local plan_tsv="$1"
+
+  _note ""
+  _note "API status (api_name -> status):"
+  while IFS=$'\t' read -r api_name _module_name _spec _candidate_count; do
+    printf '  %-45s -> %s\n' "$api_name" "$(status_get "$api_name")" >&2
+  done < "$plan_tsv"
 }
 
 should_skip_codegen() {
@@ -139,11 +178,13 @@ seen_summary() {
 
   local clobbers
   clobbers="$(wc -l < "$CLOBBER_LIST_FILE" 2>/dev/null || echo 0)"
-  if [[ "$clobbers" != "0" ]]; then
-    _warn "detected ${clobbers} possible clobbers (see ${clob_out})"
+
+  # Be silent on the happy path.
+  if [[ "$clobbers" == "0" ]]; then
+    return 0
   fi
 
-  _note ""
+  _warn "detected ${clobbers} possible clobbers (see ${clob_out})"
   _note "Seen list written to: ${seen_out}"
 }
 
@@ -219,20 +260,19 @@ generate_one_api() {
   local log_file
   log_file="${CODEGEN_LOG_DIR}/${api_name}.swagger-codegen.log"
 
-  echo "Generating ${api_name} (${module_name})"
-  echo "  Spec:   ${spec_file}"
-  echo "  Output: ${LIB_DIR}/${api_name}"
-  echo "  Log:    ${log_file}"
+  status_set "$api_name" "RUN"
 
-  swagger-codegen generate \
+  echo "Generating ${api_name} -> ${spec_basename}"
+
+  if ! swagger-codegen generate \
     -i "$spec_file" \
     -l ruby \
     -c "${LIB_DIR}/${api_name}/${CONFIG_TEMPLATE}" \
     -o "${LIB_DIR}/${api_name}" \
-    >"$log_file" 2>&1
-
-  if [[ $? -ne 0 ]]; then
-    echo "swagger-codegen failed for ${api_name}. Last 50 lines of ${log_file}:" >&2
+    >"$log_file" 2>&1; then
+    status_set "$api_name" "FAIL"
+    _warn "swagger-codegen failed for ${api_name} (see ${log_file})"
+    _note "Last 50 lines:"
     tail -n 50 "$log_file" >&2 || true
     exit 1
   fi
@@ -246,7 +286,9 @@ generate_one_api() {
   rm -rf "${LIB_DIR}/${api_name}/lib"
   rm -f "${LIB_DIR}/${api_name}/"*.gemspec
 
-  echo "  Done:   ${api_name}"
+  status_set "$api_name" "OK"
+
+  echo "Done: ${api_name}"
 }
 
 prepend_provenance_headers() {
@@ -423,27 +465,22 @@ print_generation_plan() {
 
   print_models_context
 
-  _note "Generation plan:"
   local count
   count="$(wc -l < "$plan_tsv" | tr -d ' ')"
-  _note "  APIs:  ${count}"
-  _note "  Plan:  ${plan_tsv}"
-  if [[ -s "${CODEGEN_LOG_DIR}/duplicates.tsv" ]]; then
-    _note "  Dups:  ${CODEGEN_LOG_DIR}/duplicates.tsv"
-  fi
+  _note "Generation plan:"
+  _note "  APIs: ${count}"
   _note ""
 
-  # Show all api_name -> selected spec (basename) so it's easy to scan.
-  _note "API selections (api_name -> spec):"
-  while IFS=$'\t' read -r api_name _module_name spec _candidate_count; do
-    printf '  %-45s -> %-35s (%s)\n' "$api_name" "$(spec_label "$spec")" "$(spec_link "$spec")" >&2
+  _note "API selections (api_name -> spec [candidates] status):"
+  while IFS=$'\t' read -r api_name _module_name spec candidate_count; do
+    printf '  %-45s -> %-35s [%s] %s\n' "$api_name" "$(spec_label "$spec")" "${candidate_count}" "$(status_get "$api_name")" >&2
   done < "$plan_tsv"
 
   _note ""
-  _note "Plan notes:"
-  _note "  - Each API generates: lib/<api>.rb plus lib/<api>/*"
-  _note "  - After generation, we prepend provenance headers to all generated .rb files (expected rewrite; not a clobber)"
-  _note ""
+  _note "Notes: provenance headers are applied after generation (expected rewrite)."
+  if [[ -s "${CODEGEN_LOG_DIR}/duplicates.tsv" ]]; then
+    _note "Duplicates (if any) are written to: ${CODEGEN_LOG_DIR}/duplicates.tsv"
+  fi
 }
 
 main() {
@@ -481,14 +518,33 @@ main() {
   : > "$SEEN_LIST_FILE"
   : > "$CLOBBER_LIST_FILE"
 
+  STATUS_TSV="${CODEGEN_LOG_DIR}/${STATUS_TSV_BASENAME}"
+  : > "$STATUS_TSV"
+
   # Precompute a stable plan so API_NAME/MODULE_NAME are deterministic and match upstream.
   local plan_tsv
   plan_tsv="$(build_generation_plan)"
   print_generation_plan "$plan_tsv"
 
+  while IFS=$'\t' read -r api_name _module_name _spec _candidate_count; do
+    status_set "$api_name" "PLANNED"
+  done < "$plan_tsv"
+
+  # Re-print selections now that statuses are initialized.
+  _note ""
+  _note "API selections (api_name -> spec [candidates] status):"
+  while IFS=$'\t' read -r api_name _module_name spec candidate_count; do
+    printf '  %-45s -> %-35s [%s] %s\n' "$api_name" "$(spec_label "$spec")" "${candidate_count}" "$(status_get "$api_name")" >&2
+  done < "$plan_tsv"
+
+  _note ""
+
   while IFS=$'\t' read -r api_name module_name spec candidate_count; do
     generate_one_api "$api_name" "$module_name" "$spec"
+    echo "Status: ${api_name} -> $(status_get "$api_name")"
   done < "$plan_tsv"
+
+  print_status_table "$plan_tsv"
 
   # Ensure hand-maintained entrypoints are present, then annotate generated files.
   restore_keep_files "$KEEP_TMP_DIR"
