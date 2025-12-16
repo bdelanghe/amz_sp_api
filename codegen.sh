@@ -23,6 +23,7 @@ FORCE="${FORCE:-0}"
 # "Constants" (readonly vars)
 readonly LIB_DIR="lib"
 readonly CONFIG_TEMPLATE="config.json"
+readonly CODEGEN_LOG_DIR=".codegen-logs"
 
 # Hand-maintained entrypoints we must never rewrite.
 readonly -a KEEP_FILES=(
@@ -119,17 +120,34 @@ generate_one_api() {
 
   rewrite_config_placeholders "${LIB_DIR}/${api_name}/${CONFIG_TEMPLATE}" "$api_name" "$module_name"
 
+  local log_file
+  log_file="${CODEGEN_LOG_DIR}/${api_name}.swagger-codegen.log"
+
+  echo "Generating ${api_name} (${module_name})"
+  echo "  Spec:   ${spec_file}"
+  echo "  Output: ${LIB_DIR}/${api_name}"
+  echo "  Log:    ${log_file}"
+
   swagger-codegen generate \
     -i "$spec_file" \
     -l ruby \
     -c "${LIB_DIR}/${api_name}/${CONFIG_TEMPLATE}" \
-    -o "${LIB_DIR}/${api_name}"
+    -o "${LIB_DIR}/${api_name}" \
+    >"$log_file" 2>&1
+
+  if [[ $? -ne 0 ]]; then
+    echo "swagger-codegen failed for ${api_name}. Last 50 lines of ${log_file}:" >&2
+    tail -n 50 "$log_file" >&2 || true
+    exit 1
+  fi
 
   # Hoist the top-level lib entry file and flatten the generated layout.
   mv "${LIB_DIR}/${api_name}/lib/${api_name}.rb" "$LIB_DIR/"
   mv "${LIB_DIR}/${api_name}/lib/${api_name}/"* "${LIB_DIR}/${api_name}"
   rm -rf "${LIB_DIR}/${api_name}/lib"
   rm -f "${LIB_DIR}/${api_name}/"*.gemspec
+
+  echo "  Done:   ${api_name}"
 }
 
 prepend_provenance_headers() {
@@ -184,6 +202,9 @@ main() {
 
   rm -rf "$LIB_DIR"
   mkdir -p "$LIB_DIR"
+
+  rm -rf "$CODEGEN_LOG_DIR"
+  mkdir -p "$CODEGEN_LOG_DIR"
 
   # Generate code for each API spec.
   while IFS= read -r -d '' spec; do
