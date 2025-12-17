@@ -26,15 +26,26 @@ if [[ -f "$ROOT_DIR/env.sh" ]]; then
   source "$ROOT_DIR/env.sh"
 fi
 
+# Inputs
 PLAN_FILE="${PLAN_FILE:-.codegen-plan}"
-# Prefer MODELS_ROOT if explicitly set; otherwise use MODELS_DIR from .models/.env when available.
-# MODELS_DIR is expected to point at the snapshot's `models/` directory.
-MODELS_ROOT="${MODELS_ROOT:-${MODELS_DIR:-../selling-partner-api-models/models}}"
+
+# Prefer MODELS_DIR from .models/.env (produced by pull_models.sh). Fall back to MODELS_ROOT for older callers.
+MODELS_DIR="${MODELS_DIR:-${MODELS_ROOT:-../selling-partner-api-models/models}}"
+MODELS_ROOT="$MODELS_DIR"
 CONFIG_TEMPLATE="${CONFIG_TEMPLATE:-config.json}"
-LIB_ROOT="${LIB_ROOT:-lib}"
+FINAL_LIB_ROOT="${LIB_ROOT:-lib}"
+STAGE_ROOT="${STAGE_ROOT:-.codegen-stage}"
+ACTIVE_LIB_ROOT="$FINAL_LIB_ROOT"
+
+if [[ "$STAGE" == "1" ]]; then
+  ACTIVE_LIB_ROOT="$STAGE_ROOT/lib"
+fi
+
+LIB_ROOT="$ACTIVE_LIB_ROOT"
 
 if [[ ! -f "$PLAN_FILE" ]]; then
   echo "Missing plan file: $PLAN_FILE" >&2
+  echo "Hint: expected '$PLAN_FILE' in $ROOT_DIR (or set PLAN_FILE=...)" >&2
   exit 1
 fi
 if [[ ! -d "$MODELS_ROOT" ]]; then
@@ -46,17 +57,51 @@ if [[ ! -f "$CONFIG_TEMPLATE" ]]; then
   echo "Missing config template: $CONFIG_TEMPLATE" >&2
   exit 1
 fi
+
+# Ensure final lib root exists or can be created
+mkdir -p "$FINAL_LIB_ROOT"
+
+# If staging and not dry-run, ensure the stage root is clean and created
+if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
+  rm -rf "$STAGE_ROOT"
+  mkdir -p "$STAGE_ROOT/lib"
+fi
+
 command -v swagger-codegen >/dev/null 2>&1 || {
   echo "Missing required command: swagger-codegen" >&2
   exit 1
 }
 
+# Only require rsync if --apply is set and not dry-run
+if [[ "$APPLY" == "1" && "$DRY_RUN" != "1" ]]; then
+  command -v rsync >/dev/null 2>&1 || {
+    echo "Missing required command for --apply: rsync" >&2
+    exit 1
+  }
+fi
+
 DRY_RUN=0
+STAGE=0
+DIFF_ONLY=0
+APPLY=0
+
 for arg in "$@"; do
-  if [[ "$arg" == "--dry-run" ]]; then
-    DRY_RUN=1
-    break
-  fi
+  case "$arg" in
+    --dry-run)
+      DRY_RUN=1
+      ;;
+    --stage)
+      STAGE=1
+      ;;
+    --diff-only)
+      STAGE=1
+      DIFF_ONLY=1
+      ;;
+    --apply)
+      STAGE=1
+      APPLY=1
+      ;;
+  esac
 done
 
 # Convert things like:
@@ -108,8 +153,8 @@ verify_spec_sha() {
   # Accept either full 40-hex or short prefix SHAs from the plan.
   if [[ "$actual_sha" != "$expected_sha"* ]]; then
     echo "Spec SHA mismatch for $spec_json" >&2
-    echo "  expected: $expected_sha" >&2
-    echo "  actual:   $actual_sha" >&2
+    echo "  expected (prefix): $expected_sha" >&2
+    echo "  actual:            $actual_sha" >&2
     return 1
   fi
 
@@ -136,7 +181,7 @@ resolve_spec_json_by_sha() {
   # Find all paths at HEAD whose blob SHA matches.
   # Allow short SHAs: match any object whose full SHA starts with the provided prefix.
   # Output format: <mode> <type> <object>\t<path>
-  matches="$(cd "$repo_root" && git ls-tree -r HEAD | awk -v s="$sha" 'index($3,s)==1 {sub(/^\t/,"",$4); print $4}')"
+  matches="$(cd "$repo_root" && git ls-tree -r HEAD | awk -v s="$sha" 'index($3,s)==1 {print $NF}')"
 
   if [[ -z "$matches" ]]; then
     return 1
@@ -176,16 +221,19 @@ find_spec_json() {
   local version="$3"
   local sha="$4"
 
-  local model_dir flat_json
+  local model_dir
 
   model_dir="$MODELS_ROOT/$model"
-  flat_json="$model_dir/${prefix}_${version}.json"
 
-  # 1) Preferred flat-file naming.
-  if [[ -f "$flat_json" ]]; then
-    echo "$flat_json"
-    return 0
-  fi
+  # 1) Preferred flat-file naming, allowing joiners: <prefix><sep><version>.json where sep ∈ {"", "-", "_"}
+  local sep
+  for sep in "" "-" "_"; do
+    flat_json="$model_dir/${prefix}${sep}${version}.json"
+    if [[ -f "$flat_json" ]]; then
+      echo "$flat_json"
+      return 0
+    fi
+  done
 
   # 2) Resolve by blob SHA (most robust, ignores naming/layout).
   if [[ -n "$sha" ]]; then
@@ -238,7 +286,10 @@ while IFS= read -r raw_line; do
 
   spec_json="$(find_spec_json "$model" "$prefix" "$version" "$sha")" || {
     echo "No spec JSON found for: $model/$prefix@$version#$sha (from: $raw_line)" >&2
-    echo "Tried: $MODELS_ROOT/$model/${prefix}_${version}.json" >&2
+    echo "Tried:" >&2
+    echo "  $MODELS_ROOT/$model/${prefix}${version}.json" >&2
+    echo "  $MODELS_ROOT/$model/${prefix}-${version}.json" >&2
+    echo "  $MODELS_ROOT/$model/${prefix}_${version}.json" >&2
     exit 1
   }
 
@@ -322,3 +373,21 @@ while IFS= read -r raw_line; do
   fi
 
 done < "$PLAN_FILE"
+
+if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
+  echo "[diff] $FINAL_LIB_ROOT <-> $ACTIVE_LIB_ROOT"
+  git diff --no-index -- "$FINAL_LIB_ROOT" "$ACTIVE_LIB_ROOT" || true
+
+  if [[ "$DIFF_ONLY" == "1" ]]; then
+    echo "[diff-only] not applying staged output"
+    exit 0
+  fi
+
+  if [[ "$APPLY" == "1" ]]; then
+    echo "[apply] promoting staged output into $FINAL_LIB_ROOT"
+    rsync -a --delete "$ACTIVE_LIB_ROOT/" "$FINAL_LIB_ROOT/"
+    echo "[apply] done"
+  else
+    echo "[stage] staged output is in $ACTIVE_LIB_ROOT (run with --apply to promote)"
+  fi
+fi
