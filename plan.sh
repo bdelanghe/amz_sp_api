@@ -15,15 +15,18 @@ printb() {
 # Emit a line to the plan file, optionally with semicolon-delimited flags.
 # Format:
 #   <model>/<prefix>@<version>#<sha>[; flag1, flag2]
-# Flags are hints for downstream codegen behavior.
+# Flags are hints for downstream codegen behavior (including whether a leaf is being skipped).
 emit_plan_line() {
-  local model="$1" prefix="$2" version="$3" sha="$4"
+  local model="$1" prefix="$2" version="$3" sha="$4" status="${5:-emit}" deprecated_flag="${6:-}"
   local -a flags=()
 
-  # If the version is a namespace-like token (e.g. V0, V1), downstream generators
-  # often need help preserving it distinctly.
-  if [[ "$version" =~ ^V[0-9]+$ ]]; then
-    flags+=("use_version_namespace")
+  # Emit explicit skip reasons instead of a generic "skipped".
+  # - Deprecated leaves => skip_deprecated
+  # - Non-best / legacy leaves => skip_legacy
+  if [[ "$deprecated_flag" == "deprecated" ]]; then
+    flags+=("skip_deprecated")
+  elif [[ "$status" == "skip" ]]; then
+    flags+=("skip_legacy")
   fi
 
   # If this model contains multiple prefixes, downstream generators must namespace
@@ -35,6 +38,12 @@ emit_plan_line() {
   # If this leaf was explicitly marked as supported legacy, preserve that intent.
   if is_supported_legacy "${model}|${prefix}|${version}"; then
     flags+=("supported_legacy")
+
+    # Supported legacy versions are often V0/V1 style; downstream generators
+    # frequently need help preserving that version as part of the namespace.
+    if [[ "$version" =~ ^V[0-9]+$ ]]; then
+      flags+=("use_version_namespace")
+    fi
   fi
 
   if [[ ${#flags[@]} -gt 0 ]]; then
@@ -88,6 +97,20 @@ needs_prefix_namespace() {
   local model="$1"
   # Exact, whole-line match.
   printf '%s' "$PREFIX_NAMESPACE_MODELS" | grep -Fxq "$model"
+}
+
+# New store for version namespace keys (model|prefix)
+VERSION_NAMESPACE_KEYS=""
+
+add_version_namespace_key() {
+  local key="$1"
+  VERSION_NAMESPACE_KEYS+="${key}"$'\n'
+}
+
+needs_version_namespace() {
+  local key="$1"
+  # Exact, whole-line match.
+  printf '%s' "$VERSION_NAMESPACE_KEYS" | grep -Fxq "$key"
 }
 
 # Parse args (keep it simple; ignore unknown flags for now)
@@ -177,6 +200,12 @@ for model_dir in $MODEL_DIRS; do
     versions_tmp="$(mktemp)"
     awk -F'\t' -v p="$prefix" '$1==p {print $2"\t"$3"\t"$4}' "$tmp" | sort -u > "$versions_tmp"
 
+    # Determine if prefix has >1 non-deprecated version leaf (version != "" and deprecated == "")
+    non_deprecated_version_count=$(awk -F'\t' '$1 != "" && $2 == ""' "$versions_tmp" | cut -f1 | sort -u | wc -l | tr -d ' ')
+    if [[ "$non_deprecated_version_count" -gt 1 ]]; then
+      add_version_namespace_key "${model}|${prefix}"
+    fi
+
     # If this prefix has no non-deprecated leaves, color the prefix red.
     prefix_all_deprecated=1
     if awk -F'\t' '$2==""' "$versions_tmp" | grep -q .; then
@@ -226,7 +255,9 @@ for model_dir in $MODEL_DIRS; do
 
       if [[ -n "$dep" ]]; then
         # Deprecated date version: version and marker are red.
+        # Still record in plan as skipped+deprecated.
         printb "    └─ ${RED}$v${RESET} [${RED}$dep${RESET}] (${sha})"
+        emit_plan_line "$model" "$prefix" "$v" "$sha" "skip" "deprecated"
         continue
       fi
 
@@ -249,7 +280,7 @@ for model_dir in $MODEL_DIRS; do
       else
         # Non-best => grey
         printb "    └─ ${GREY}$v${RESET} (${sha})"
-        emit_plan_line "$model" "$prefix" "$v" "$sha"
+        emit_plan_line "$model" "$prefix" "$v" "$sha" "skip"
       fi
     done
 
@@ -259,7 +290,9 @@ for model_dir in $MODEL_DIRS; do
 
       if [[ -n "$dep" ]]; then
         # Deprecated non-date version: version and marker are red.
+        # Still record in plan as skipped+deprecated.
         printb "    └─ ${RED}$v${RESET} [${RED}$dep${RESET}] (${sha})"
+        emit_plan_line "$model" "$prefix" "$v" "$sha" "skip" "deprecated"
         continue
       fi
 
@@ -275,7 +308,7 @@ for model_dir in $MODEL_DIRS; do
         emit_plan_line "$model" "$prefix" "$v" "$sha"
       else
         printb "    └─ ${GREY}$v${RESET} (${sha})"
-        emit_plan_line "$model" "$prefix" "$v" "$sha"
+        emit_plan_line "$model" "$prefix" "$v" "$sha" "skip"
       fi
     done
 
@@ -283,6 +316,8 @@ for model_dir in $MODEL_DIRS; do
     if awk -F'\t' '$1=="" && $2!=""' "$versions_tmp" | grep -q .; then
       sha="$(awk -F'\t' '$1=="" && $2!="" {print $3; exit}' "$versions_tmp")"
       printb "    └─ [${RED}DEPRECATED${RESET}] (${sha})"
+      # Record in plan using a sentinel version token so the line stays parseable.
+      emit_plan_line "$model" "$prefix" "DEPRECATED" "$sha" "skip" "deprecated"
     fi
 
     # Unversioned normal file
