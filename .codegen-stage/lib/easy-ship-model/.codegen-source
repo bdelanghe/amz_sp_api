@@ -1,0 +1,7 @@
+model=easy-ship-model
+prefix=easyShip
+version=2022-03-23
+sha=d5106aa
+spec_json=.models/df0f6a4/models/easy-ship-model/easyShip_2022-03-23.json
+upstream_sha=df0f6a4d062dc27a42952c07a681d937172e38d8
+generated_at_utc=2025-12-17T19:31:21Z

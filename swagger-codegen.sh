@@ -13,7 +13,7 @@ set -euo pipefail
 #   - skip_deprecated   => do not generate
 #   - skip_legacy       => do not generate (unless supported_legacy is also present)
 #   - supported_legacy  => generate even if legacy
-#   - use_prefix_namespace  => gem/module/output are namespaced by prefix (always true in this generator)
+#   - use_prefix_namespace  => gem/module/output are namespaced by prefix
 #   - use_version_namespace => gem/module/output are additionally namespaced by version
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -33,6 +33,9 @@ DRY_RUN=0
 STAGE=0
 DIFF_ONLY=0
 APPLY=0
+NAME_ONLY=0
+FORCE="${FORCE:-0}"
+[[ "$FORCE" == "1" ]] || FORCE="0"
 
 for arg in "$@"; do
   case "$arg" in
@@ -49,6 +52,12 @@ for arg in "$@"; do
     --apply)
       STAGE=1
       APPLY=1
+      ;;
+    --name-only)
+      NAME_ONLY=1
+      ;;
+    --force)
+      FORCE=1
       ;;
   esac
 done
@@ -98,10 +107,23 @@ fi
 # Ensure final lib root exists or can be created
 mkdir -p "$FINAL_LIB_ROOT"
 
-# If staging and not dry-run, ensure the stage root is clean and created
+# If staging and not dry-run, ensure the stage root is clean and created.
+# Seed the stage lib from the current lib so the diff only reflects what
+# codegen would *change*, not every file that isn't regenerated this run.
 if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
   rm -rf "$STAGE_ROOT"
   mkdir -p "$STAGE_ROOT/lib"
+
+  # If lib already exists, copy it into the stage area first.
+  # This avoids misleading diffs where non-generated files appear "deleted".
+  if [[ -d "$FINAL_LIB_ROOT" ]]; then
+    if command -v rsync >/dev/null 2>&1; then
+      rsync -a "$FINAL_LIB_ROOT/" "$ACTIVE_LIB_ROOT/"
+    else
+      # Fallback: best-effort copy without rsync.
+      cp -a "$FINAL_LIB_ROOT/." "$ACTIVE_LIB_ROOT/"
+    fi
+  fi
 fi
 
 command -v swagger-codegen >/dev/null 2>&1 || {
@@ -153,6 +175,62 @@ has_flag() {
   local flags_csv="$1"
   local needle="$2"
   [[ ",${flags_csv}," == *",${needle},"* ]]
+}
+
+breadcrumb_path_for() {
+  local out_name="$1"
+  # Store breadcrumb alongside the generated Ruby module tree.
+  echo "$LIB_ROOT/$out_name/.codegen-source"
+}
+
+breadcrumb_matches() {
+  local out_name="$1"
+  local expected_sha="$2"
+
+  # If no expected sha is provided, we can't safely cache-skip.
+  [[ -z "$expected_sha" ]] && return 1
+
+  local crumb
+  crumb="$(breadcrumb_path_for "$out_name")"
+  [[ -f "$crumb" ]] || return 1
+
+  # Expect a line like: sha=<prefix-or-full>
+  local actual
+  actual="$(awk -F= '/^sha=/{print $2; exit}' "$crumb" 2>/dev/null || true)"
+  [[ -z "$actual" ]] && return 1
+
+  # Accept either full 40-hex or a short prefix.
+  if [[ "$actual" == "$expected_sha"* || "$expected_sha" == "$actual"* ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
+write_breadcrumb() {
+  local out_name="$1"
+  local model="$2"
+  local prefix="$3"
+  local version="$4"
+  local sha="$5"
+  local spec_json="$6"
+
+  local crumb_dir crumb
+  crumb="$(breadcrumb_path_for "$out_name")"
+  crumb_dir="$(dirname "$crumb")"
+  mkdir -p "$crumb_dir"
+
+  {
+    echo "model=$model"
+    echo "prefix=$prefix"
+    echo "version=$version"
+    echo "sha=$sha"
+    echo "spec_json=$spec_json"
+    if [[ -n "${UPSTREAM_SHA:-}" ]]; then
+      echo "upstream_sha=$UPSTREAM_SHA"
+    fi
+    echo "generated_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  } > "$crumb"
 }
 
 # Verify that the spec JSON we are about to feed into swagger-codegen matches the plan's blob SHA.
@@ -351,6 +429,17 @@ while IFS= read -r raw_line; do
 
   out_dir="$LIB_ROOT/$out_name"
 
+  # If we already generated this exact spec (by SHA) into the active lib root, we can skip.
+  # This matters most for staged runs where we seed the stage lib from the current lib.
+  if [[ "$FORCE" != "1" ]] && breadcrumb_matches "$out_name" "$sha"; then
+    if [[ "$DRY_RUN" == "1" ]]; then
+      echo "[dry-run] would skip (cached) $model/$prefix@$version#$sha -> $out_dir"
+    else
+      echo "[skip_cached] $model/$prefix@$version#$sha (matches breadcrumb)"
+    fi
+    continue
+  fi
+
   if [[ "$DRY_RUN" == "1" ]]; then
     echo "[dry-run] would generate $spec_json -> $out_dir (module=$module_name sha=$sha)"
   else
@@ -406,6 +495,9 @@ while IFS= read -r raw_line; do
 
     rm -rf "$out_dir/lib" || true
     rm -f "$out_dir"/*.gemspec || true
+
+    # Record provenance for future cache-skips and debugging.
+    write_breadcrumb "$out_name" "$model" "$prefix" "$version" "$sha" "$spec_json"
   fi
 
 done < "$PLAN_FILE"
@@ -421,7 +513,11 @@ if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
     exit 1
   fi
 
-  git diff --no-index -- "$FINAL_LIB_ROOT" "$ACTIVE_LIB_ROOT" || true
+  if [[ "$NAME_ONLY" == "1" ]]; then
+    GIT_PAGER=cat git diff --no-index --name-only -- "$FINAL_LIB_ROOT" "$ACTIVE_LIB_ROOT" || true
+  else
+    GIT_PAGER=cat git diff --no-index -- "$FINAL_LIB_ROOT" "$ACTIVE_LIB_ROOT" || true
+  fi
 
   if [[ "$DIFF_ONLY" == "1" ]]; then
     echo "[diff-only] not applying staged output"

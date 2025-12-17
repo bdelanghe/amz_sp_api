@@ -1,0 +1,7 @@
+model=vendor-direct-fulfillment-inventory-api-model
+prefix=vendorDirectFulfillmentInventory
+version=V1
+sha=9c02e09
+spec_json=.models/df0f6a4/models/vendor-direct-fulfillment-inventory-api-model/vendorDirectFulfillmentInventoryV1.json
+upstream_sha=df0f6a4d062dc27a42952c07a681d937172e38d8
+generated_at_utc=2025-12-17T19:31:52Z

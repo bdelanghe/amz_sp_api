@@ -1,0 +1,7 @@
+model=amazon-warehousing-and-distribution-model
+prefix=awd
+version=2024-05-09
+sha=36621aa
+spec_json=.models/df0f6a4/models/amazon-warehousing-and-distribution-model/awd_2024-05-09.json
+upstream_sha=df0f6a4d062dc27a42952c07a681d937172e38d8
+generated_at_utc=2025-12-17T19:31:13Z
