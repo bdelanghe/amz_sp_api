@@ -397,6 +397,15 @@ breadcrumb_actual_sha_at() {
   ' "$crumb" 2>/dev/null
 }
 
+breadcrumb_exists_at() {
+  local root="$1"
+  local out_name="$2"
+
+  local crumb
+  crumb="$(breadcrumb_path_for_root "$root" "$out_name")"
+  [[ -f "$crumb" ]]
+}
+
 breadcrumb_path_for_root() {
   local root="$1"
   local out_name="$2"
@@ -654,10 +663,18 @@ while IFS= read -r raw_line; do
   [[ "$raw_line" == \#* ]] && continue
 
   # Split "left; flags".
+  # Accept either `;flags` or `; flags` (and normalize whitespace).
   left="${raw_line%%;*}"
   flags_part=""
   if [[ "$raw_line" == *";"* ]]; then
-    flags_part="${raw_line#*; }"
+    # Everything after the first ';'
+    flags_part="${raw_line#*;}"
+
+    # Trim leading/trailing whitespace
+    flags_part="${flags_part#${flags_part%%[![:space:]]*}}"
+    flags_part="${flags_part%${flags_part##*[![:space:]]}}"
+
+    # Remove all remaining spaces so we can treat it like a CSV
     flags_part="${flags_part// /}"
   fi
 
@@ -672,17 +689,10 @@ while IFS= read -r raw_line; do
   if has_flag "$flags_part" "supported_legacy"; then is_supported_legacy=1; fi
 
   # --check / --check-staged: verify that the chosen lib root matches the plan's expected json_spec_blob_sha.
+  # Semantics:
+  #   - Non-skipped APIs: breadcrumb must match expected sha (ok/stale/missing)
+  #   - Skipped APIs (deprecated/outdated): breadcrumb must be absent (ok if absent, stale if present)
   if [[ "$CHECK" == "1" ]]; then
-    # Respect skip flags, but still report them.
-    if has_flag "$flags_part" "skip_deprecated"; then
-      emit_check_status "$api_id" "deprecated" "$sha"
-      continue
-    fi
-    if has_flag "$flags_part" "skip_legacy" && ! has_flag "$flags_part" "supported_legacy"; then
-      emit_check_status "$api_id" "outdated" "$sha"
-      continue
-    fi
-
     # Compute out_name exactly like generation mode so we check the right directory.
     out_name_base="$model"
     if has_flag "$flags_part" "use_prefix_namespace"; then
@@ -695,12 +705,39 @@ while IFS= read -r raw_line; do
       out_name="${out_name_base}-${ver_tok}"
     fi
 
-    if breadcrumb_matches_at "$CHECK_LIB_ROOT" "$out_name" "$sha"; then
-      if [[ "$is_supported_legacy" == "1" ]]; then
-        emit_check_status "$api_id" "supported" "$sha"
+    # Skip flags are *assertions* about absence.
+    if has_flag "$flags_part" "skip_deprecated"; then
+      if breadcrumb_exists_at "$CHECK_LIB_ROOT" "$out_name"; then
+        actual="$(breadcrumb_actual_sha_at "$CHECK_LIB_ROOT" "$out_name" 2>/dev/null || true)"
+        if [[ -z "$actual" ]]; then
+          emit_check_status "$api_id" "stale" "$sha" "unexpected_presence"
+        else
+          emit_check_status "$api_id" "stale" "$sha" "actual=${actual:0:12}"
+        fi
+        CHECK_FAILED=1
       else
         emit_check_status "$api_id" "ok" "$sha"
       fi
+      continue
+    fi
+
+    if has_flag "$flags_part" "skip_legacy" && ! has_flag "$flags_part" "supported_legacy"; then
+      if breadcrumb_exists_at "$CHECK_LIB_ROOT" "$out_name"; then
+        actual="$(breadcrumb_actual_sha_at "$CHECK_LIB_ROOT" "$out_name" 2>/dev/null || true)"
+        if [[ -z "$actual" ]]; then
+          emit_check_status "$api_id" "stale" "$sha" "unexpected_presence"
+        else
+          emit_check_status "$api_id" "stale" "$sha" "actual=${actual:0:12}"
+        fi
+        CHECK_FAILED=1
+      else
+        emit_check_status "$api_id" "ok" "$sha"
+      fi
+      continue
+    fi
+
+    if breadcrumb_matches_at "$CHECK_LIB_ROOT" "$out_name" "$sha"; then
+      emit_check_status "$api_id" "ok" "$sha"
     else
       actual="$(breadcrumb_actual_sha_at "$CHECK_LIB_ROOT" "$out_name" 2>/dev/null || true)"
       if [[ -z "$actual" ]]; then
