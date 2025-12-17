@@ -12,5 +12,6 @@ Name | Type | Description | Notes
 **ship_from_party** | [**PartyIdentification**](PartyIdentification.md) |  | 
 **ship_to_party** | [**Address**](Address.md) |  | 
 **bill_to_party** | [**PartyIdentification**](PartyIdentification.md) |  | 
+**has_customizable_items** | **BOOLEAN** | When &#x60;true&#x60;, the order contains customizable items. | [optional] 
 **items** | [**Array&lt;OrderItem&gt;**](OrderItem.md) | A list of items in this purchase order. | 
 

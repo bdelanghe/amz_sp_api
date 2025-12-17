@@ -3,8 +3,8 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**classification_id** | **String** | Identifier of the classification associated with the sales rank. | 
-**title** | **String** | Title, or name, of the sales rank. | 
-**link** | **String** | Corresponding Amazon retail website link, or URL, for the sales rank. | [optional] 
-**rank** | **Integer** | Sales rank value. | 
+**classification_id** | **String** | Identifier of the classification that is associated with the sales rank. | 
+**title** | **String** | Name of the sales rank. | 
+**link** | **String** | Corresponding Amazon retail website URL for the sales category. | [optional] 
+**rank** | **Integer** | Sales rank. | 
 

@@ -126,7 +126,7 @@ Submits acknowledgements for one or more purchase orders.  **Usage Plan:**  | Ra
 require 'vendor-direct-fulfillment-orders-api-model'
 
 api_instance = AmzSpApi::VendorDirectFulfillmentOrdersApiModel::VendorOrdersApi.new
-body = AmzSpApi::VendorDirectFulfillmentOrdersApiModel::SubmitAcknowledgementRequest.new # SubmitAcknowledgementRequest | 
+body = AmzSpApi::VendorDirectFulfillmentOrdersApiModel::SubmitAcknowledgementRequest.new # SubmitAcknowledgementRequest | The request body containing the acknowledgement to an order
 
 
 begin
@@ -141,7 +141,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**SubmitAcknowledgementRequest**](SubmitAcknowledgementRequest.md)|  | 
+ **body** | [**SubmitAcknowledgementRequest**](SubmitAcknowledgementRequest.md)| The request body containing the acknowledgement to an order | 
 
 ### Return type
 

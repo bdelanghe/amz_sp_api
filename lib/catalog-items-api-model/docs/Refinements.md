@@ -3,6 +3,6 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**brands** | [**Array&lt;BrandRefinement&gt;**](BrandRefinement.md) | Brand search refinements. | 
-**classifications** | [**Array&lt;ClassificationRefinement&gt;**](ClassificationRefinement.md) | Classification search refinements. | 
+**brands** | [**Array&lt;BrandRefinement&gt;**](BrandRefinement.md) | A list of brands you can use to refine your search. | 
+**classifications** | [**Array&lt;ClassificationRefinement&gt;**](ClassificationRefinement.md) | A list of classifications you can use to refine your search. | 
 
