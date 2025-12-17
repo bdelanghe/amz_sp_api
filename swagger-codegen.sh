@@ -317,8 +317,9 @@ c_cyan()  { [[ "$USE_COLOR" == "1" ]] && printf '\033[36m' || true; }
 
 emit_api_status() {
   local api="$1"          # canonical API id: <model>/<prefix>@<version>
-  local status="$2"       # cached | generate | skip_deprecated | skip_legacy | dry_run | supported
+  local status="$2"       # cached | generate | build | omitted | skip_deprecated | skip_legacy | dry_run | supported
   local sha="$3"          # short or full
+  local extra="${4:-}"    # optional extra column (e.g., skip reason)
 
   # Human-friendly labels
   local label="$status"
@@ -326,6 +327,7 @@ emit_api_status() {
     cached)          label="cached" ;;
     generate)        label="generate" ;;
     build)           label="build" ;;
+    omitted)         label="omitted" ;;
     dry_run)         label="dry_run" ;;
     skip_legacy)     label="outdated" ;;
     skip_deprecated) label="deprecated" ;;
@@ -336,6 +338,7 @@ emit_api_status() {
   local color_fn=""
   case "$status" in
     cached)           color_fn="c_green" ;;
+    omitted)          color_fn="c_green" ;;
     generate)         color_fn="c_yellow" ;;
     build)            color_fn="c_yellow" ;;
     dry_run)          color_fn="c_cyan" ;;
@@ -353,14 +356,22 @@ emit_api_status() {
 
   # Tab-separated output keeps columns aligned without padding inside brackets.
   # Format:
-  #   [status]\t<sha>\t<api>
+  #   [status]\t<sha>\t<api>[\t<extra>]
   if [[ -n "$color_fn" ]]; then
     local open close
     open="$($color_fn 2>/dev/null || true)"
     close="$(c_reset 2>/dev/null || true)"
-    printf '%s[%s]%s\t%s\t%s\n' "$open" "$label" "$close" "$sha_tok" "$api"
+    if [[ -n "$extra" ]]; then
+      printf '%s[%s]%s\t%s\t%s\t%s\n' "$open" "$label" "$close" "$sha_tok" "$api" "$extra"
+    else
+      printf '%s[%s]%s\t%s\t%s\n' "$open" "$label" "$close" "$sha_tok" "$api"
+    fi
   else
-    printf '[%s]\t%s\t%s\n' "$label" "$sha_tok" "$api"
+    if [[ -n "$extra" ]]; then
+      printf '[%s]\t%s\t%s\t%s\n' "$label" "$sha_tok" "$api" "$extra"
+    else
+      printf '[%s]\t%s\t%s\n' "$label" "$sha_tok" "$api"
+    fi
   fi
 }
 
@@ -368,7 +379,8 @@ emit_run_status() {
   local api="$1"
   local status="$2"
   local sha="$3"
-  emit_api_status "$api" "$status" "$sha"
+  local extra="${4:-}"
+  emit_api_status "$api" "$status" "$sha" "$extra"
 }
 emit_check_status() {
   local api="$1"     # <model>/<prefix>@<version>
@@ -934,7 +946,7 @@ while IFS= read -r raw_line; do
   # Honor skip flags.
   if has_flag "$flags_part" "skip_deprecated"; then
     if [[ "$STAGE" == "1" ]]; then
-      emit_run_status "$api_id" "skip_deprecated" "$sha"
+      emit_run_status "$api_id" "omitted" "$sha" "skip_deprecated"
     else
       echo "[skip_deprecated] $model/$prefix@$version#$sha"
     fi
@@ -943,7 +955,7 @@ while IFS= read -r raw_line; do
   fi
   if has_flag "$flags_part" "skip_legacy" && ! has_flag "$flags_part" "supported_legacy"; then
     if [[ "$STAGE" == "1" ]]; then
-      emit_run_status "$api_id" "skip_legacy" "$sha"
+      emit_run_status "$api_id" "omitted" "$sha" "skip_legacy"
     else
       echo "[skip_legacy] $model/$prefix@$version#$sha"
     fi
