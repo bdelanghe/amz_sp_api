@@ -2,6 +2,7 @@ source ./env.sh
 
 RED="\033[31m"
 GREEN="\033[32m"
+GREY="\033[90m"
 RESET="\033[0m"
 
 printb() {
@@ -16,7 +17,6 @@ echo "Listing files inside each model directory:"
 # Iterate models in a stable order
 for model_dir in $MODEL_DIRS; do
   model="$(basename "$model_dir")"
-  echo "$model/"
 
   tmp="$(mktemp)"
 
@@ -52,59 +52,124 @@ for model_dir in $MODEL_DIRS; do
     printf '%s\t%s\t%s\n' "$prefix" "$version" "$deprecated" >> "$tmp"
   done
 
+  # If this model has no non-deprecated entries at all, color the model header red.
+  model_all_deprecated=1
+  if awk -F'\t' '$3==""' "$tmp" | grep -q .; then
+    model_all_deprecated=0
+  fi
+
+  if [[ "$model_all_deprecated" -eq 1 ]]; then
+    printb "${RED}${model}/${RESET}"
+  else
+    echo "${model}/"
+  fi
+
   # Print grouped tree: prefix then its versions as children.
   cut -f1 "$tmp" | sort -u | while read -r prefix; do
-    echo "  └─ $prefix"
+    # Emit version leaves (once per prefix)
+    versions_tmp="$(mktemp)"
+    awk -F'\t' -v p="$prefix" '$1==p {print $2"\t"$3}' "$tmp" | sort -u > "$versions_tmp"
 
-    # Emit version leaves. If there are no versions and not deprecated, print nothing further.
-    awk -F'\t' -v p="$prefix" '$1==p {print $2"\t"$3}' "$tmp" | sort -u | while read -r version deprecated; do
-      # Collect versions for this prefix into buckets
-      versions_tmp="$(mktemp)"
+    # If this prefix has no non-deprecated leaves, color the prefix red.
+    prefix_all_deprecated=1
+    if awk -F'\t' '$2==""' "$versions_tmp" | grep -q .; then
+      prefix_all_deprecated=0
+    fi
 
-      awk -F'\t' -v p="$prefix" '$1==p {print $2"\t"$3}' "$tmp" | sort -u > "$versions_tmp"
+    if [[ "$prefix_all_deprecated" -eq 1 ]]; then
+      printb "  └─ ${RED}${prefix}${RESET}"
+    else
+      echo "  └─ $prefix"
+    fi
 
-      # Separate date versions and non-date versions
-      date_versions=$(awk -F'\t' '$1 ~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/ {print $1}' "$versions_tmp" | sort -r)
-      other_versions=$(awk -F'\t' '$1 !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/ && $1 != "" {print $1}' "$versions_tmp")
+    # Date versions first (newest date in green), then V* versions.
+    date_versions=$(awk -F'\t' '$1 ~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/ {print $1}' "$versions_tmp" | sort -r)
+    other_versions=$(awk -F'\t' '$1 !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/ && $1 != "" {print $1}' "$versions_tmp" | sort -u)
 
-      first_date=1
-      for v in $date_versions; do
-        dep="$(awk -F'\t' -v vv="$v" '$1==vv && $2!="" {print $2; exit}' "$versions_tmp")"
-        dep_mark=""
-        if [[ -n "$dep" ]]; then
-          dep_mark=" [${RED}$dep${RESET}]"
-        fi
+    # Count leaves for this prefix (dates + other versions + deprecated-only + latest)
+    n_dates=$(printf '%s\n' $date_versions | sed '/^$/d' | wc -l | tr -d ' ')
+    n_other=$(printf '%s\n' $other_versions | sed '/^$/d' | wc -l | tr -d ' ')
+    has_deprecated_only=0
+    if awk -F'\t' '$1=="" && $2!=""' "$versions_tmp" | grep -q .; then
+      has_deprecated_only=1
+    fi
+    has_latest=0
+    if awk -F'\t' '$1=="" && $2==""' "$versions_tmp" | grep -q .; then
+      has_latest=1
+    fi
+    leaf_count=$((n_dates + n_other + has_deprecated_only + has_latest))
 
-        if [[ "$first_date" -eq 1 ]]; then
-          printb "    └─ ${GREEN}$v${RESET}${dep_mark}"
-          first_date=0
-        else
-          printb "    └─ $v${dep_mark}"
-        fi
-      done
+    # Determine the "best" non-deprecated version for coloring.
+    # Preference: newest date (YYYY-MM-DD). If none, highest numeric V* (e.g. V2). If none, none.
+    best_version=""
 
-      for v in $other_versions; do
-        dep="$(awk -F'\t' -v vv="$v" '$1==vv && $2!="" {print $2; exit}' "$versions_tmp")"
-        if [[ -n "$dep" ]]; then
-          printb "    └─ $v [${RED}$dep${RESET}]"
-        else
-          echo "    └─ $v"
-        fi
-      done
+    best_date=$(awk -F'\t' '$1 ~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/ && $2=="" {print $1}' "$versions_tmp" | sort -r | head -n1)
+    if [[ -n "$best_date" ]]; then
+      best_version="$best_date"
+    else
+      best_vnum=$(awk -F'\t' '$1 ~ /^V[0-9]+$/ && $2=="" {print $1}' "$versions_tmp" | sort -V | tail -n1)
+      if [[ -n "$best_vnum" ]]; then
+        best_version="$best_vnum"
+      fi
+    fi
 
-      # Handle deprecated-only case (no version, deprecated markdown)
-      if awk -F'\t' '$1=="" && $2!=""' "$versions_tmp" | grep -q .; then
-        printb "    └─ [${RED}DEPRECATED${RESET}]"
+    for v in $date_versions; do
+      dep="$(awk -F'\t' -v vv="$v" '$1==vv && $2!="" {print $2; exit}' "$versions_tmp")"
+
+      if [[ -n "$dep" ]]; then
+        # Deprecated date version: version and marker are red.
+        printb "    └─ ${RED}$v${RESET} [${RED}$dep${RESET}]"
+        continue
       fi
 
-      # Handle unversioned normal file
-      if awk -F'\t' '$1=="" && $2==""' "$versions_tmp" | grep -q .; then
+      # Not deprecated
+      if [[ "$leaf_count" -eq 1 ]]; then
+        # Single non-deprecated leaf => green
+        printb "    └─ ${GREEN}$v${RESET}"
+      elif [[ -n "$best_version" && "$v" == "$best_version" ]]; then
+        # Best version => green
+        printb "    └─ ${GREEN}$v${RESET}"
+      else
+        # Non-best => grey
+        printb "    └─ ${GREY}$v${RESET}"
+      fi
+    done
+
+    for v in $other_versions; do
+      dep="$(awk -F'\t' -v vv="$v" '$1==vv && $2!="" {print $2; exit}' "$versions_tmp")"
+      if [[ -n "$dep" ]]; then
+        # Deprecated non-date version: version and marker are red.
+        printb "    └─ ${RED}$v${RESET} [${RED}$dep${RESET}]"
+      else
+        # Not deprecated
+        if [[ "$leaf_count" -eq 1 ]]; then
+          printb "    └─ ${GREEN}$v${RESET}"
+        elif [[ -n "$best_version" && "$v" == "$best_version" ]]; then
+          printb "    └─ ${GREEN}$v${RESET}"
+        else
+          printb "    └─ ${GREY}$v${RESET}"
+        fi
+      fi
+    done
+
+    # Deprecated-only (no version)
+    if awk -F'\t' '$1=="" && $2!=""' "$versions_tmp" | grep -q .; then
+      printb "    └─ [${RED}DEPRECATED${RESET}]"
+    fi
+
+    # Unversioned normal file
+    if awk -F'\t' '$1=="" && $2==""' "$versions_tmp" | grep -q .; then
+      # If there are other versioned leaves, the unversioned file is legacy (not latest).
+      if [[ "$leaf_count" -eq 1 ]]; then
+        printb "    └─ ${GREEN}latest${RESET}"
+      elif [[ "$n_dates" -gt 0 || "$n_other" -gt 0 ]]; then
+        printb "    └─ ${GREY}legacy${RESET}"
+      else
         echo "    └─ latest"
       fi
+    fi
 
-      rm -f "$versions_tmp"
-      continue
-    done
+    rm -f "$versions_tmp"
   done
 
   rm -f "$tmp"
