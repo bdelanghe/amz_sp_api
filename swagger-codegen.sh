@@ -69,7 +69,7 @@ for arg in "$@"; do
     --stage|stage)
       STAGE=1
       ;;
-    --diff-only|diff-only)
+    --diff-only|diff-only|--diff|diff)
       STAGE=1
       DIFF_ONLY=1
       ;;
@@ -105,7 +105,7 @@ done
 
 if [[ "${#UNKNOWN_ARGS[@]}" -gt 0 ]]; then
   echo "Unknown argument(s): ${UNKNOWN_ARGS[*]}" >&2
-  echo "Hint: supported args: stage apply diff-only dry-run name-only list-api-changes force check check-staged" >&2
+  echo "Hint: supported args: stage apply diff-only diff dry-run name-only list-api-changes force check check-staged" >&2
   exit 2
 fi
 
@@ -361,7 +361,7 @@ emit_run_status() {
 }
 emit_check_status() {
   local api="$1"     # <model>/<prefix>@<version>
-  local status="$2"  # ok | stale | missing | outdated | deprecated | supported
+  local status="$2"  # ok | omitted | stale | missing | outdated | deprecated | supported
   local sha="$3"
   local extra="${4:-}"
 
@@ -369,6 +369,7 @@ emit_check_status() {
   local color_fn=""
   case "$status" in
     ok)         color_fn="c_green" ;;
+    omitted)    color_fn="c_green" ;;
     supported)  color_fn="c_yellow" ;;
     stale)      color_fn="c_red" ;;
     missing)    color_fn="c_red" ;;
@@ -638,9 +639,13 @@ resolve_spec_json_by_sha() {
 
 # In check modes, pre-scan the plan so we can explain what a mismatched SHA likely corresponds to.
 # This lets us distinguish "minor" (same version, different sha) vs "major" (different version).
-# Keyed by the computed out_name (same logic as generation/check).
-declare -A _CHECK_OUTNAME_RECORDS
+# Portable implementation (bash 3.2): write an index file keyed by out_name.
+_CHECK_INDEX_FILE=""
 if [[ "$CHECK" == "1" ]]; then
+  _CHECK_INDEX_FILE="$(mktemp -t swagger_codegen_check_index.XXXXXX)"
+  # Ensure cleanup on exit (covers success and failure).
+  trap '[[ -n "${_CHECK_INDEX_FILE:-}" && -f "${_CHECK_INDEX_FILE:-}" ]] && rm -f "${_CHECK_INDEX_FILE:-}"' EXIT
+
   while IFS= read -r _raw; do
     [[ -z "${_raw// }" ]] && continue
     [[ "$_raw" == \#* ]] && continue
@@ -675,11 +680,9 @@ if [[ "$CHECK" == "1" ]]; then
 
     # Record format: api_id|version|sha|flags
     _rec="${_api_id}|${_version}|${_sha}|${_flags_part}"
-    if [[ -n "${_CHECK_OUTNAME_RECORDS[$_out_name]:-}" ]]; then
-      _CHECK_OUTNAME_RECORDS[$_out_name]="${_CHECK_OUTNAME_RECORDS[$_out_name]}\n${_rec}"
-    else
-      _CHECK_OUTNAME_RECORDS[$_out_name]="${_rec}"
-    fi
+
+    # Index line format: out_name<TAB>record
+    printf '%s\t%s\n' "$_out_name" "$_rec" >> "$_CHECK_INDEX_FILE"
   done < "$PLAN_FILE"
 fi
 
@@ -689,23 +692,23 @@ check_lookup_plan_record_for_actual_sha() {
   local out_name="$1"
   local actual_sha="$2"
 
-  local recs line plan_sha
-  recs="${_CHECK_OUTNAME_RECORDS[$out_name]:-}"
-  [[ -z "$recs" ]] && return 1
+  [[ -n "${_CHECK_INDEX_FILE:-}" && -f "${_CHECK_INDEX_FILE:-}" ]] || return 1
 
-  while IFS= read -r line; do
-    [[ -z "$line" ]] && continue
-    plan_sha="${line#*|}"
-    plan_sha="${plan_sha#*|}"
-    plan_sha="${plan_sha%%|*}"
-
-    if [[ -n "$plan_sha" && ( "$actual_sha" == "$plan_sha"* || "$plan_sha" == "$actual_sha"* ) ]]; then
-      printf '%s' "$line"
-      return 0
-    fi
-  done < <(printf '%b\n' "$recs")
-
-  return 1
+  awk -F'\t' -v key="$out_name" -v actual="$actual_sha" '
+    $1 != key { next }
+    {
+      rec = $2
+      n = split(rec, parts, "|")
+      plan_sha = parts[3]
+      if (plan_sha == "") next
+      # prefix match either direction
+      if (index(actual, plan_sha) == 1 || index(plan_sha, actual) == 1) {
+        print rec
+        exit 0
+      }
+    }
+    END { exit 1 }
+  ' "$_CHECK_INDEX_FILE"
 }
 
 # Find the spec JSON for a plan entry.
@@ -816,10 +819,10 @@ while IFS= read -r raw_line; do
           CHECK_FAILED=1
         else
           # OK: output exists, but it is not from the deprecated SHA (likely overwritten by a supported entry).
-          emit_check_status "$api_id" "ok" "$sha" "skip_deprecated"
+          emit_check_status "$api_id" "omitted" "$sha" "skip_deprecated"
         fi
       else
-        emit_check_status "$api_id" "ok" "$sha" "skip_deprecated"
+        emit_check_status "$api_id" "omitted" "$sha" "skip_deprecated"
       fi
       continue
     fi
@@ -833,10 +836,10 @@ while IFS= read -r raw_line; do
           CHECK_FAILED=1
         else
           # OK: output exists, but it is not from the legacy SHA (likely the newest supported version).
-          emit_check_status "$api_id" "ok" "$sha" "skip_legacy"
+          emit_check_status "$api_id" "omitted" "$sha" "skip_legacy"
         fi
       else
-        emit_check_status "$api_id" "ok" "$sha" "skip_legacy"
+        emit_check_status "$api_id" "omitted" "$sha" "skip_legacy"
       fi
       continue
     fi
