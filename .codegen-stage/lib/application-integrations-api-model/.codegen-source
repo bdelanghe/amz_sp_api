@@ -1,7 +1,0 @@
-model=application-integrations-api-model
-prefix=appIntegrations
-version=2024-04-01
-sha=8889f46
-spec_json=.models/df0f6a4/models/application-integrations-api-model/appIntegrations-2024-04-01.json
-upstream_sha=df0f6a4d062dc27a42952c07a681d937172e38d8
-generated_at_utc=2025-12-17T19:33:39Z

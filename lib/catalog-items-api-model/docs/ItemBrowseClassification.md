@@ -4,6 +4,5 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **display_name** | **String** | Display name for the classification. | 
-**classification_id** | **String** | Identifier of the classification. | 
-**parent** | [**ItemBrowseClassification**](ItemBrowseClassification.md) |  | [optional] 
+**classification_id** | **String** | Identifier of the classification (browse node identifier). | 
 

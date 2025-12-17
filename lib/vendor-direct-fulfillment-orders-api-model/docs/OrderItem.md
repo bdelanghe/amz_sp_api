@@ -13,5 +13,4 @@ Name | Type | Description | Notes
 **net_price** | [**Money**](Money.md) |  | 
 **tax_details** | [**TaxItemDetails**](TaxItemDetails.md) |  | [optional] 
 **total_price** | [**Money**](Money.md) |  | [optional] 
-**buyer_customized_info** | [**BuyerCustomizedInfoDetail**](BuyerCustomizedInfoDetail.md) |  | [optional] 
 

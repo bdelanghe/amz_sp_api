@@ -4,5 +4,5 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **purchase_order_number** | **String** | The purchase order number for this order. | 
-**content** | **String** | The Base64 customer invoice. | 
+**content** | **String** | The Base64encoded customer invoice. | 
 

@@ -92,7 +92,7 @@ end
 
 ## Documentation for API Endpoints
 
-All URIs are relative to *https://sellingpartnerapi-na.amazon.com/*
+All URIs are relative to */*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
@@ -112,10 +112,7 @@ Class | Method | HTTP request | Description
  - [AmzSpApi::ShipmentInvoicingApiModel::GetShipmentDetailsResponse](docs/GetShipmentDetailsResponse.md)
  - [AmzSpApi::ShipmentInvoicingApiModel::MarketplaceTaxInfo](docs/MarketplaceTaxInfo.md)
  - [AmzSpApi::ShipmentInvoicingApiModel::Money](docs/Money.md)
- - [AmzSpApi::ShipmentInvoicingApiModel::PaymentInformation](docs/PaymentInformation.md)
- - [AmzSpApi::ShipmentInvoicingApiModel::PaymentInformationList](docs/PaymentInformationList.md)
  - [AmzSpApi::ShipmentInvoicingApiModel::PaymentMethodDetailItemList](docs/PaymentMethodDetailItemList.md)
- - [AmzSpApi::ShipmentInvoicingApiModel::PaymentMethodEnum](docs/PaymentMethodEnum.md)
  - [AmzSpApi::ShipmentInvoicingApiModel::SerialNumbersList](docs/SerialNumbersList.md)
  - [AmzSpApi::ShipmentInvoicingApiModel::ShipmentDetail](docs/ShipmentDetail.md)
  - [AmzSpApi::ShipmentInvoicingApiModel::ShipmentInvoiceStatus](docs/ShipmentInvoiceStatus.md)
