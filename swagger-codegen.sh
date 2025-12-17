@@ -46,6 +46,12 @@ LIST_API_CHANGES=0
 FORCE="${FORCE:-0}"
 [[ "$FORCE" == "1" ]] || FORCE="0"
 
+# Check modes
+CHECK=0
+CHECK_STAGED=0
+# Check accumulator
+CHECK_FAILED=0
+
 # Simple run counters (helps explain no-op runs)
 COUNT_GENERATED=0
 COUNT_SKIPPED_CACHED=0
@@ -78,6 +84,13 @@ for arg in "$@"; do
     --force)
       FORCE=1
       ;;
+    --check)
+      CHECK=1
+      ;;
+    --check-staged)
+      CHECK=1
+      CHECK_STAGED=1
+      ;;
   esac
 done
 
@@ -87,6 +100,20 @@ if [[ "$LIST_API_CHANGES" == "1" ]]; then
   STAGE=0
   DIFF_ONLY=0
   APPLY=0
+fi
+
+# --check / --check-staged are inspection modes: do not generate, do not stage, do not diff, do not apply.
+if [[ "$CHECK" == "1" ]]; then
+  DRY_RUN=1
+  DIFF_ONLY=0
+  APPLY=0
+
+  # Default: check the real lib. If --check-staged was provided, check the staged lib.
+  if [[ "$CHECK_STAGED" == "1" ]]; then
+    STAGE=1
+  else
+    STAGE=0
+  fi
 fi
 
 # Final destination for generated code. Keep this distinct from LIB_ROOT so
@@ -104,6 +131,12 @@ fi
 
 # LIB_ROOT is used by the generator as the output root for this run.
 LIB_ROOT="$ACTIVE_LIB_ROOT"
+
+# Which root is being checked (for --check / --check-staged)
+CHECK_LIB_ROOT="$FINAL_LIB_ROOT"
+if [[ "$CHECK" == "1" && "$CHECK_STAGED" == "1" ]]; then
+  CHECK_LIB_ROOT="$ACTIVE_LIB_ROOT"
+fi
 
 # Inputs
 PLAN_FILE="${PLAN_FILE:-.codegen-plan}"
@@ -223,6 +256,60 @@ c_yellow(){ [[ "$USE_COLOR" == "1" ]] && printf '\033[33m' || true; }
 c_cyan()  { [[ "$USE_COLOR" == "1" ]] && printf '\033[36m' || true; }
 
 emit_api_status() {
+emit_check_status() {
+  local api="$1"   # <model>/<prefix>@<version>
+  local status="$2"  # ok | stale | missing | legacy | deprecated | supported
+  local sha="$3"
+  local extra="${4:-}"
+
+  local label="$status"
+  local color_fn=""
+  case "$status" in
+    ok)         color_fn="c_green" ;;
+    supported)  color_fn="c_yellow" ;;
+    stale)      color_fn="c_yellow" ;;
+    missing)    color_fn="c_red" ;;
+    legacy)     color_fn="c_dim" ;;
+    deprecated) color_fn="c_red" ;;
+    *)          color_fn="" ;;
+  esac
+
+  local sha_tok="$sha"
+  if [[ "${#sha_tok}" -gt 12 ]]; then
+    sha_tok="${sha_tok:0:12}"
+  fi
+
+  if [[ -n "$color_fn" ]]; then
+    local open close
+    open="$($color_fn 2>/dev/null || true)"
+    close="$(c_reset 2>/dev/null || true)"
+    if [[ -n "$extra" ]]; then
+      printf '%s[%s]%s\t%s\t%s\t%s\n' "$open" "$label" "$close" "$sha_tok" "$api" "$extra"
+    else
+      printf '%s[%s]%s\t%s\t%s\n' "$open" "$label" "$close" "$sha_tok" "$api"
+    fi
+  else
+    if [[ -n "$extra" ]]; then
+      printf '[%s]\t%s\t%s\t%s\n' "$label" "$sha_tok" "$api" "$extra"
+    else
+      printf '[%s]\t%s\t%s\n' "$label" "$sha_tok" "$api"
+    fi
+  fi
+}
+breadcrumb_actual_sha_at() {
+  local root="$1"
+  local out_name="$2"
+
+  local crumb
+  crumb="$(breadcrumb_path_for_root "$root" "$out_name")"
+  [[ -f "$crumb" ]] || return 1
+
+  awk -F= '
+    /^json_spec_blob_sha=/{print $2; found=1; exit}
+    /^sha=/{print $2; found=1; exit}
+    END{if(!found) exit 1}
+  ' "$crumb" 2>/dev/null
+}
   local api="$1"          # canonical API id: <model>/<prefix>@<version>
   local status="$2"       # cached | generate | skip_deprecated | skip_legacy | dry_run | supported
   local sha="$3"          # short or full
@@ -543,6 +630,49 @@ while IFS= read -r raw_line; do
   is_supported_legacy=0
   if has_flag "$flags_part" "supported_legacy"; then is_supported_legacy=1; fi
 
+  # --check / --check-staged: verify that the chosen lib root matches the plan's expected json_spec_blob_sha.
+  if [[ "$CHECK" == "1" ]]; then
+    # Respect skip flags, but still report them.
+    if has_flag "$flags_part" "skip_deprecated"; then
+      emit_check_status "$api_id" "deprecated" "$sha"
+      continue
+    fi
+    if has_flag "$flags_part" "skip_legacy" && ! has_flag "$flags_part" "supported_legacy"; then
+      emit_check_status "$api_id" "legacy" "$sha"
+      continue
+    fi
+
+    # Compute out_name exactly like generation mode so we check the right directory.
+    out_name_base="$model"
+    if has_flag "$flags_part" "use_prefix_namespace"; then
+      out_name_base="${model}-${prefix}"
+    fi
+
+    out_name="$out_name_base"
+    if has_flag "$flags_part" "use_version_namespace"; then
+      ver_tok="$(sanitize_version_token "$version")"
+      out_name="${out_name_base}-${ver_tok}"
+    fi
+
+    if breadcrumb_matches_at "$CHECK_LIB_ROOT" "$out_name" "$sha"; then
+      if [[ "$is_supported_legacy" == "1" ]]; then
+        emit_check_status "$api_id" "supported" "$sha"
+      else
+        emit_check_status "$api_id" "ok" "$sha"
+      fi
+    else
+      actual="$(breadcrumb_actual_sha_at "$CHECK_LIB_ROOT" "$out_name" 2>/dev/null || true)"
+      if [[ -z "$actual" ]]; then
+        emit_check_status "$api_id" "missing" "$sha"
+      else
+        emit_check_status "$api_id" "stale" "$sha" "actual=${actual:0:12}"
+      fi
+      CHECK_FAILED=1
+    fi
+
+    continue
+  fi
+
   # Honor skip flags.
   if has_flag "$flags_part" "skip_deprecated"; then
     if [[ "$LIST_API_CHANGES" == "1" ]]; then
@@ -702,6 +832,15 @@ while IFS= read -r raw_line; do
   fi
 
 done < "$PLAN_FILE"
+
+
+# Early-exit for check mode
+if [[ "$CHECK" == "1" ]]; then
+  if [[ "$CHECK_FAILED" == "1" ]]; then
+    exit 2
+  fi
+  exit 0
+fi
 
 if [[ "$LIST_API_CHANGES" == "1" ]]; then
   exit 0
