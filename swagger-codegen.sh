@@ -190,14 +190,69 @@ has_flag() {
   [[ ",${flags_csv}," == *",${needle},"* ]]
 }
 
+is_tty() {
+  [[ -t 1 ]]
+}
+
+# Respect NO_COLOR and disable colors when stdout isn't a TTY.
+USE_COLOR=0
+if is_tty && [[ -z "${NO_COLOR:-}" ]]; then
+  USE_COLOR=1
+fi
+
+c_reset() { [[ "$USE_COLOR" == "1" ]] && printf '\033[0m' || true; }
+# Basic palette
+c_dim()   { [[ "$USE_COLOR" == "1" ]] && printf '\033[2m' || true; }
+c_red()   { [[ "$USE_COLOR" == "1" ]] && printf '\033[31m' || true; }
+c_green() { [[ "$USE_COLOR" == "1" ]] && printf '\033[32m' || true; }
+c_yellow(){ [[ "$USE_COLOR" == "1" ]] && printf '\033[33m' || true; }
+c_cyan()  { [[ "$USE_COLOR" == "1" ]] && printf '\033[36m' || true; }
+
 emit_api_status() {
   local api="$1"          # canonical API id: <model>/<prefix>@<version>
-  local status="$2"       # cached | generate | skip_deprecated | skip_legacy | dry_run
+  local status="$2"       # cached | generate | skip_deprecated | skip_legacy | dry_run | supported
   local sha="$3"          # short or full
 
-  # Keep output very simple and stable for parsing:
-  #   <api>\t<status>\t<sha>
-  echo "$api"$'\t'"$status"$'\t'"$sha"
+  # Human-friendly labels
+  local label="$status"
+  case "$status" in
+    cached)          label="cached" ;;
+    generate)        label="generate" ;;
+    dry_run)         label="dry_run" ;;
+    skip_legacy)     label="legacy" ;;
+    skip_deprecated) label="deprecated" ;;
+    supported)       label="supported" ;;
+  esac
+
+  # Color only the bracketed status token.
+  local color_fn=""
+  case "$status" in
+    cached)           color_fn="c_green" ;;
+    generate)         color_fn="c_yellow" ;;
+    dry_run)          color_fn="c_cyan" ;;
+    skip_legacy)      color_fn="c_dim" ;;
+    skip_deprecated)  color_fn="c_red" ;;
+    supported)        color_fn="c_yellow" ;;
+    *)                color_fn="" ;;
+  esac
+
+  # Display SHA like git (short, no `sha=` prefix)
+  local sha_tok="$sha"
+  if [[ "${#sha_tok}" -gt 12 ]]; then
+    sha_tok="${sha_tok:0:12}"
+  fi
+
+  # Tab-separated output keeps columns aligned without padding inside brackets.
+  # Format:
+  #   [status]\t<sha>\t<api>
+  if [[ -n "$color_fn" ]]; then
+    local open close
+    open="$($color_fn 2>/dev/null || true)"
+    close="$(c_reset 2>/dev/null || true)"
+    printf '%s[%s]%s\t%s\t%s\n' "$open" "$label" "$close" "$sha_tok" "$api"
+  else
+    printf '[%s]\t%s\t%s\n' "$label" "$sha_tok" "$api"
+  fi
 }
 
 breadcrumb_path_for() {
@@ -401,6 +456,8 @@ while IFS= read -r raw_line; do
   version="${rest2%%#*}"
   sha="${rest2#*#}"
   api_id="$model/$prefix@$version"
+  is_supported_legacy=0
+  if has_flag "$flags_part" "supported_legacy"; then is_supported_legacy=1; fi
 
   # Honor skip flags.
   if has_flag "$flags_part" "skip_deprecated"; then
@@ -465,7 +522,11 @@ while IFS= read -r raw_line; do
   # This matters most for staged runs where we seed the stage lib from the current lib.
   if [[ "$FORCE" != "1" ]] && breadcrumb_matches "$out_name" "$sha"; then
     if [[ "$LIST_API_CHANGES" == "1" ]]; then
-      emit_api_status "$api_id" "cached" "$sha"
+      if [[ "$is_supported_legacy" == "1" ]]; then
+        emit_api_status "$api_id" "supported" "$sha"
+      else
+        emit_api_status "$api_id" "cached" "$sha"
+      fi
     else
       if [[ "$DRY_RUN" == "1" ]]; then
         echo "[dry-run] would skip (cached) $model/$prefix@$version#$sha -> $out_dir"
@@ -478,7 +539,11 @@ while IFS= read -r raw_line; do
 
   if [[ "$DRY_RUN" == "1" ]]; then
     if [[ "$LIST_API_CHANGES" == "1" ]]; then
-      emit_api_status "$api_id" "dry_run" "$sha"
+      if [[ "$is_supported_legacy" == "1" ]]; then
+        emit_api_status "$api_id" "supported" "$sha"
+      else
+        emit_api_status "$api_id" "dry_run" "$sha"
+      fi
     else
       echo "[dry-run] would generate $spec_json -> $out_dir (module=$module_name sha=$sha)"
     fi
@@ -491,7 +556,11 @@ while IFS= read -r raw_line; do
     mkdir -p "$CODEGEN_LOG_DIR"
 
     if [[ "$LIST_API_CHANGES" == "1" ]]; then
-      emit_api_status "$api_id" "generate" "$sha"
+      if [[ "$is_supported_legacy" == "1" ]]; then
+        emit_api_status "$api_id" "supported" "$sha"
+      else
+        emit_api_status "$api_id" "generate" "$sha"
+      fi
     else
       echo "[generate] $spec_json -> $out_dir (module=$module_name sha=$sha log=$LOG_FILE)"
     fi
