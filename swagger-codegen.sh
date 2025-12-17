@@ -344,7 +344,7 @@ emit_api_status() {
     dry_run)          color_fn="c_cyan" ;;
     skip_legacy)      color_fn="c_dim" ;;
     skip_deprecated)  color_fn="c_red" ;;
-    supported)        color_fn="c_yellow" ;;
+    supported)        color_fn="c_green" ;;
     *)                color_fn="" ;;
   esac
 
@@ -393,7 +393,7 @@ emit_check_status() {
   case "$status" in
     ok)         color_fn="c_green" ;;
     omitted)    color_fn="c_green" ;;
-    supported)  color_fn="c_yellow" ;;
+    supported)  color_fn="c_green" ;;
     stale)      color_fn="c_red" ;;
     missing)    color_fn="c_red" ;;
     outdated)   color_fn="c_dim" ;;
