@@ -483,6 +483,35 @@ print_generation_plan() {
   fi
 }
 
+
+# Argument parsing
+APPLY=0
+for arg in "$@"; do
+  if [[ "$arg" == "--apply" ]]; then
+    APPLY=1
+  fi
+done
+
+# --apply: promote already-staged output into lib (no plan, no cache, no diff)
+if [[ "${APPLY:-0}" == "1" ]]; then
+  STAGE_LIB_DIR="${STAGE_LIB_DIR:-.codegen-stage/lib}"
+  LIB_ROOT="${LIB_ROOT:-lib}"
+
+  if [[ ! -d "$STAGE_LIB_DIR" ]]; then
+    echo "Missing staged output dir: $STAGE_LIB_DIR (run ./swagger-codegen.sh first to stage output)" >&2
+    exit 1
+  fi
+
+  echo "[apply] promoting staged output into $LIB_ROOT"
+  mkdir -p "$LIB_ROOT"
+
+  # Copy staged lib -> lib, deleting files in lib that are no longer present in stage.
+  rsync -a --delete "$STAGE_LIB_DIR/" "$LIB_ROOT/"
+
+  echo "[apply] done"
+  exit 0
+fi
+
 main() {
   if should_skip_codegen; then
     exit 1
