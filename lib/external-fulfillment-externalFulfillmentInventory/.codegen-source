@@ -1,7 +1,0 @@
-model=external-fulfillment
-prefix=externalFulfillmentInventory
-version=2024-09-11
-json_spec_blob_sha=500e2fd
-codegen_flags=use_prefix_namespace
-upstream_spec_url=https://github.com/amzn/selling-partner-api-models/blob/df0f6a4d062dc27a42952c07a681d937172e38d8/models/external-fulfillment/externalFulfillmentInventory_2024-09-11.json
-generated_at_utc=2025-12-17T20:28:28Z

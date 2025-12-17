@@ -1,7 +1,0 @@
-model=vendor-direct-fulfillment-orders-api-model
-prefix=vendorDirectFulfillmentOrders
-version=2021-12-28
-json_spec_blob_sha=1350fbd
-codegen_flags=
-upstream_spec_url=https://github.com/amzn/selling-partner-api-models/blob/df0f6a4d062dc27a42952c07a681d937172e38d8/models/vendor-direct-fulfillment-orders-api-model/vendorDirectFulfillmentOrders_2021-12-28.json
-generated_at_utc=2025-12-17T20:28:58Z

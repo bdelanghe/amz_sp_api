@@ -1,7 +1,0 @@
-model=vendor-direct-fulfillment-inventory-api-model
-prefix=vendorDirectFulfillmentInventory
-version=V1
-json_spec_blob_sha=9c02e09
-codegen_flags=
-upstream_spec_url=https://github.com/amzn/selling-partner-api-models/blob/df0f6a4d062dc27a42952c07a681d937172e38d8/models/vendor-direct-fulfillment-inventory-api-model/vendorDirectFulfillmentInventoryV1.json
-generated_at_utc=2025-12-17T20:28:57Z

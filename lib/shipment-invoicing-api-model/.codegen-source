@@ -1,7 +1,0 @@
-model=shipment-invoicing-api-model
-prefix=shipmentInvoicing
-version=V0
-json_spec_blob_sha=dc8032e
-codegen_flags=
-upstream_spec_url=https://github.com/amzn/selling-partner-api-models/blob/df0f6a4d062dc27a42952c07a681d937172e38d8/models/shipment-invoicing-api-model/shipmentInvoicingV0.json
-generated_at_utc=2025-12-17T20:28:51Z

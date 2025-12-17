@@ -1,7 +1,0 @@
-model=fulfillment-inbound-api-model
-prefix=fulfillmentInbound
-version=2024-03-20
-json_spec_blob_sha=54deb70
-codegen_flags=
-upstream_spec_url=https://github.com/amzn/selling-partner-api-models/blob/df0f6a4d062dc27a42952c07a681d937172e38d8/models/fulfillment-inbound-api-model/fulfillmentInbound_2024-03-20.json
-generated_at_utc=2025-12-17T20:28:35Z

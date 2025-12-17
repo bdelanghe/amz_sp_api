@@ -1,7 +1,0 @@
-model=feeds-api-model
-prefix=feeds
-version=2021-06-30
-json_spec_blob_sha=7a22e18
-codegen_flags=
-upstream_spec_url=https://github.com/amzn/selling-partner-api-models/blob/df0f6a4d062dc27a42952c07a681d937172e38d8/models/feeds-api-model/feeds_2021-06-30.json
-generated_at_utc=2025-12-17T20:28:31Z
