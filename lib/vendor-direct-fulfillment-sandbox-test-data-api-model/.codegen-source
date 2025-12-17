@@ -1,3 +1,7 @@
-sha=317738b
-upstream_spec_url=
-generated_at_utc=2025-12-17T20:17:38Z
+model=vendor-direct-fulfillment-sandbox-test-data-api-model
+prefix=vendorDirectFulfillmentSandboxData
+version=2021-10-28
+json_spec_blob_sha=317738b
+flags=
+upstream_spec_url=https://github.com/amzn/selling-partner-api-models/blob/df0f6a4d062dc27a42952c07a681d937172e38d8/models/vendor-direct-fulfillment-sandbox-test-data-api-model/vendorDirectFulfillmentSandboxData_2021-10-28.json
+generated_at_utc=2025-12-17T20:22:52Z

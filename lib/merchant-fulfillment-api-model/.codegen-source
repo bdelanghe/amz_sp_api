@@ -1,3 +1,7 @@
-sha=0f8f20e
-upstream_spec_url=
-generated_at_utc=2025-12-17T20:17:20Z
+model=merchant-fulfillment-api-model
+prefix=merchantFulfillment
+version=V0
+json_spec_blob_sha=0f8f20e
+flags=
+upstream_spec_url=https://github.com/amzn/selling-partner-api-models/blob/df0f6a4d062dc27a42952c07a681d937172e38d8/models/merchant-fulfillment-api-model/merchantFulfillmentV0.json
+generated_at_utc=2025-12-17T20:22:34Z

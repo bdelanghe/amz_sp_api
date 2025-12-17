@@ -1,3 +1,7 @@
-sha=02f2c7b
-upstream_spec_url=
-generated_at_utc=2025-12-17T20:17:32Z
+model=supply-sources-api-model
+prefix=supplySources
+version=2020-07-01
+json_spec_blob_sha=02f2c7b
+flags=
+upstream_spec_url=https://github.com/amzn/selling-partner-api-models/blob/df0f6a4d062dc27a42952c07a681d937172e38d8/models/supply-sources-api-model/supplySources_2020-07-01.json
+generated_at_utc=2025-12-17T20:22:46Z

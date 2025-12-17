@@ -1,3 +1,7 @@
-sha=a7067a0
-upstream_spec_url=
-generated_at_utc=2025-12-17T20:17:17Z
+model=listings-items-api-model
+prefix=listingsItems
+version=2021-08-01
+json_spec_blob_sha=a7067a0
+flags=
+upstream_spec_url=https://github.com/amzn/selling-partner-api-models/blob/df0f6a4d062dc27a42952c07a681d937172e38d8/models/listings-items-api-model/listingsItems_2021-08-01.json
+generated_at_utc=2025-12-17T20:22:32Z
