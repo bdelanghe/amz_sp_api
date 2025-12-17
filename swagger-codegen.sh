@@ -243,7 +243,6 @@ sed_inplace() {
   fi
 }
 
-#
 # Convert things like:
 #   fulfillmentInbound   -> FulfillmentInbound
 #   vendorDirect...      -> VendorDirect...
@@ -254,17 +253,6 @@ camelize() {
   local s="$1"
   # Preserve already-CamelCase strings; just strip separators and capitalize boundaries.
   printf '%s' "$s" | perl -pe 's/[^A-Za-z0-9]+/-/g; s/(^|-)./uc($&)/ge; s/-//g'
-}
-
-# Convert a string to kebab-case (e.g. externalFulfillmentInventory -> external-fulfillment-inventory)
-kebabize() {
-  local s="$1"
-  # Convert CamelCase / camelCase to kebab-case, normalize separators, and lowercase.
-  # Examples:
-  #   externalFulfillmentInventory -> external-fulfillment-inventory
-  #   AWD -> awd
-  printf '%s' "$s" \
-    | perl -pe 's/([a-z0-9])([A-Z])/$1-$2/g; s/[^A-Za-z0-9]+/-/g; s/^-+|-+$//g; $_=lc($_)'
 }
 
 sanitize_version_token() {
@@ -631,14 +619,10 @@ resolve_spec_json_by_sha() {
 }
 
 # In check modes, pre-scan the plan so we can explain what a mismatched SHA likely corresponds to.
-# This avoids Bash 4 associative arrays so it works on macOS default bash (3.2).
-# Index format (tab-separated): out_name  api_id  version  sha  flags
-CHECK_INDEX_FILE=""
+# This lets us distinguish "minor" (same version, different sha) vs "major" (different version).
+# Keyed by the computed out_name (same logic as generation/check).
+declare -A _CHECK_OUTNAME_RECORDS
 if [[ "$CHECK" == "1" ]]; then
-  CHECK_INDEX_FILE="$(mktemp -t swagger_codegen_check_index.XXXXXX)"
-  # Ensure cleanup even on error.
-  trap '[[ -n "${CHECK_INDEX_FILE:-}" && -f "$CHECK_INDEX_FILE" ]] && rm -f "$CHECK_INDEX_FILE"' EXIT
-
   while IFS= read -r _raw; do
     [[ -z "${_raw// }" ]] && continue
     [[ "$_raw" == \#* ]] && continue
@@ -662,7 +646,7 @@ if [[ "$CHECK" == "1" ]]; then
 
     _out_name_base="$_model"
     if has_flag "$_flags_part" "use_prefix_namespace"; then
-      _out_name_base="${_model}-$(kebabize "$_prefix")"
+      _out_name_base="${_model}-${_prefix}"
     fi
 
     _out_name="$_out_name_base"
@@ -671,30 +655,39 @@ if [[ "$CHECK" == "1" ]]; then
       _out_name="${_out_name_base}-${_ver_tok}"
     fi
 
-    printf '%s\t%s\t%s\t%s\t%s\n' "$_out_name" "$_api_id" "$_version" "$_sha" "$_flags_part" >> "$CHECK_INDEX_FILE"
+    # Record format: api_id|version|sha|flags
+    _rec="${_api_id}|${_version}|${_sha}|${_flags_part}"
+    if [[ -n "${_CHECK_OUTNAME_RECORDS[$_out_name]:-}" ]]; then
+      _CHECK_OUTNAME_RECORDS[$_out_name]="${_CHECK_OUTNAME_RECORDS[$_out_name]}\n${_rec}"
+    else
+      _CHECK_OUTNAME_RECORDS[$_out_name]="${_rec}"
+    fi
   done < "$PLAN_FILE"
 fi
 
 check_lookup_plan_record_for_actual_sha() {
-  # Given an out_name and an actual sha, return the matching plan record line:
-  #   api_id|version|sha|flags
-  # Matches when the planned sha and actual sha share a prefix in either direction.
+  # Given an out_name and an actual sha, return the matching plan record line (api_id|version|sha|flags)
+  # when any planned sha matches actual (prefix match in either direction).
   local out_name="$1"
   local actual_sha="$2"
 
-  [[ -n "${CHECK_INDEX_FILE:-}" && -f "$CHECK_INDEX_FILE" ]] || return 1
-  [[ -n "$out_name" && -n "$actual_sha" ]] || return 1
+  local recs line plan_sha
+  recs="${_CHECK_OUTNAME_RECORDS[$out_name]:-}"
+  [[ -z "$recs" ]] && return 1
 
-  awk -v on="$out_name" -v a="$actual_sha" -F'\t' '
-    $1 == on {
-      plan_api=$2; plan_ver=$3; plan_sha=$4; plan_flags=$5;
-      if (plan_sha != "" && (index(a, plan_sha)==1 || index(plan_sha, a)==1)) {
-        printf("%s|%s|%s|%s", plan_api, plan_ver, plan_sha, plan_flags);
-        exit 0;
-      }
-    }
-    END { exit 1 }
-  ' "$CHECK_INDEX_FILE" 2>/dev/null
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    plan_sha="${line#*|}"
+    plan_sha="${plan_sha#*|}"
+    plan_sha="${plan_sha%%|*}"
+
+    if [[ -n "$plan_sha" && ( "$actual_sha" == "$plan_sha"* || "$plan_sha" == "$actual_sha"* ) ]]; then
+      printf '%s' "$line"
+      return 0
+    fi
+  done < <(printf '%b\n' "$recs")
+
+  return 1
 }
 
 # Find the spec JSON for a plan entry.
@@ -743,37 +736,7 @@ find_spec_json() {
   return 1
 }
 
-#
-# If --apply is requested and a staged lib already exists, treat apply as promotion-only.
-# This matches the mental model: `stage` builds `.codegen-stage/lib`, `apply` promotes it.
-APPLY_ONLY=0
-if [[ "$APPLY" == "1" && "$STAGE" == "1" && "$DRY_RUN" != "1" ]]; then
-  if [[ -d "$STAGE_ROOT/lib" ]]; then
-    APPLY_ONLY=1
-  fi
-fi
-
-# If staging and not dry-run, ensure the stage root is clean and created.
-# Seed the stage lib from the current lib so the diff only reflects what
-# codegen would *change*, not every file that isn't regenerated this run.
-if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" && "$APPLY_ONLY" != "1" ]]; then
-  rm -rf "$STAGE_ROOT"
-  mkdir -p "$STAGE_ROOT/lib"
-
-  # If lib already exists, copy it into the stage area first.
-  # This avoids misleading diffs where non-generated files appear "deleted".
-  if [[ -d "$FINAL_LIB_ROOT" ]]; then
-    if command -v rsync >/dev/null 2>&1; then
-      rsync -a "$FINAL_LIB_ROOT/" "$ACTIVE_LIB_ROOT/"
-    else
-      # Fallback: best-effort copy without rsync.
-      cp -a "$FINAL_LIB_ROOT/." "$ACTIVE_LIB_ROOT/"
-    fi
-  fi
-fi
-
 # Drive generation from the plan.
-if [[ "$APPLY_ONLY" != "1" ]]; then
 while IFS= read -r raw_line; do
   # Skip blanks / comments
   [[ -z "${raw_line// }" ]] && continue
@@ -984,13 +947,13 @@ while IFS= read -r raw_line; do
   # - If use_version_namespace is present, additionally include version to avoid collisions across versions.
   # Base naming:
   #   default:  <model>
-  #   +prefix:  <model>-<kebabized-prefix>
+  #   +prefix:  <model>-<prefix>
   #   +version: append `-<versionToken>` and add to module constant
   out_name_base="$model"
   module_base="$(camelize "$model")"
 
   if has_flag "$flags_part" "use_prefix_namespace"; then
-    out_name_base="${model}-$(kebabize "$prefix")"
+    out_name_base="${model}-${prefix}"
     module_base="$(camelize "$prefix")"
   fi
 
@@ -1119,7 +1082,6 @@ while IFS= read -r raw_line; do
   fi
 
 done < "$PLAN_FILE"
-fi
 
 
 # Early-exit for check mode
