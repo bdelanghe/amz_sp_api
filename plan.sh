@@ -59,6 +59,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+PLAN_OUT=".codegen-plan"
+: > "$PLAN_OUT"
+
 MODEL_DIRS=$(find "$MODELS_DIR" -mindepth 1 -maxdepth 1 -type d | sort)
 
 echo "Listing files inside each model directory:"
@@ -177,6 +180,7 @@ for model_dir in $MODEL_DIRS; do
       # Supported legacy (explicitly opted-in): yellow + label.
       if is_supported_legacy "${model}|${prefix}|${v}"; then
         printb "    └─ ${YELLOW}$v${RESET} (${sha}) ${YELLOW}(supported legacy)${RESET}"
+        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
         continue
       fi
 
@@ -184,32 +188,41 @@ for model_dir in $MODEL_DIRS; do
       if [[ "$leaf_count" -eq 1 ]]; then
         # Single non-deprecated leaf => green
         printb "    └─ ${GREEN}$v${RESET} (${sha})"
+        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
       elif [[ -n "$best_version" && "$v" == "$best_version" ]]; then
         # Best version => green
         printb "    └─ ${GREEN}$v${RESET} (${sha})"
+        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
       else
         # Non-best => grey
         printb "    └─ ${GREY}$v${RESET} (${sha})"
+        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
       fi
     done
 
     for v in $other_versions; do
       dep="$(awk -F'\t' -v vv="$v" '$1==vv && $2!="" {print $2; exit}' "$versions_tmp")"
       sha="$(awk -F'\t' -v vv="$v" '$1==vv {print $3; exit}' "$versions_tmp")"
+
       if [[ -n "$dep" ]]; then
         # Deprecated non-date version: version and marker are red.
         printb "    └─ ${RED}$v${RESET} [${RED}$dep${RESET}] (${sha})"
+        continue
+      fi
+
+      # Not deprecated
+      if is_supported_legacy "${model}|${prefix}|${v}"; then
+        printb "    └─ ${YELLOW}$v${RESET} (${sha}) ${YELLOW}(supported legacy)${RESET}"
+        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
+      elif [[ "$leaf_count" -eq 1 ]]; then
+        printb "    └─ ${GREEN}$v${RESET} (${sha})"
+        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
+      elif [[ -n "$best_version" && "$v" == "$best_version" ]]; then
+        printb "    └─ ${GREEN}$v${RESET} (${sha})"
+        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
       else
-        # Not deprecated
-        if is_supported_legacy "${model}|${prefix}|${v}"; then
-          printb "    └─ ${YELLOW}$v${RESET} (${sha}) ${YELLOW}(supported legacy)${RESET}"
-        elif [[ "$leaf_count" -eq 1 ]]; then
-          printb "    └─ ${GREEN}$v${RESET} (${sha})"
-        elif [[ -n "$best_version" && "$v" == "$best_version" ]]; then
-          printb "    └─ ${GREEN}$v${RESET} (${sha})"
-        else
-          printb "    └─ ${GREY}$v${RESET} (${sha})"
-        fi
+        printb "    └─ ${GREY}$v${RESET} (${sha})"
+        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
       fi
     done
 
@@ -239,3 +252,5 @@ for model_dir in $MODEL_DIRS; do
 
   echo
 done
+
+echo "\nPlan written to $PLAN_OUT" >&2
