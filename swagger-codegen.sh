@@ -286,9 +286,15 @@ breadcrumb_matches() {
   crumb="$(breadcrumb_path_for "$out_name")"
   [[ -f "$crumb" ]] || return 1
 
-  # Expect a line like: sha=<prefix-or-full>
+  # Try to read json_spec_blob_sha= first, fallback to sha= for backward compatibility.
   local actual
-  actual="$(awk -F= '/^sha=/{print $2; exit}' "$crumb" 2>/dev/null || true)"
+  actual="$(
+    awk -F= '
+      /^json_spec_blob_sha=/{print $2; found=1; exit}
+      /^sha=/{print $2; found=1; exit}
+      END{if(!found) exit 1}
+    ' "$crumb" 2>/dev/null || true
+  )"
   [[ -z "$actual" ]] && return 1
 
   # Accept either full 40-hex or a short prefix.
@@ -306,6 +312,7 @@ write_breadcrumb() {
   local version="$4"
   local sha="$5"
   local spec_json="$6"
+  local flags_csv="$7"
 
   local crumb_dir crumb
   crumb="$(breadcrumb_path_for "$out_name")"
@@ -313,22 +320,51 @@ write_breadcrumb() {
   mkdir -p "$crumb_dir"
 
   # Build a stable upstream URL to the *exact spec blob* that produced this output.
-  # We derive the repo-relative path from `spec_json` (which is typically an absolute
-  # path into the models repo checkout).
+  # We derive a repo-relative path from `spec_json`.
+  # `spec_json` may be absolute or relative (often under .models/<short>/models/...).
   local upstream_spec_url=""
-  local repo_root rel
+  local upstream_sha_val repo_root_abs spec_abs rel
 
-  local upstream_sha_val="${UPSTREAM_SHA:-${upstream_sha:-}}"
+  upstream_sha_val="${UPSTREAM_SHA:-${upstream_sha:-}}"
   if [[ -n "$upstream_sha_val" ]]; then
-    repo_root="$(cd "$MODELS_ROOT/.." && pwd -P)"
-    if [[ "$spec_json" == "$repo_root/"* ]]; then
-      rel="${spec_json#"$repo_root/"}"
+    # MODELS_ROOT points at: <snapshot_root>/models
+    # so the snapshot root is: <snapshot_root>
+    repo_root_abs="$(cd "$MODELS_ROOT/.." && pwd -P)"
+
+    # Normalize spec_json to an absolute path when possible.
+    spec_abs="$spec_json"
+    if [[ "$spec_abs" != /* ]]; then
+      spec_abs="$(cd "$ROOT_DIR" && perl -MCwd=abs_path -e 'print abs_path(shift)' "$spec_json" 2>/dev/null || true)"
+      [[ -n "$spec_abs" ]] || spec_abs="$spec_json"
+    fi
+
+    # Preferred: compute path relative to the snapshot git repo root.
+    if [[ "$spec_abs" == "$repo_root_abs/"* ]]; then
+      rel="${spec_abs#"$repo_root_abs/"}"
+    else
+      # Fallback: if the path contains `/models/`, derive a repo-relative path starting at `models/`.
+      # Example:
+      #   .models/df0f6a4/models/aplus-content-api-model/aplusContent_2020-11-01.json
+      # becomes:
+      #   models/aplus-content-api-model/aplusContent_2020-11-01.json
+      if [[ "$spec_json" == *"/models/"* ]]; then
+        rel="models/${spec_json#*"/models/"}"
+      else
+        rel=""
+      fi
+    fi
+
+    if [[ -n "$rel" ]]; then
       upstream_spec_url="https://github.com/amzn/selling-partner-api-models/blob/${upstream_sha_val}/${rel}"
     fi
   fi
 
   {
-    echo "sha=$sha"
+    echo "model=$model"
+    echo "prefix=$prefix"
+    echo "version=$version"
+    echo "json_spec_blob_sha=$sha"
+    echo "flags=${flags_csv:-}"
     echo "upstream_spec_url=$upstream_spec_url"
     echo "generated_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "$crumb"
@@ -637,7 +673,7 @@ while IFS= read -r raw_line; do
     rm -f "$out_dir"/*.gemspec || true
 
     # Record provenance for future cache-skips and debugging.
-    write_breadcrumb "$out_name" "$model" "$prefix" "$version" "$sha" "$spec_json"
+    write_breadcrumb "$out_name" "$model" "$prefix" "$version" "$sha" "$spec_json" "$flags_part"
   fi
 
 done < "$PLAN_FILE"

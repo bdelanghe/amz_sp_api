@@ -1,8 +1,3 @@
-model=aplus-content-api-model
-prefix=aplusContent
-version=2020-11-01
 sha=1070248
-spec_json=.models/df0f6a4/models/aplus-content-api-model/aplusContent_2020-11-01.json
-upstream_sha=df0f6a4d062dc27a42952c07a681d937172e38d8
-upstream_models_url=https://github.com/amzn/selling-partner-api-models/tree/df0f6a4d062dc27a42952c07a681d937172e38d8/models
-generated_at_utc=2025-12-17T20:10:26Z
+upstream_spec_url=
+generated_at_utc=2025-12-17T20:16:58Z
