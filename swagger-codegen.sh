@@ -198,15 +198,30 @@ fi
 # Ensure final lib root exists or can be created
 mkdir -p "$FINAL_LIB_ROOT"
 
-# Staging behavior:
-#   - stage: incremental build into .codegen-stage/lib (cache only if you run stage twice)
-#   - diff-only: clean + seed from lib/ so the diff is meaningful
+# If staging and not dry-run, ensure the stage root is ready and created.
+# For --stage, only cache-skip if the plan is the same as the previous staged run.
 if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
-  if [[ "$DIFF_ONLY" == "1" ]]; then
+  # stage: only keep existing stage (and allow cache-skips) if this is the *same plan* as last stage run.
+  # This makes the first `--stage` build, and the second `--stage` cache-skip.
+  stage_marker="$STAGE_ROOT/.stage-plan-sha"
+
+  plan_sha=""
+  if command -v shasum >/dev/null 2>&1; then
+    plan_sha="$(shasum -a 256 "$PLAN_FILE" | awk '{print $1}')"
+  elif command -v openssl >/dev/null 2>&1; then
+    plan_sha="$(openssl dgst -sha256 "$PLAN_FILE" | awk '{print $2}')"
+  fi
+
+  prev_sha=""
+  if [[ -f "$stage_marker" ]]; then
+    prev_sha="$(cat "$stage_marker" 2>/dev/null || true)"
+  fi
+
+  if [[ -d "$STAGE_ROOT/lib" && "$FORCE" != "1" && -n "$plan_sha" && "$prev_sha" == "$plan_sha" ]]; then
+    : # keep existing staged output
+  else
     rm -rf "$STAGE_ROOT"
     mkdir -p "$STAGE_ROOT/lib"
-
-    # Seed the stage from the current lib so diffs reflect just what codegen changes.
     if [[ -d "$FINAL_LIB_ROOT" ]]; then
       if command -v rsync >/dev/null 2>&1; then
         rsync -a "$FINAL_LIB_ROOT/" "$ACTIVE_LIB_ROOT/"
@@ -214,13 +229,8 @@ if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
         cp -a "$FINAL_LIB_ROOT/." "$ACTIVE_LIB_ROOT/"
       fi
     fi
-  else
-    # stage: do NOT wipe by default, so a second `--stage` run can cache-skip.
-    if [[ -d "$STAGE_ROOT/lib" && "$FORCE" != "1" ]]; then
-      : # keep existing staged output
-    else
-      rm -rf "$STAGE_ROOT"
-      mkdir -p "$STAGE_ROOT/lib"
+    if [[ -n "$plan_sha" ]]; then
+      printf '%s' "$plan_sha" > "$stage_marker"
     fi
   fi
 fi
@@ -976,15 +986,9 @@ while IFS= read -r raw_line; do
 
   out_dir="$LIB_ROOT/$out_name"
 
-  # If we already generated this exact spec (by SHA), we can skip.
-  # For --stage, cache-skip is based on staged output (unless diff/apply).
-  if [[ "$FORCE" != "1" ]] && {
-    if [[ "$STAGE" == "1" && "$DIFF_ONLY" != "1" && "$APPLY" != "1" ]]; then
-      breadcrumb_matches_at "$LIB_ROOT" "$out_name" "$sha"
-    else
-      breadcrumb_matches_target "$out_name" "$sha"
-    fi
-  }; then
+  # If we already generated this exact spec (by SHA) into the target lib root, we can skip.
+  # This matters most for staged runs where we seed the stage lib from the current lib.
+  if [[ "$FORCE" != "1" ]] && breadcrumb_matches_target "$out_name" "$sha"; then
     if [[ "$LIST_API_CHANGES" == "1" ]]; then
       if [[ "$is_supported_legacy" == "1" ]]; then
         emit_api_status "$api_id" "supported" "$sha"
