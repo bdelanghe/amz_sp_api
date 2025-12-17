@@ -1,50 +1,53 @@
-amazon-warehousing-and-distribution-model	AmazonWarehousingAndDistributionModel	.models/df0f6a4/models/amazon-warehousing-and-distribution-model/awd_2024-05-09.json	1
-aplus-content-api-model	AplusContentApiModel	.models/df0f6a4/models/aplus-content-api-model/aplusContent_2020-11-01.json	1
-application-integrations-api-model	ApplicationIntegrationsApiModel	.models/df0f6a4/models/application-integrations-api-model/appIntegrations-2024-04-01.json	1
-application-management-api-model	ApplicationManagementApiModel	.models/df0f6a4/models/application-management-api-model/application_2023-11-30.json	1
-catalog-items-api-model	CatalogItemsApiModel	.models/df0f6a4/models/catalog-items-api-model/catalogItems_2022-04-01.json	3
-customer-feedback-api-model	CustomerFeedbackApiModel	.models/df0f6a4/models/customer-feedback-api-model/customerFeedback_2024-06-01.json	1
-data-kiosk-api-model	DataKioskApiModel	.models/df0f6a4/models/data-kiosk-api-model/dataKiosk_2023-11-15.json	1
-delivery-by-amazon	DeliveryByAmazon	.models/df0f6a4/models/delivery-by-amazon/deliveryShipmentInvoiceV2022-07-01.json	1
-easy-ship-model	EasyShipModel	.models/df0f6a4/models/easy-ship-model/easyShip_2022-03-23.json	1
-external-fulfillment	ExternalFulfillment	.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json	3
-fba-inbound-eligibility-api-model	FbaInboundEligibilityApiModel	.models/df0f6a4/models/fba-inbound-eligibility-api-model/fbaInbound.json	1
-fba-inventory-api-model	FbaInventoryApiModel	.models/df0f6a4/models/fba-inventory-api-model/fbaInventory.json	1
-feeds-api-model	FeedsApiModel	.models/df0f6a4/models/feeds-api-model/feeds_2021-06-30.json	1
-finances-api-model	FinancesApiModel	.models/df0f6a4/models/finances-api-model/finances_2024-06-19.json	3
-fulfillment-inbound-api-model	FulfillmentInboundApiModel	.models/df0f6a4/models/fulfillment-inbound-api-model/fulfillmentInbound_2024-03-20.json	1
-fulfillment-inbound-api-model-V0	FulfillmentInboundApiModelV0	.models/df0f6a4/models/fulfillment-inbound-api-model/fulfillmentInboundV0.json	1
-fulfillment-outbound-api-model	FulfillmentOutboundApiModel	.models/df0f6a4/models/fulfillment-outbound-api-model/fulfillmentOutbound_2020-07-01.json	1
-invoices-api-model	InvoicesApiModel	.models/df0f6a4/models/invoices-api-model/InvoicesApiModel_2024-06-19.json	2
-listings-items-api-model	ListingsItemsApiModel	.models/df0f6a4/models/listings-items-api-model/listingsItems_2021-08-01.json	2
-listings-restrictions-api-model	ListingsRestrictionsApiModel	.models/df0f6a4/models/listings-restrictions-api-model/listingsRestrictions_2021-08-01.json	1
-merchant-fulfillment-api-model	MerchantFulfillmentApiModel	.models/df0f6a4/models/merchant-fulfillment-api-model/merchantFulfillmentV0.json	1
-messaging-api-model	MessagingApiModel	.models/df0f6a4/models/messaging-api-model/messaging.json	1
-notifications-api-model	NotificationsApiModel	.models/df0f6a4/models/notifications-api-model/notifications.json	1
-orders-api-model	OrdersApiModel	.models/df0f6a4/models/orders-api-model/ordersV0.json	4
-product-fees-api-model	ProductFeesApiModel	.models/df0f6a4/models/product-fees-api-model/productFeesV0.json	1
-product-pricing-api-model	ProductPricingApiModel	.models/df0f6a4/models/product-pricing-api-model/productPricing_2022-05-01.json	2
-product-type-definitions-api-model	ProductTypeDefinitionsApiModel	.models/df0f6a4/models/product-type-definitions-api-model/definitionsProductTypes_2020-09-01.json	1
-replenishment-api-model	ReplenishmentApiModel	.models/df0f6a4/models/replenishment-api-model/replenishment-2022-11-07.json	1
-reports-api-model	ReportsApiModel	.models/df0f6a4/models/reports-api-model/reports_2021-06-30.json	1
-sales-api-model	SalesApiModel	.models/df0f6a4/models/sales-api-model/sales.json	1
-seller-wallet-api-model	SellerWalletApiModel	.models/df0f6a4/models/seller-wallet-api-model/sellerWallet_2024-03-01.json	1
-sellers-api-model	SellersApiModel	.models/df0f6a4/models/sellers-api-model/sellers.json	1
-services-api-model	ServicesApiModel	.models/df0f6a4/models/services-api-model/services.json	1
-shipment-invoicing-api-model	ShipmentInvoicingApiModel	.models/df0f6a4/models/shipment-invoicing-api-model/shipmentInvoicingV0.json	1
-shipping-api-model	ShippingApiModel	.models/df0f6a4/models/shipping-api-model/shippingV2.json	4
-solicitations-api-model	SolicitationsApiModel	.models/df0f6a4/models/solicitations-api-model/solicitations.json	1
-supply-sources-api-model	SupplySourcesApiModel	.models/df0f6a4/models/supply-sources-api-model/supplySources_2020-07-01.json	1
-tokens-api-model	TokensApiModel	.models/df0f6a4/models/tokens-api-model/tokens_2021-03-01.json	1
-uploads-api-model	UploadsApiModel	.models/df0f6a4/models/uploads-api-model/uploads_2020-11-01.json	1
-vehicles-api-model	VehiclesApiModel	.models/df0f6a4/models/vehicles-api-model/vehicles_2024-11-01.json	1
-vendor-direct-fulfillment-inventory-api-model	VendorDirectFulfillmentInventoryApiModel	.models/df0f6a4/models/vendor-direct-fulfillment-inventory-api-model/vendorDirectFulfillmentInventoryV1.json	1
-vendor-direct-fulfillment-orders-api-model	VendorDirectFulfillmentOrdersApiModel	.models/df0f6a4/models/vendor-direct-fulfillment-orders-api-model/vendorDirectFulfillmentOrders_2021-12-28.json	2
-vendor-direct-fulfillment-payments-api-model	VendorDirectFulfillmentPaymentsApiModel	.models/df0f6a4/models/vendor-direct-fulfillment-payments-api-model/vendorDirectFulfillmentPaymentsV1.json	1
-vendor-direct-fulfillment-sandbox-test-data-api-model	VendorDirectFulfillmentSandboxTestDataApiModel	.models/df0f6a4/models/vendor-direct-fulfillment-sandbox-test-data-api-model/vendorDirectFulfillmentSandboxData_2021-10-28.json	1
-vendor-direct-fulfillment-shipping-api-model	VendorDirectFulfillmentShippingApiModel	.models/df0f6a4/models/vendor-direct-fulfillment-shipping-api-model/vendorDirectFulfillmentShipping_2021-12-28.json	2
-vendor-direct-fulfillment-transactions-api-model	VendorDirectFulfillmentTransactionsApiModel	.models/df0f6a4/models/vendor-direct-fulfillment-transactions-api-model/vendorDirectFulfillmentTransactions_2021-12-28.json	2
-vendor-invoices-api-model	VendorInvoicesApiModel	.models/df0f6a4/models/vendor-invoices-api-model/vendorInvoices.json	1
-vendor-orders-api-model	VendorOrdersApiModel	.models/df0f6a4/models/vendor-orders-api-model/vendorOrders.json	1
-vendor-shipments-api-model	VendorShipmentsApiModel	.models/df0f6a4/models/vendor-shipments-api-model/vendorShipments.json	1
-vendor-transaction-status-api-model	VendorTransactionStatusApiModel	.models/df0f6a4/models/vendor-transaction-status-api-model/vendorTransactionStatus.json	1
+vendor-transaction-status-api-model\tVendorTransactionStatusApiModel\t.models/df0f6a4/models/vehicles-api-model/vehicles_2024-11-01.json\t62\t2024-11-01
+vendor-shipments-api-model\tVendorShipmentsApiModel\t.models/df0f6a4/models/vehicles-api-model/vehicles_2024-11-01.json\t61\t2024-11-01
+vendor-orders-api-model\tVendorOrdersApiModel\t.models/df0f6a4/models/vehicles-api-model/vehicles_2024-11-01.json\t60\t2024-11-01
+vendor-invoices-api-model\tVendorInvoicesApiModel\t.models/df0f6a4/models/vehicles-api-model/vehicles_2024-11-01.json\t59\t2024-11-01
+vendor-direct-fulfillment-transactions-api-model\tVendorDirectFulfillmentTransactionsApiModel\t.models/df0f6a4/models/vehicles-api-model/vehicles_2024-11-01.json\t58\t2024-11-01
+vendor-direct-fulfillment-shipping-api-model\tVendorDirectFulfillmentShippingApiModel\t.models/df0f6a4/models/vehicles-api-model/vehicles_2024-11-01.json\t56\t2024-11-01
+vendor-direct-fulfillment-sandbox-test-data-api-model\tVendorDirectFulfillmentSandboxTestDataApiModel\t.models/df0f6a4/models/vehicles-api-model/vehicles_2024-11-01.json\t54\t2024-11-01
+vendor-direct-fulfillment-payments-api-model\tVendorDirectFulfillmentPaymentsApiModel\t.models/df0f6a4/models/vehicles-api-model/vehicles_2024-11-01.json\t53\t2024-11-01
+vendor-direct-fulfillment-orders-api-model\tVendorDirectFulfillmentOrdersApiModel\t.models/df0f6a4/models/vehicles-api-model/vehicles_2024-11-01.json\t52\t2024-11-01
+vendor-direct-fulfillment-inventory-api-model\tVendorDirectFulfillmentInventoryApiModel\t.models/df0f6a4/models/vehicles-api-model/vehicles_2024-11-01.json\t50\t2024-11-01
+vehicles-api-model\tVehiclesApiModel\t.models/df0f6a4/models/vehicles-api-model/vehicles_2024-11-01.json\t49\t2024-11-01
+uploads-api-model\tUploadsApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t48\t2024-09-11
+tokens-api-model\tTokensApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t47\t2024-09-11
+supply-sources-api-model\tSupplySourcesApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t46\t2024-09-11
+solicitations-api-model\tSolicitationsApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t45\t2024-09-11
+shipping-api-model\tShippingApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t44\t2024-09-11
+shipment-invoicing-api-model\tShipmentInvoicingApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t42\t2024-09-11
+services-api-model\tServicesApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t41\t2024-09-11
+sellers-api-model\tSellersApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t40\t2024-09-11
+seller-wallet-api-model\tSellerWalletApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t39\t2024-09-11
+sales-api-model\tSalesApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t38\t2024-09-11
+reports-api-model\tReportsApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t37\t2024-09-11
+replenishment-api-model\tReplenishmentApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t36\t2024-09-11
+product-type-definitions-api-model\tProductTypeDefinitionsApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t35\t2024-09-11
+product-pricing-api-model\tProductPricingApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t34\t2024-09-11
+product-fees-api-model\tProductFeesApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t32\t2024-09-11
+orders-api-model\tOrdersApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t31\t2024-09-11
+notifications-api-model\tNotificationsApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t30\t2024-09-11
+messaging-api-model\tMessagingApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t29\t2024-09-11
+merchant-fulfillment-api-model\tMerchantFulfillmentApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t28\t2024-09-11
+listings-restrictions-api-model\tListingsRestrictionsApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t27\t2024-09-11
+listings-items-api-model\tListingsItemsApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t26\t2024-09-11
+invoices-api-model\tInvoicesApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t24\t2024-09-11
+fulfillment-outbound-api-model\tFulfillmentOutboundApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t23\t2024-09-11
+finances-api-model\tFinancesApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t20\t2024-09-11
+feeds-api-model\tFeedsApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t17\t2024-09-11
+fba-small-and-light-api-model\tFbaSmallAndLightApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t16\t2024-09-11
+fba-inventory-api-model\tFbaInventoryApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t16\t2024-09-11
+fba-inbound-eligibility-api-model\tFbaInboundEligibilityApiModel\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t15\t2024-09-11
+external-fulfillment\tExternalFulfillment\t.models/df0f6a4/models/external-fulfillment/externalFulfillmentShipments_2024-09-11.json\t14\t2024-09-11
+easy-ship-model\tEasyShipModel\t.models/df0f6a4/models/customer-feedback-api-model/customerFeedback_2024-06-01.json\t11\t2024-06-01
+delivery-by-amazon\tDeliveryByAmazon\t.models/df0f6a4/models/customer-feedback-api-model/customerFeedback_2024-06-01.json\t10\t2024-06-01
+data-kiosk-api-model\tDataKioskApiModel\t.models/df0f6a4/models/customer-feedback-api-model/customerFeedback_2024-06-01.json\t9\t2024-06-01
+customer-feedback-api-model\tCustomerFeedbackApiModel\t.models/df0f6a4/models/customer-feedback-api-model/customerFeedback_2024-06-01.json\t8\t2024-06-01
+catalog-items-api-model\tCatalogItemsApiModel\t.models/df0f6a4/models/amazon-warehousing-and-distribution-model/awd_2024-05-09.json\t7\t2024-05-09
+authorization-api-model\tAuthorizationApiModel\t.models/df0f6a4/models/amazon-warehousing-and-distribution-model/awd_2024-05-09.json\t4\t2024-05-09
+application-management-api-model\tApplicationManagementApiModel\t.models/df0f6a4/models/amazon-warehousing-and-distribution-model/awd_2024-05-09.json\t4\t2024-05-09
+application-integrations-api-model\tApplicationIntegrationsApiModel\t.models/df0f6a4/models/amazon-warehousing-and-distribution-model/awd_2024-05-09.json\t3\t2024-05-09
+aplus-content-api-model\tAplusContentApiModel\t.models/df0f6a4/models/amazon-warehousing-and-distribution-model/awd_2024-05-09.json\t2\t2024-05-09
+amazon-warehousing-and-distribution-model\tAmazonWarehousingAndDistributionModel\t.models/df0f6a4/models/amazon-warehousing-and-distribution-model/awd_2024-05-09.json\t1\t2024-05-09
+fulfillment-inbound-api-model\tFulfillmentInboundApiModel\t.models/df0f6a4/models/fulfillment-inbound-api-model/fulfillmentInbound_2024-03-20.json\t2\t2024-03-20
+fulfillment-inbound-api-model	FulfillmentInboundApiModel	.models/df0f6a4/models/fulfillment-inbound-api-model/fulfillmentInbound_2024-03-20.json	2	2024-03-20
+fulfillment-inbound-api-model-V0	FulfillmentInboundApiModelV0	.models/df0f6a4/models/fulfillment-inbound-api-model/fulfillmentInboundV0.json	2	V0

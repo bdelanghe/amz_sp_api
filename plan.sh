@@ -1,4 +1,12 @@
-#!/bin/bash
+#!/bin/sh
+# plan.sh is written for bash (uses process substitution, [[ ]], arrays).
+# If invoked via /bin/sh (or the shebang is honored), re-exec under bash.
+#
+# Use BASH_VERSINFO (a bash-only array) instead of BASH_VERSION, because
+# BASH_VERSION can be exported and would trick /bin/sh into thinking it's bash.
+if [ -z "${BASH_VERSINFO+set}" ]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
 set -euo pipefail
 
 # plan.sh
@@ -12,17 +20,28 @@ fi
 # shellcheck disable=SC1091
 source "./env.sh"
 
+echo "Building codegen plan from models snapshot"
+echo "Models: ${MODELS_URL}"
+echo "SHA:    ${UPSTREAM_SHA}"
+echo "Root:   ${MODELS_DIR}"
+echo ""
+
 : "${MODELS_DIR:?MODELS_DIR must be set by env.sh}"
 : "${UPSTREAM_SHA:?UPSTREAM_SHA must be set by env.sh}"
 : "${MODELS_URL:?MODELS_URL must be set by env.sh}"
 
 readonly CODEGEN_LOG_DIR=".codegen-logs"
 readonly PLAN_TSV="${CODEGEN_LOG_DIR}/.plan.tsv"
-readonly DUP_TSV="${CODEGEN_LOG_DIR}/duplicates.tsv"
 
 readonly PLAN_SAVE_DIR="lib"
 readonly PLAN_SAVE_TSV="${PLAN_SAVE_DIR}/.codegen_plan.tsv"
-readonly PLAN_SAVE_DUP_TSV="${PLAN_SAVE_DIR}/.codegen_plan_duplicates.tsv"
+
+# Compute the git blob SHA for a file inside the models snapshot.
+# Assumes MODELS_DIR is a git worktree or checkout.
+git_blob_sha() {
+  local file="$1"
+  (cd "$MODELS_DIR/.." && git hash-object "$file")
+}
 
 # Convert kebab-case API name into a Ruby ModuleName.
 # Example: "fulfillment-outbound-api-model" -> "FulfillmentOutboundApiModel"
@@ -39,14 +58,57 @@ max_date_score() {
   local d
 
   # Pull all YYYY-MM-DD substrings (if any), then keep the max.
+  local tmp_dates
+  tmp_dates="$(mktemp)"
+  # shellcheck disable=SC2064
+  trap "rm -f '$tmp_dates'" RETURN
+
+  printf '%s' "$s" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' >"$tmp_dates" 2>/dev/null || true
   while IFS= read -r d; do
     d="${d//-/}"
     if [[ -z "$best" || "$d" > "$best" ]]; then
       best="$d"
     fi
-  done < <(printf '%s' "$s" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' || true)
+  done <"$tmp_dates"
+
+  rm -f "$tmp_dates"
+  trap - RETURN
 
   printf '%s' "$best"
+}
+
+# Compute a human suffix for a spec file (no extension).
+# Examples:
+#   awd_2024-05-09.json                -> 2024-05-09
+#   appIntegrations-2024-04-01.json    -> 2024-04-01
+#   fulfillmentInboundV0.json          -> V0
+#   vendorOrders.json                 -> vendorOrders
+spec_suffix() {
+  local base
+  base="$(basename "$1" .json)"
+
+  if [[ "$base" =~ ([0-9]{4}-[0-9]{2}-[0-9]{2}) ]]; then
+    printf '%s' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+
+  if [[ "$base" =~ (V[0-9]+)$ ]]; then
+    printf '%s' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+
+  printf '%s' "$base"
+}
+
+# Sort score for ordering plans: YYYYMMDD (numeric-ish string). No date => 00000000.
+spec_sort_score() {
+  local d
+  d="$(max_date_score "$(basename "$1")")"
+  if [[ -n "$d" ]]; then
+    printf '%s' "$d"
+  else
+    printf '%s' "00000000"
+  fi
 }
 
 # Choose exactly one spec for an API folder.
@@ -111,7 +173,13 @@ emit_fulfillment_inbound_plan() {
 
   local api="fulfillment-inbound-api-model"
   local -a specs
-  mapfile -t specs < <(find "$api_dir" -maxdepth 1 -type f -name '*.json' -print | sort)
+  local tmp_specs
+  tmp_specs="$(mktemp)"
+  find "$api_dir" -maxdepth 1 -type f -name '*.json' -print | sort >"$tmp_specs"
+  while IFS= read -r s; do
+    [[ -n "$s" ]] && specs+=("$s")
+  done <"$tmp_specs"
+  rm -f "$tmp_specs"
   if [[ ${#specs[@]} -eq 0 ]]; then
     return 0
   fi
@@ -134,31 +202,19 @@ emit_fulfillment_inbound_plan() {
     selected="$(select_spec_for_api "$api" "${specs[@]}")"
   fi
 
+  echo "  selected: ${api} ($(basename "$selected"))"
   local cnt="${#specs[@]}"
-  printf '%s\t%s\t%s\t%s\n' "$api" "$(api_module_name "$api")" "$selected" "$cnt" >> "$PLAN_TSV"
+  local blob
+  blob="$(git_blob_sha "$selected")"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$api" "$(api_module_name "$api")" "$selected" "$cnt" "$(spec_suffix "$selected")" "$blob" >> "$PLAN_TSV"
 
   if [[ -n "$v0_spec" ]]; then
     local api_v0="${api}-V0"
-    printf '%s\t%s\t%s\t%s\n' "$api_v0" "$(api_module_name "$api_v0")" "$v0_spec" "$cnt" >> "$PLAN_TSV"
+    echo "  selected: ${api}-V0 ($(basename "$v0_spec"))"
+    local blob_v0
+    blob_v0="$(git_blob_sha "$v0_spec")"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$api_v0" "$(api_module_name "$api_v0")" "$v0_spec" "$cnt" "$(spec_suffix "$v0_spec")" "$blob_v0" >> "$PLAN_TSV"
   fi
-}
-
-write_duplicates_row() {
-  local api="$1"; shift
-  local -a specs=("$@")
-
-  if [[ ${#specs[@]} -le 1 ]]; then
-    return 0
-  fi
-
-  local cands
-  cands="$(
-    for s in "${specs[@]}"; do
-      basename "$s"
-    done | paste -sd, -
-  )"
-
-  printf '%s\t%s\t%s\n' "$api" "${#specs[@]}" "$cands" >> "$DUP_TSV"
 }
 
 print_plan_summary() {
@@ -171,91 +227,113 @@ print_plan_summary() {
   echo ""
   echo "Plan: ${api_count} API(s)"
   echo ""
-  echo "API selections (api_name -> spec):"
+  echo "API selections (most recent -> oldest):"
 
-  # Pretty, deterministic display from the plan itself.
-  while IFS=$'\t' read -r api mod spec cnt; do
-    # Print the basename only; keep output compact.
-    printf '  %-40s -> %-32s (candidates: %s)\n' "$api" "$(basename "$spec")" "$cnt"
+  # plan columns: api, module, spec_path, candidate_count, suffix, blob_sha
+  while IFS=$'\t' read -r api mod spec cnt suffix blob; do
+    printf '  %-35s -> %-15s (%s @ %s)\n' "$api" "$suffix" "$(basename "$spec")" "$blob"
   done < "$PLAN_TSV"
-
-  if [[ -s "$DUP_TSV" ]]; then
-    local dup_count
-    dup_count="$(wc -l < "$DUP_TSV" | tr -d ' ')"
-    echo ""
-    echo "Duplicates: ${dup_count} API folder(s) have multiple specs."
-    echo "  See: ${DUP_TSV}"
-  fi
 
   echo ""
   echo "Plan written to: ${PLAN_TSV}"
   echo "Saved copy:      ${PLAN_SAVE_TSV}"
-  echo "Saved dups copy: ${PLAN_SAVE_DUP_TSV}"
 }
 
 main() {
   mkdir -p "$CODEGEN_LOG_DIR"
   : > "$PLAN_TSV"
-  : > "$DUP_TSV"
+  echo "Scanning API directories..."
 
   # The models snapshot layout is: <MODELS_DIR>/<api-folder>/*.json
   # So build the plan by enumerating folders, not by a global find.
   local -a api_dirs
-  mapfile -t api_dirs < <(find "$MODELS_DIR" -mindepth 1 -maxdepth 1 -type d -print | sort)
+  local tmp_dirs
+  tmp_dirs="$(mktemp)"
+  find "$MODELS_DIR" -mindepth 1 -maxdepth 1 -type d -print | sort >"$tmp_dirs"
+  while IFS= read -r d; do
+    [[ -n "$d" ]] && api_dirs+=("$d")
+  done <"$tmp_dirs"
+  rm -f "$tmp_dirs"
 
   local dir api
   for dir in "${api_dirs[@]}"; do
     api="$(basename "$dir")"
+    echo "→ Inspecting ${api}"
 
     # Special-case fulfillment inbound to emit v1 + v0 as separate APIs.
     if [[ "$api" == "fulfillment-inbound-api-model" ]]; then
       local -a specs
-      mapfile -t specs < <(find "$dir" -maxdepth 1 -type f -name '*.json' -print | sort)
-      write_duplicates_row "$api" "${specs[@]}"
+      local tmp_specs
+      tmp_specs="$(mktemp)"
+      find "$dir" -maxdepth 1 -type f -name '*.json' -print | sort >"$tmp_specs"
+      while IFS= read -r s; do
+        [[ -n "$s" ]] && specs+=("$s")
+      done <"$tmp_specs"
+      rm -f "$tmp_specs"
       emit_fulfillment_inbound_plan "$dir"
       continue
     fi
 
     local -a specs
-    mapfile -t specs < <(find "$dir" -maxdepth 1 -type f -name '*.json' -print | sort)
+    local tmp_specs
+    tmp_specs="$(mktemp)"
+    find "$dir" -maxdepth 1 -type f -name '*.json' -print | sort >"$tmp_specs"
+    while IFS= read -r s; do
+      [[ -n "$s" ]] && specs+=("$s")
+    done <"$tmp_specs"
+    rm -f "$tmp_specs"
     if [[ ${#specs[@]} -eq 0 ]]; then
       continue
     fi
 
-    write_duplicates_row "$api" "${specs[@]}"
-
     local selected
     selected="$(select_spec_for_api "$api" "${specs[@]}")"
+    echo "  selected: ${api} ($(basename "$selected"))"
 
     local cnt="${#specs[@]}"
-    printf '%s\t%s\t%s\t%s\n' "$api" "$(api_module_name "$api")" "$selected" "$cnt" >> "$PLAN_TSV"
+    local blob
+    blob="$(git_blob_sha "$selected")"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$api" "$(api_module_name "$api")" "$selected" "$cnt" "$(spec_suffix "$selected")" "$blob" >> "$PLAN_TSV"
   done
 
-  # Fulfillment inbound should appear at the end (and its -V0 variant after it).
-  # The loop above inserts it in-place; re-sort while keeping stable fulfillment ordering.
-  # We do this by splitting and concatenating.
-  local tmp_all tmp_main tmp_fi
+  echo ""
+  echo "Ordering plan (most recent → oldest)…"
+  # Order plan by most-recent -> oldest using the selected spec date (YYYYMMDD).
+  # Keep fulfillment inbound entries at the very end (and -V0 last).
+  local tmp_all tmp_main
   tmp_all="${CODEGEN_LOG_DIR}/.plan.tmp.all.tsv"
   tmp_main="${CODEGEN_LOG_DIR}/.plan.tmp.main.tsv"
-  tmp_fi="${CODEGEN_LOG_DIR}/.plan.tmp.fi.tsv"
 
   cp "$PLAN_TSV" "$tmp_all"
 
-  grep -v '^fulfillment-inbound-api-model\t' "$tmp_all" | grep -v '^fulfillment-inbound-api-model-V0\t' "$tmp_all" | sort > "$tmp_main" || true
+  # Sort everything except fulfillment-inbound by spec date descending.
+  # Columns: api \t module \t spec_path \t cnt \t suffix \t blob
+  grep -v '^fulfillment-inbound-api-model\t' "$tmp_all" | grep -v '^fulfillment-inbound-api-model-V0\t' "$tmp_all" \
+    | awk -F'\t' '{ print $0 "\t" $3 }' \
+    | while IFS=$'\t' read -r api mod spec cnt suffix blob spec_path; do
+        score="$(spec_sort_score "$spec_path")"
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$score" "$api" "$mod" "$spec" "$cnt" "$suffix" "$blob"
+      done \
+    | sort -r -t $'\t' -k1,1 -k2,2 \
+    | cut -f2- > "$tmp_main" || true
+
   {
     cat "$tmp_main"
     grep '^fulfillment-inbound-api-model\t' "$tmp_all" || true
     grep '^fulfillment-inbound-api-model-V0\t' "$tmp_all" || true
   } > "$PLAN_TSV"
 
-  rm -f "$tmp_all" "$tmp_main" "$tmp_fi" 2>/dev/null || true
+  rm -f "$tmp_all" "$tmp_main" 2>/dev/null || true
+
+  echo ""
+  echo "Plan complete."
+  echo ""
 
   print_plan_summary
 
   # Persist the plan artifacts under lib/ so they can be inspected without digging into .codegen-logs.
   mkdir -p "$PLAN_SAVE_DIR"
   cp "$PLAN_TSV" "$PLAN_SAVE_TSV"
-  cp "$DUP_TSV" "$PLAN_SAVE_DUP_TSV"
 }
 
 main "$@"
