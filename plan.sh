@@ -12,6 +12,38 @@ printb() {
   printf "%b\n" "$1"
 }
 
+# Emit a line to the plan file, optionally with semicolon-delimited flags.
+# Format:
+#   <model>/<prefix>@<version>#<sha>[; flag1, flag2]
+# Flags are hints for downstream codegen behavior.
+emit_plan_line() {
+  local model="$1" prefix="$2" version="$3" sha="$4"
+  local -a flags=()
+
+  # If the version is a namespace-like token (e.g. V0, V1), downstream generators
+  # often need help preserving it distinctly.
+  if [[ "$version" =~ ^V[0-9]+$ ]]; then
+    flags+=("use_version_namespace")
+  fi
+
+  # If this model contains multiple prefixes, downstream generators must namespace
+  # outputs by prefix to avoid collisions (e.g. finances vs transfers).
+  if needs_prefix_namespace "$model"; then
+    flags+=("use_prefix_namespace")
+  fi
+
+  # If this leaf was explicitly marked as supported legacy, preserve that intent.
+  if is_supported_legacy "${model}|${prefix}|${version}"; then
+    flags+=("supported_legacy")
+  fi
+
+  if [[ ${#flags[@]} -gt 0 ]]; then
+    (IFS=", "; echo "${model}/${prefix}@${version}#${sha}; ${flags[*]}" >> "$PLAN_OUT")
+  else
+    echo "${model}/${prefix}@${version}#${sha}" >> "$PLAN_OUT"
+  fi
+}
+
 # Optional: mark specific non-best versions as "supported legacy".
 # Usage (repeatable):
 #   ./plan.sh --support-legacy <model>/<prefix>@<version>
@@ -41,6 +73,21 @@ is_supported_legacy() {
   local key="$1"
   # Exact, whole-line match.
   printf '%s' "$SUPPORTED_LEGACY_KEYS" | grep -Fxq "$key"
+}
+
+# If a model directory contains >1 distinct prefix namespace, downstream generators
+# must treat the prefix as part of the output namespace to avoid collisions.
+PREFIX_NAMESPACE_MODELS=""
+
+add_prefix_namespace_model() {
+  local model="$1"
+  PREFIX_NAMESPACE_MODELS+="${model}"$'\n'
+}
+
+needs_prefix_namespace() {
+  local model="$1"
+  # Exact, whole-line match.
+  printf '%s' "$PREFIX_NAMESPACE_MODELS" | grep -Fxq "$model"
 }
 
 # Parse args (keep it simple; ignore unknown flags for now)
@@ -105,6 +152,12 @@ for model_dir in $MODEL_DIRS; do
 
     printf '%s\t%s\t%s\t%s\n' "$prefix" "$version" "$deprecated" "$blob_sha" >> "$tmp"
   done
+
+  # Detect if this model has >1 distinct prefix; if so, require prefix namespacing.
+  prefix_count="$(cut -f1 "$tmp" | sort -u | wc -l | tr -d ' ')"
+  if [[ "$prefix_count" -gt 1 ]]; then
+    add_prefix_namespace_model "$model"
+  fi
 
   # If this model has no non-deprecated entries at all, color the model header red.
   model_all_deprecated=1
@@ -180,7 +233,7 @@ for model_dir in $MODEL_DIRS; do
       # Supported legacy (explicitly opted-in): yellow + label.
       if is_supported_legacy "${model}|${prefix}|${v}"; then
         printb "    └─ ${YELLOW}$v${RESET} (${sha}) ${YELLOW}(supported legacy)${RESET}"
-        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
+        emit_plan_line "$model" "$prefix" "$v" "$sha"
         continue
       fi
 
@@ -188,15 +241,15 @@ for model_dir in $MODEL_DIRS; do
       if [[ "$leaf_count" -eq 1 ]]; then
         # Single non-deprecated leaf => green
         printb "    └─ ${GREEN}$v${RESET} (${sha})"
-        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
+        emit_plan_line "$model" "$prefix" "$v" "$sha"
       elif [[ -n "$best_version" && "$v" == "$best_version" ]]; then
         # Best version => green
         printb "    └─ ${GREEN}$v${RESET} (${sha})"
-        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
+        emit_plan_line "$model" "$prefix" "$v" "$sha"
       else
         # Non-best => grey
         printb "    └─ ${GREY}$v${RESET} (${sha})"
-        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
+        emit_plan_line "$model" "$prefix" "$v" "$sha"
       fi
     done
 
@@ -213,16 +266,16 @@ for model_dir in $MODEL_DIRS; do
       # Not deprecated
       if is_supported_legacy "${model}|${prefix}|${v}"; then
         printb "    └─ ${YELLOW}$v${RESET} (${sha}) ${YELLOW}(supported legacy)${RESET}"
-        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
+        emit_plan_line "$model" "$prefix" "$v" "$sha"
       elif [[ "$leaf_count" -eq 1 ]]; then
         printb "    └─ ${GREEN}$v${RESET} (${sha})"
-        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
+        emit_plan_line "$model" "$prefix" "$v" "$sha"
       elif [[ -n "$best_version" && "$v" == "$best_version" ]]; then
         printb "    └─ ${GREEN}$v${RESET} (${sha})"
-        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
+        emit_plan_line "$model" "$prefix" "$v" "$sha"
       else
         printb "    └─ ${GREY}$v${RESET} (${sha})"
-        echo "${model}/${prefix}@${v}#${sha}" >> "$PLAN_OUT"
+        emit_plan_line "$model" "$prefix" "$v" "$sha"
       fi
     done
 
