@@ -269,21 +269,34 @@ emit_api_status() {
   fi
 }
 
-breadcrumb_path_for() {
-  local out_name="$1"
+breadcrumb_path_for_root() {
+  local root="$1"
+  local out_name="$2"
   # Store breadcrumb alongside the generated Ruby module tree.
-  echo "$LIB_ROOT/$out_name/.codegen-source"
+  echo "$root/$out_name/.codegen-source"
 }
 
-breadcrumb_matches() {
+breadcrumb_path_for() {
   local out_name="$1"
-  local expected_sha="$2"
+  breadcrumb_path_for_root "$LIB_ROOT" "$out_name"
+}
+
+breadcrumb_path_for_target() {
+  local out_name="$1"
+  # IMPORTANT: cache decisions should be based on the *target* lib, not the staged copy.
+  breadcrumb_path_for_root "$FINAL_LIB_ROOT" "$out_name"
+}
+
+breadcrumb_matches_at() {
+  local root="$1"
+  local out_name="$2"
+  local expected_sha="$3"
 
   # If no expected sha is provided, we can't safely cache-skip.
   [[ -z "$expected_sha" ]] && return 1
 
   local crumb
-  crumb="$(breadcrumb_path_for "$out_name")"
+  crumb="$(breadcrumb_path_for_root "$root" "$out_name")"
   [[ -f "$crumb" ]] || return 1
 
   # Try to read json_spec_blob_sha= first, fallback to sha= for backward compatibility.
@@ -303,6 +316,18 @@ breadcrumb_matches() {
   fi
 
   return 1
+}
+
+breadcrumb_matches() {
+  local out_name="$1"
+  local expected_sha="$2"
+  breadcrumb_matches_at "$LIB_ROOT" "$out_name" "$expected_sha"
+}
+
+breadcrumb_matches_target() {
+  local out_name="$1"
+  local expected_sha="$2"
+  breadcrumb_matches_at "$FINAL_LIB_ROOT" "$out_name" "$expected_sha"
 }
 
 write_breadcrumb() {
@@ -579,9 +604,9 @@ while IFS= read -r raw_line; do
 
   out_dir="$LIB_ROOT/$out_name"
 
-  # If we already generated this exact spec (by SHA) into the active lib root, we can skip.
+  # If we already generated this exact spec (by SHA) into the target lib root, we can skip.
   # This matters most for staged runs where we seed the stage lib from the current lib.
-  if [[ "$FORCE" != "1" ]] && breadcrumb_matches "$out_name" "$sha"; then
+  if [[ "$FORCE" != "1" ]] && breadcrumb_matches_target "$out_name" "$sha"; then
     if [[ "$LIST_API_CHANGES" == "1" ]]; then
       if [[ "$is_supported_legacy" == "1" ]]; then
         emit_api_status "$api_id" "supported" "$sha"
@@ -701,7 +726,7 @@ if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
 
   # Summarize why this may be a no-op run.
   if [[ "$COUNT_GENERATED" == "0" && "$COUNT_SKIPPED_CACHED" -gt 0 ]]; then
-    echo "[note] all planned APIs were cache-skipped based on .codegen-source breadcrumbs (use FORCE=1 to regenerate)"
+    echo "[note] all planned APIs were cache-skipped because $FINAL_LIB_ROOT already matches the plan's json_spec_blob_sha breadcrumbs (use FORCE=1 to regenerate)"
   fi
 
   if [[ "$NAME_ONLY" == "1" ]]; then
