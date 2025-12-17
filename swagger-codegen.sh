@@ -26,13 +26,30 @@ if [[ -f "$ROOT_DIR/env.sh" ]]; then
   source "$ROOT_DIR/env.sh"
 fi
 
-# Inputs
-PLAN_FILE="${PLAN_FILE:-.codegen-plan}"
+DRY_RUN=0
+STAGE=0
+DIFF_ONLY=0
+APPLY=0
 
-# Prefer MODELS_DIR from .models/.env (produced by pull_models.sh). Fall back to MODELS_ROOT for older callers.
-MODELS_DIR="${MODELS_DIR:-${MODELS_ROOT:-../selling-partner-api-models/models}}"
-MODELS_ROOT="$MODELS_DIR"
-CONFIG_TEMPLATE="${CONFIG_TEMPLATE:-config.json}"
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run)
+      DRY_RUN=1
+      ;;
+    --stage)
+      STAGE=1
+      ;;
+    --diff-only)
+      STAGE=1
+      DIFF_ONLY=1
+      ;;
+    --apply)
+      STAGE=1
+      APPLY=1
+      ;;
+  esac
+done
+
 FINAL_LIB_ROOT="${LIB_ROOT:-lib}"
 STAGE_ROOT="${STAGE_ROOT:-.codegen-stage}"
 ACTIVE_LIB_ROOT="$FINAL_LIB_ROOT"
@@ -42,6 +59,14 @@ if [[ "$STAGE" == "1" ]]; then
 fi
 
 LIB_ROOT="$ACTIVE_LIB_ROOT"
+
+# Inputs
+PLAN_FILE="${PLAN_FILE:-.codegen-plan}"
+
+# Prefer MODELS_DIR from .models/.env (produced by pull_models.sh). Fall back to MODELS_ROOT for older callers.
+MODELS_DIR="${MODELS_DIR:-${MODELS_ROOT:-../selling-partner-api-models/models}}"
+MODELS_ROOT="$MODELS_DIR"
+CONFIG_TEMPLATE="${CONFIG_TEMPLATE:-config.json}"
 
 if [[ ! -f "$PLAN_FILE" ]]; then
   echo "Missing plan file: $PLAN_FILE" >&2
@@ -80,29 +105,18 @@ if [[ "$APPLY" == "1" && "$DRY_RUN" != "1" ]]; then
   }
 fi
 
-DRY_RUN=0
-STAGE=0
-DIFF_ONLY=0
-APPLY=0
+sed_inplace() {
+  local expr="$1"
+  local file="$2"
 
-for arg in "$@"; do
-  case "$arg" in
-    --dry-run)
-      DRY_RUN=1
-      ;;
-    --stage)
-      STAGE=1
-      ;;
-    --diff-only)
-      STAGE=1
-      DIFF_ONLY=1
-      ;;
-    --apply)
-      STAGE=1
-      APPLY=1
-      ;;
-  esac
-done
+  # GNU sed supports: sed -i -e 's/a/b/' file
+  # BSD/macOS sed supports: sed -i '' -e 's/a/b/' file
+  if sed --version >/dev/null 2>&1; then
+    sed -i -e "$expr" "$file"
+  else
+    sed -i '' -e "$expr" "$file"
+  fi
+}
 
 # Convert things like:
 #   fulfillmentInbound   -> FulfillmentInbound
@@ -339,8 +353,8 @@ while IFS= read -r raw_line; do
   if [[ "$DRY_RUN" != "1" ]]; then
     # Prepare per-gem config.json
     cp "$CONFIG_TEMPLATE" "$out_dir/config.json"
-    sed -i '' "s/GEMNAME/${out_name}/g" "$out_dir/config.json"
-    sed -i '' "s/MODULENAME/${module_name}/g" "$out_dir/config.json"
+    sed_inplace "s/GEMNAME/${out_name}/g" "$out_dir/config.json"
+    sed_inplace "s/MODULENAME/${module_name}/g" "$out_dir/config.json"
 
     swagger-codegen generate \
       -i "$spec_json" \
