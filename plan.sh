@@ -1,5 +1,3 @@
-
-
 #!/bin/bash
 set -euo pipefail
 
@@ -21,6 +19,10 @@ source "./env.sh"
 readonly CODEGEN_LOG_DIR=".codegen-logs"
 readonly PLAN_TSV="${CODEGEN_LOG_DIR}/.plan.tsv"
 readonly DUP_TSV="${CODEGEN_LOG_DIR}/duplicates.tsv"
+
+readonly PLAN_SAVE_DIR="lib"
+readonly PLAN_SAVE_TSV="${PLAN_SAVE_DIR}/.codegen_plan.tsv"
+readonly PLAN_SAVE_DUP_TSV="${PLAN_SAVE_DIR}/.codegen_plan_duplicates.tsv"
 
 # Convert kebab-case API name into a Ruby ModuleName.
 # Example: "fulfillment-outbound-api-model" -> "FulfillmentOutboundApiModel"
@@ -80,15 +82,22 @@ select_spec_for_api() {
     return 0
   fi
 
-  # 2) Otherwise prefer V0.json if present
+  # 2) No dated specs.
+  # Prefer a non-versioned filename over V0/V1 variants when both exist.
+  # (V0/V1 are typically older / legacy and should not win by accident.)
+  local -a non_versioned
   for spec in "${specs[@]}"; do
-    if [[ "$spec" == *V0.json ]]; then
-      printf '%s' "$spec"
-      return 0
+    if [[ ! "$(basename "$spec")" =~ V[0-9]+\.json$ ]]; then
+      non_versioned+=("$spec")
     fi
   done
 
-  # 3) Otherwise, last filename lexicographically
+  if [[ ${#non_versioned[@]} -gt 0 ]]; then
+    printf '%s\n' "${non_versioned[@]}" | sort | tail -n 1
+    return 0
+  fi
+
+  # 3) Only versioned filenames exist (e.g. just V0/V1); take the last lexicographically.
   printf '%s\n' "${specs[@]}" | sort | tail -n 1
 }
 
@@ -180,6 +189,8 @@ print_plan_summary() {
 
   echo ""
   echo "Plan written to: ${PLAN_TSV}"
+  echo "Saved copy:      ${PLAN_SAVE_TSV}"
+  echo "Saved dups copy: ${PLAN_SAVE_DUP_TSV}"
 }
 
 main() {
@@ -240,6 +251,11 @@ main() {
   rm -f "$tmp_all" "$tmp_main" "$tmp_fi" 2>/dev/null || true
 
   print_plan_summary
+
+  # Persist the plan artifacts under lib/ so they can be inspected without digging into .codegen-logs.
+  mkdir -p "$PLAN_SAVE_DIR"
+  cp "$PLAN_TSV" "$PLAN_SAVE_TSV"
+  cp "$DUP_TSV" "$PLAN_SAVE_DUP_TSV"
 }
 
 main "$@"
