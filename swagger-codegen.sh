@@ -1,6 +1,6 @@
 #!/bin/bash
 # exit on error
-set -e
+set -euo pipefail
 
 # Generate Ruby clients from the checked-out SP-API models snapshot, driven by .codegen-plan.
 #
@@ -26,6 +26,9 @@ if [[ -f "$ROOT_DIR/env.sh" ]]; then
   source "$ROOT_DIR/env.sh"
 fi
 
+# Logs for swagger-codegen output (kept out of stdout unless explicitly viewed)
+CODEGEN_LOG_DIR="${CODEGEN_LOG_DIR:-.codegen-logs}"
+
 DRY_RUN=0
 STAGE=0
 DIFF_ONLY=0
@@ -50,14 +53,20 @@ for arg in "$@"; do
   esac
 done
 
-FINAL_LIB_ROOT="${LIB_ROOT:-lib}"
-STAGE_ROOT="${STAGE_ROOT:-.codegen-stage}"
-ACTIVE_LIB_ROOT="$FINAL_LIB_ROOT"
+# Final destination for generated code. Keep this distinct from LIB_ROOT so
+# staging/diffing can't accidentally point both sides at the same directory.
+FINAL_LIB_ROOT="${FINAL_LIB_ROOT:-lib}"
 
+# Where staged output is written when --stage/--diff-only/--apply are used.
+STAGE_ROOT="${STAGE_ROOT:-.codegen-stage}"
+
+# ACTIVE_LIB_ROOT is where this run will write its output.
+ACTIVE_LIB_ROOT="$FINAL_LIB_ROOT"
 if [[ "$STAGE" == "1" ]]; then
   ACTIVE_LIB_ROOT="$STAGE_ROOT/lib"
 fi
 
+# LIB_ROOT is used by the generator as the output root for this run.
 LIB_ROOT="$ACTIVE_LIB_ROOT"
 
 # Inputs
@@ -67,6 +76,9 @@ PLAN_FILE="${PLAN_FILE:-.codegen-plan}"
 MODELS_DIR="${MODELS_DIR:-${MODELS_ROOT:-../selling-partner-api-models/models}}"
 MODELS_ROOT="$MODELS_DIR"
 CONFIG_TEMPLATE="${CONFIG_TEMPLATE:-config.json}"
+
+# Ensure log dir exists early (even for dry-runs we may want to reference it)
+mkdir -p "$CODEGEN_LOG_DIR"
 
 if [[ ! -f "$PLAN_FILE" ]]; then
   echo "Missing plan file: $PLAN_FILE" >&2
@@ -227,8 +239,8 @@ resolve_spec_json_by_sha() {
 # (Some APIs may also include .md files, but swagger-codegen needs the JSON spec.)
 #
 # Resolution order:
-#   1) Exact flat filename match
-#   2) Resolve by blob SHA (robust against renames) within the model dir
+#   1) Exact flat filename match (allowing joiners: "", "-", "_")
+#   2) Resolve by blob SHA (robust against naming differences) within the model dir
 find_spec_json() {
   local model="$1"
   local prefix="$2"
@@ -342,7 +354,14 @@ while IFS= read -r raw_line; do
   if [[ "$DRY_RUN" == "1" ]]; then
     echo "[dry-run] would generate $spec_json -> $out_dir (module=$module_name sha=$sha)"
   else
-    echo "[generate] $spec_json -> $out_dir (module=$module_name sha=$sha)"
+    # Compute log file path
+    safe_model="${model//[^a-zA-Z0-9]/_}"
+    safe_prefix="${prefix//[^a-zA-Z0-9]/_}"
+    safe_version="${version//[^a-zA-Z0-9]/_}"
+    LOG_FILE="$CODEGEN_LOG_DIR/${safe_model}__${safe_prefix}__${safe_version}.log"
+    mkdir -p "$CODEGEN_LOG_DIR"
+
+    echo "[generate] $spec_json -> $out_dir (module=$module_name sha=$sha log=$LOG_FILE)"
   fi
 
   if [[ "$DRY_RUN" != "1" ]]; then
@@ -360,7 +379,10 @@ while IFS= read -r raw_line; do
       -i "$spec_json" \
       -l ruby \
       -c "$out_dir/config.json" \
-      -o "$out_dir"
+      -o "$out_dir" > "$LOG_FILE" 2>&1 || {
+        echo "swagger-codegen failed for $model/$prefix@$version (see $LOG_FILE)" >&2
+        exit 1
+      }
 
     # Normalize output layout to match repo conventions:
     # - Hoist lib/<gem>.rb to lib/
@@ -390,6 +412,15 @@ done < "$PLAN_FILE"
 
 if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
   echo "[diff] $FINAL_LIB_ROOT <-> $ACTIVE_LIB_ROOT"
+
+  # Guard: if these ever point at the same directory, the diff output is nonsense.
+  if [[ "$(cd "$FINAL_LIB_ROOT" && pwd -P)" == "$(cd "$ACTIVE_LIB_ROOT" && pwd -P)" ]]; then
+    echo "Refusing to diff: FINAL_LIB_ROOT and ACTIVE_LIB_ROOT resolve to the same path" >&2
+    echo "  FINAL_LIB_ROOT=$FINAL_LIB_ROOT" >&2
+    echo "  ACTIVE_LIB_ROOT=$ACTIVE_LIB_ROOT" >&2
+    exit 1
+  fi
+
   git diff --no-index -- "$FINAL_LIB_ROOT" "$ACTIVE_LIB_ROOT" || true
 
   if [[ "$DIFF_ONLY" == "1" ]]; then
