@@ -3,6 +3,6 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**display_name** | **String** | The display name of the product category or subcategory. | [optional] 
-**value** | **String** | The code that identifies the product category or subcategory. | [optional] 
+**display_name** | **String** | Display name of the product category or subcategory | [optional] 
+**value** | **String** | Value (code) of the product category or subcategory. | [optional] 
 

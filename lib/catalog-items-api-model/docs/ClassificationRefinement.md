@@ -3,7 +3,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**number_of_results** | **Integer** | The estimated number of results that would be returned if you refine your search by the specified &#x60;classificationId&#x60;. | 
+**number_of_results** | **Integer** | The estimated number of results that would still be returned if refinement key applied. | 
 **display_name** | **String** | Display name for the classification. | 
-**classification_id** | **String** | The identifier of the classification that you can use to refine your search. | 
+**classification_id** | **String** | Identifier for the classification that can be used for search refinement purposes. | 
 
