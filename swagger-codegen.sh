@@ -198,21 +198,29 @@ fi
 # Ensure final lib root exists or can be created
 mkdir -p "$FINAL_LIB_ROOT"
 
-# If staging and not dry-run, ensure the stage root is clean and created.
-# Seed the stage lib from the current lib so the diff only reflects what
-# codegen would *change*, not every file that isn't regenerated this run.
+# Staging behavior:
+#   - stage: incremental build into .codegen-stage/lib (cache only if you run stage twice)
+#   - diff-only: clean + seed from lib/ so the diff is meaningful
 if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
-  rm -rf "$STAGE_ROOT"
-  mkdir -p "$STAGE_ROOT/lib"
+  if [[ "$DIFF_ONLY" == "1" ]]; then
+    rm -rf "$STAGE_ROOT"
+    mkdir -p "$STAGE_ROOT/lib"
 
-  # If lib already exists, copy it into the stage area first.
-  # This avoids misleading diffs where non-generated files appear "deleted".
-  if [[ -d "$FINAL_LIB_ROOT" ]]; then
-    if command -v rsync >/dev/null 2>&1; then
-      rsync -a "$FINAL_LIB_ROOT/" "$ACTIVE_LIB_ROOT/"
+    # Seed the stage from the current lib so diffs reflect just what codegen changes.
+    if [[ -d "$FINAL_LIB_ROOT" ]]; then
+      if command -v rsync >/dev/null 2>&1; then
+        rsync -a "$FINAL_LIB_ROOT/" "$ACTIVE_LIB_ROOT/"
+      else
+        cp -a "$FINAL_LIB_ROOT/." "$ACTIVE_LIB_ROOT/"
+      fi
+    fi
+  else
+    # stage: do NOT wipe by default, so a second `--stage` run can cache-skip.
+    if [[ -d "$STAGE_ROOT/lib" && "$FORCE" != "1" ]]; then
+      : # keep existing staged output
     else
-      # Fallback: best-effort copy without rsync.
-      cp -a "$FINAL_LIB_ROOT/." "$ACTIVE_LIB_ROOT/"
+      rm -rf "$STAGE_ROOT"
+      mkdir -p "$STAGE_ROOT/lib"
     fi
   fi
 fi
@@ -968,9 +976,15 @@ while IFS= read -r raw_line; do
 
   out_dir="$LIB_ROOT/$out_name"
 
-  # If we already generated this exact spec (by SHA) into the target lib root, we can skip.
-  # This matters most for staged runs where we seed the stage lib from the current lib.
-  if [[ "$FORCE" != "1" ]] && breadcrumb_matches_target "$out_name" "$sha"; then
+  # If we already generated this exact spec (by SHA), we can skip.
+  # For --stage, cache-skip is based on staged output (unless diff/apply).
+  if [[ "$FORCE" != "1" ]] && {
+    if [[ "$STAGE" == "1" && "$DIFF_ONLY" != "1" && "$APPLY" != "1" ]]; then
+      breadcrumb_matches_at "$LIB_ROOT" "$out_name" "$sha"
+    else
+      breadcrumb_matches_target "$out_name" "$sha"
+    fi
+  }; then
     if [[ "$LIST_API_CHANGES" == "1" ]]; then
       if [[ "$is_supported_legacy" == "1" ]]; then
         emit_api_status "$api_id" "supported" "$sha"
