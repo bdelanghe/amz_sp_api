@@ -4,4 +4,5 @@ version=2021-08-01
 sha=59dfccc
 spec_json=.models/df0f6a4/models/listings-restrictions-api-model/listingsRestrictions_2021-08-01.json
 upstream_sha=df0f6a4d062dc27a42952c07a681d937172e38d8
-generated_at_utc=2025-12-17T19:58:52Z
+upstream_models_url=https://github.com/amzn/selling-partner-api-models/tree/df0f6a4d062dc27a42952c07a681d937172e38d8/models
+generated_at_utc=2025-12-17T20:10:46Z

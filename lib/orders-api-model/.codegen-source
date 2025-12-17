@@ -4,4 +4,5 @@ version=V0
 sha=278e19c
 spec_json=.models/df0f6a4/models/orders-api-model/ordersV0.json
 upstream_sha=df0f6a4d062dc27a42952c07a681d937172e38d8
-generated_at_utc=2025-12-17T19:58:55Z
+upstream_models_url=https://github.com/amzn/selling-partner-api-models/tree/df0f6a4d062dc27a42952c07a681d937172e38d8/models
+generated_at_utc=2025-12-17T20:10:49Z

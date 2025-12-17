@@ -19,8 +19,15 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
+# Load models env (produced by pull_models.sh)
+if [[ -f "$ROOT_DIR/.models/.env" ]]; then
+  # shellcheck disable=SC1091
+  source "$ROOT_DIR/.models/.env"
+fi
+
 # Optional environment overrides (kept simple / local to the repo).
 # This can set PLAN_FILE, MODELS_ROOT, LIB_ROOT, etc.
+# Note: env.sh may override values loaded from .models/.env above.
 if [[ -f "$ROOT_DIR/env.sh" ]]; then
   # shellcheck disable=SC1091
   source "$ROOT_DIR/env.sh"
@@ -309,36 +316,20 @@ write_breadcrumb() {
   # We derive the repo-relative path from `spec_json` (which is typically an absolute
   # path into the models repo checkout).
   local upstream_spec_url=""
-  local upstream_models_url=""
   local repo_root rel
 
-  if [[ -n "${UPSTREAM_SHA:-}" ]]; then
-    upstream_models_url="https://github.com/amzn/selling-partner-api-models/tree/${UPSTREAM_SHA}/models"
-
+  local upstream_sha_val="${UPSTREAM_SHA:-${upstream_sha:-}}"
+  if [[ -n "$upstream_sha_val" ]]; then
     repo_root="$(cd "$MODELS_ROOT/.." && pwd -P)"
     if [[ "$spec_json" == "$repo_root/"* ]]; then
       rel="${spec_json#"$repo_root/"}"
-      upstream_spec_url="https://github.com/amzn/selling-partner-api-models/blob/${UPSTREAM_SHA}/${rel}"
+      upstream_spec_url="https://github.com/amzn/selling-partner-api-models/blob/${upstream_sha_val}/${rel}"
     fi
   fi
 
   {
-    echo "model=$model"
-    echo "prefix=$prefix"
-    echo "version=$version"
     echo "sha=$sha"
-    echo "spec_json=$spec_json"
-
-    if [[ -n "${UPSTREAM_SHA:-}" ]]; then
-      echo "upstream_sha=$UPSTREAM_SHA"
-    fi
-    if [[ -n "$upstream_models_url" ]]; then
-      echo "upstream_models_url=$upstream_models_url"
-    fi
-    if [[ -n "$upstream_spec_url" ]]; then
-      echo "upstream_spec_url=$upstream_spec_url"
-    fi
-
+    echo "upstream_spec_url=$upstream_spec_url"
     echo "generated_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "$crumb"
 }
