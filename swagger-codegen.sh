@@ -29,6 +29,7 @@ fi
 # Logs for swagger-codegen output (kept out of stdout unless explicitly viewed)
 CODEGEN_LOG_DIR="${CODEGEN_LOG_DIR:-.codegen-logs}"
 
+
 DRY_RUN=0
 STAGE=0
 DIFF_ONLY=0
@@ -37,6 +38,12 @@ NAME_ONLY=0
 LIST_API_CHANGES=0
 FORCE="${FORCE:-0}"
 [[ "$FORCE" == "1" ]] || FORCE="0"
+
+# Simple run counters (helps explain no-op runs)
+COUNT_GENERATED=0
+COUNT_SKIPPED_CACHED=0
+COUNT_SKIPPED_LEGACY=0
+COUNT_SKIPPED_DEPRECATED=0
 
 
 for arg in "$@"; do
@@ -466,6 +473,7 @@ while IFS= read -r raw_line; do
     else
       echo "[skip_deprecated] $model/$prefix@$version#$sha"
     fi
+    COUNT_SKIPPED_DEPRECATED=$((COUNT_SKIPPED_DEPRECATED + 1))
     continue
   fi
   if has_flag "$flags_part" "skip_legacy" && ! has_flag "$flags_part" "supported_legacy"; then
@@ -474,6 +482,7 @@ while IFS= read -r raw_line; do
     else
       echo "[skip_legacy] $model/$prefix@$version#$sha"
     fi
+    COUNT_SKIPPED_LEGACY=$((COUNT_SKIPPED_LEGACY + 1))
     continue
   fi
 
@@ -533,6 +542,7 @@ while IFS= read -r raw_line; do
       else
         echo "[skip_cached] $model/$prefix@$version#$sha (matches breadcrumb)"
       fi
+      COUNT_SKIPPED_CACHED=$((COUNT_SKIPPED_CACHED + 1))
     fi
     continue
   fi
@@ -564,6 +574,7 @@ while IFS= read -r raw_line; do
     else
       echo "[generate] $spec_json -> $out_dir (module=$module_name sha=$sha log=$LOG_FILE)"
     fi
+    COUNT_GENERATED=$((COUNT_GENERATED + 1))
   fi
 
   if [[ "$DRY_RUN" != "1" ]]; then
@@ -630,6 +641,17 @@ if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
     exit 1
   fi
 
+  # Quiet change detection (git diff --quiet exits 1 when different)
+  CHANGED=0
+  if ! git diff --no-index --quiet -- "$FINAL_LIB_ROOT" "$ACTIVE_LIB_ROOT" >/dev/null 2>&1; then
+    CHANGED=1
+  fi
+
+  # Summarize why this may be a no-op run.
+  if [[ "$COUNT_GENERATED" == "0" && "$COUNT_SKIPPED_CACHED" -gt 0 ]]; then
+    echo "[note] all planned APIs were cache-skipped based on .codegen-source breadcrumbs (use FORCE=1 to regenerate)"
+  fi
+
   if [[ "$NAME_ONLY" == "1" ]]; then
     GIT_PAGER=cat git diff --no-index --name-only -- "$FINAL_LIB_ROOT" "$ACTIVE_LIB_ROOT" || true
   else
@@ -637,14 +659,21 @@ if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
   fi
 
   if [[ "$DIFF_ONLY" == "1" ]]; then
+    if [[ "$CHANGED" == "0" ]]; then
+      echo "[diff] no changes"
+    fi
     echo "[diff-only] not applying staged output"
     exit 0
   fi
 
   if [[ "$APPLY" == "1" ]]; then
-    echo "[apply] promoting staged output into $FINAL_LIB_ROOT"
-    rsync -a --delete "$ACTIVE_LIB_ROOT/" "$FINAL_LIB_ROOT/"
-    echo "[apply] done"
+    if [[ "$CHANGED" == "0" ]]; then
+      echo "[apply] no changes to apply"
+    else
+      echo "[apply] promoting staged output into $FINAL_LIB_ROOT"
+      rsync -a --delete "$ACTIVE_LIB_ROOT/" "$FINAL_LIB_ROOT/"
+      echo "[apply] done"
+    fi
   else
     echo "[stage] staged output is in $ACTIVE_LIB_ROOT (run with --apply to promote)"
   fi
