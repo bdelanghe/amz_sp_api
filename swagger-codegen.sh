@@ -157,8 +157,14 @@ fi
 # We intentionally do NOT generate in check mode.
 if [[ "$CHECK" == "1" && "$CHECK_STAGED" == "1" ]]; then
   if [[ ! -d "$CHECK_LIB_ROOT" ]]; then
-    echo "Missing staged output dir: $CHECK_LIB_ROOT" >&2
-    echo "Hint: run ./swagger-codegen.sh --diff-only (or --stage) first to populate $STAGE_ROOT, then re-run --check-staged" >&2
+    # Minimal diagnostic (colored when stderr is a TTY)
+    if [[ -t 2 && -z "${NO_COLOR:-}" ]]; then
+      printf '\033[31m[missing]\033[0m\t%s\n' "$CHECK_LIB_ROOT" >&2
+      printf '\033[2m[hint]\033[0m\t%s\n' 'run: ./swagger-codegen.sh stage (or diff-only)' >&2
+    else
+      printf '[missing]\t%s\n' "$CHECK_LIB_ROOT" >&2
+      printf '[hint]\t%s\n' 'run: ./swagger-codegen.sh stage (or diff-only)' >&2
+    fi
     exit 1
   fi
 fi
@@ -290,8 +296,9 @@ emit_api_status() {
   case "$status" in
     cached)          label="cached" ;;
     generate)        label="generate" ;;
+    build)           label="build" ;;
     dry_run)         label="dry_run" ;;
-    skip_legacy)     label="legacy" ;;
+    skip_legacy)     label="outdated" ;;
     skip_deprecated) label="deprecated" ;;
     supported)       label="supported" ;;
   esac
@@ -301,6 +308,7 @@ emit_api_status() {
   case "$status" in
     cached)           color_fn="c_green" ;;
     generate)         color_fn="c_yellow" ;;
+    build)            color_fn="c_yellow" ;;
     dry_run)          color_fn="c_cyan" ;;
     skip_legacy)      color_fn="c_dim" ;;
     skip_deprecated)  color_fn="c_red" ;;
@@ -327,6 +335,12 @@ emit_api_status() {
   fi
 }
 
+emit_run_status() {
+  local api="$1"
+  local status="$2"
+  local sha="$3"
+  emit_api_status "$api" "$status" "$sha"
+}
 emit_check_status() {
   local api="$1"     # <model>/<prefix>@<version>
   local status="$2"  # ok | stale | missing | outdated | deprecated | supported
@@ -338,10 +352,10 @@ emit_check_status() {
   case "$status" in
     ok)         color_fn="c_green" ;;
     supported)  color_fn="c_yellow" ;;
-    stale)      color_fn="c_yellow" ;;
+    stale)      color_fn="c_red" ;;
     missing)    color_fn="c_red" ;;
     outdated)   color_fn="c_dim" ;;
-    deprecated) color_fn="c_red" ;;
+    deprecated) color_fn="c_dim" ;;
     *)          color_fn="" ;;
   esac
 
@@ -705,7 +719,11 @@ while IFS= read -r raw_line; do
     if [[ "$LIST_API_CHANGES" == "1" ]]; then
       emit_api_status "$api_id" "skip_deprecated" "$sha"
     else
-      echo "[skip_deprecated] $model/$prefix@$version#$sha"
+      if [[ "$STAGE" == "1" ]]; then
+        emit_run_status "$api_id" "skip_deprecated" "$sha"
+      else
+        echo "[skip_deprecated] $model/$prefix@$version#$sha"
+      fi
     fi
     COUNT_SKIPPED_DEPRECATED=$((COUNT_SKIPPED_DEPRECATED + 1))
     continue
@@ -714,7 +732,11 @@ while IFS= read -r raw_line; do
     if [[ "$LIST_API_CHANGES" == "1" ]]; then
       emit_api_status "$api_id" "skip_legacy" "$sha"
     else
-      echo "[skip_legacy] $model/$prefix@$version#$sha"
+      if [[ "$STAGE" == "1" ]]; then
+        emit_run_status "$api_id" "skip_legacy" "$sha"
+      else
+        echo "[skip_legacy] $model/$prefix@$version#$sha"
+      fi
     fi
     COUNT_SKIPPED_LEGACY=$((COUNT_SKIPPED_LEGACY + 1))
     continue
@@ -771,10 +793,18 @@ while IFS= read -r raw_line; do
         emit_api_status "$api_id" "cached" "$sha"
       fi
     else
-      if [[ "$DRY_RUN" == "1" ]]; then
-        echo "[dry-run] would skip (cached) $model/$prefix@$version#$sha -> $out_dir"
+      if [[ "$STAGE" == "1" ]]; then
+        if [[ "$is_supported_legacy" == "1" ]]; then
+          emit_run_status "$api_id" "supported" "$sha"
+        else
+          emit_run_status "$api_id" "cached" "$sha"
+        fi
       else
-        echo "[skip_cached] $model/$prefix@$version#$sha (matches breadcrumb)"
+        if [[ "$DRY_RUN" == "1" ]]; then
+          echo "[dry-run] would skip (cached) $model/$prefix@$version#$sha -> $out_dir"
+        else
+          echo "[skip_cached] $model/$prefix@$version#$sha (matches breadcrumb)"
+        fi
       fi
       COUNT_SKIPPED_CACHED=$((COUNT_SKIPPED_CACHED + 1))
     fi
@@ -806,7 +836,15 @@ while IFS= read -r raw_line; do
         emit_api_status "$api_id" "generate" "$sha"
       fi
     else
-      echo "[generate] $spec_json -> $out_dir (module=$module_name sha=$sha log=$LOG_FILE)"
+      if [[ "$STAGE" == "1" ]]; then
+        if [[ "$is_supported_legacy" == "1" ]]; then
+          emit_run_status "$api_id" "supported" "$sha"
+        else
+          emit_run_status "$api_id" "build" "$sha"
+        fi
+      else
+        echo "[generate] $spec_json -> $out_dir (module=$module_name sha=$sha log=$LOG_FILE)"
+      fi
     fi
     COUNT_GENERATED=$((COUNT_GENERATED + 1))
   fi
@@ -873,7 +911,7 @@ if [[ "$LIST_API_CHANGES" == "1" ]]; then
   exit 0
 fi
 
-if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
+if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" && ( "$DIFF_ONLY" == "1" || "$APPLY" == "1" || "$NAME_ONLY" == "1" ) ]]; then
   echo "[diff] $FINAL_LIB_ROOT <-> $ACTIVE_LIB_ROOT"
 
   # Guard: if these ever point at the same directory, the diff output is nonsense.
@@ -917,7 +955,7 @@ if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
       rsync -a --delete "$ACTIVE_LIB_ROOT/" "$FINAL_LIB_ROOT/"
       echo "[apply] done"
     fi
-  else
-    echo "[stage] staged output is in $ACTIVE_LIB_ROOT (run with --apply to promote)"
   fi
+elif [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
+  echo "[stage] staged output is in $ACTIVE_LIB_ROOT (run with --apply to promote)"
 fi
