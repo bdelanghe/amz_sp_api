@@ -256,60 +256,6 @@ c_yellow(){ [[ "$USE_COLOR" == "1" ]] && printf '\033[33m' || true; }
 c_cyan()  { [[ "$USE_COLOR" == "1" ]] && printf '\033[36m' || true; }
 
 emit_api_status() {
-emit_check_status() {
-  local api="$1"   # <model>/<prefix>@<version>
-  local status="$2"  # ok | stale | missing | legacy | deprecated | supported
-  local sha="$3"
-  local extra="${4:-}"
-
-  local label="$status"
-  local color_fn=""
-  case "$status" in
-    ok)         color_fn="c_green" ;;
-    supported)  color_fn="c_yellow" ;;
-    stale)      color_fn="c_yellow" ;;
-    missing)    color_fn="c_red" ;;
-    legacy)     color_fn="c_dim" ;;
-    deprecated) color_fn="c_red" ;;
-    *)          color_fn="" ;;
-  esac
-
-  local sha_tok="$sha"
-  if [[ "${#sha_tok}" -gt 12 ]]; then
-    sha_tok="${sha_tok:0:12}"
-  fi
-
-  if [[ -n "$color_fn" ]]; then
-    local open close
-    open="$($color_fn 2>/dev/null || true)"
-    close="$(c_reset 2>/dev/null || true)"
-    if [[ -n "$extra" ]]; then
-      printf '%s[%s]%s\t%s\t%s\t%s\n' "$open" "$label" "$close" "$sha_tok" "$api" "$extra"
-    else
-      printf '%s[%s]%s\t%s\t%s\n' "$open" "$label" "$close" "$sha_tok" "$api"
-    fi
-  else
-    if [[ -n "$extra" ]]; then
-      printf '[%s]\t%s\t%s\t%s\n' "$label" "$sha_tok" "$api" "$extra"
-    else
-      printf '[%s]\t%s\t%s\n' "$label" "$sha_tok" "$api"
-    fi
-  fi
-}
-breadcrumb_actual_sha_at() {
-  local root="$1"
-  local out_name="$2"
-
-  local crumb
-  crumb="$(breadcrumb_path_for_root "$root" "$out_name")"
-  [[ -f "$crumb" ]] || return 1
-
-  awk -F= '
-    /^json_spec_blob_sha=/{print $2; found=1; exit}
-    /^sha=/{print $2; found=1; exit}
-    END{if(!found) exit 1}
-  ' "$crumb" 2>/dev/null
-}
   local api="$1"          # canonical API id: <model>/<prefix>@<version>
   local status="$2"       # cached | generate | skip_deprecated | skip_legacy | dry_run | supported
   local sha="$3"          # short or full
@@ -354,6 +300,62 @@ breadcrumb_actual_sha_at() {
   else
     printf '[%s]\t%s\t%s\n' "$label" "$sha_tok" "$api"
   fi
+}
+
+emit_check_status() {
+  local api="$1"     # <model>/<prefix>@<version>
+  local status="$2"  # ok | stale | missing | outdated | deprecated | supported
+  local sha="$3"
+  local extra="${4:-}"
+
+  local label="$status"
+  local color_fn=""
+  case "$status" in
+    ok)         color_fn="c_green" ;;
+    supported)  color_fn="c_yellow" ;;
+    stale)      color_fn="c_yellow" ;;
+    missing)    color_fn="c_red" ;;
+    outdated)   color_fn="c_dim" ;;
+    deprecated) color_fn="c_red" ;;
+    *)          color_fn="" ;;
+  esac
+
+  local sha_tok="$sha"
+  if [[ "${#sha_tok}" -gt 12 ]]; then
+    sha_tok="${sha_tok:0:12}"
+  fi
+
+  if [[ -n "$color_fn" ]]; then
+    local open close
+    open="$($color_fn 2>/dev/null || true)"
+    close="$(c_reset 2>/dev/null || true)"
+    if [[ -n "$extra" ]]; then
+      printf '%s[%s]%s\t%s\t%s\t%s\n' "$open" "$label" "$close" "$sha_tok" "$api" "$extra"
+    else
+      printf '%s[%s]%s\t%s\t%s\n' "$open" "$label" "$close" "$sha_tok" "$api"
+    fi
+  else
+    if [[ -n "$extra" ]]; then
+      printf '[%s]\t%s\t%s\t%s\n' "$label" "$sha_tok" "$api" "$extra"
+    else
+      printf '[%s]\t%s\t%s\n' "$label" "$sha_tok" "$api"
+    fi
+  fi
+}
+
+breadcrumb_actual_sha_at() {
+  local root="$1"
+  local out_name="$2"
+
+  local crumb
+  crumb="$(breadcrumb_path_for_root "$root" "$out_name")"
+  [[ -f "$crumb" ]] || return 1
+
+  awk -F= '
+    /^json_spec_blob_sha=/{print $2; found=1; exit}
+    /^sha=/{print $2; found=1; exit}
+    END{if(!found) exit 1}
+  ' "$crumb" 2>/dev/null
 }
 
 breadcrumb_path_for_root() {
@@ -638,7 +640,7 @@ while IFS= read -r raw_line; do
       continue
     fi
     if has_flag "$flags_part" "skip_legacy" && ! has_flag "$flags_part" "supported_legacy"; then
-      emit_check_status "$api_id" "legacy" "$sha"
+      emit_check_status "$api_id" "outdated" "$sha"
       continue
     fi
 
