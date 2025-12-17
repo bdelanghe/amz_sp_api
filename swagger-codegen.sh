@@ -467,6 +467,51 @@ breadcrumb_matches_target() {
   breadcrumb_matches_at "$FINAL_LIB_ROOT" "$out_name" "$expected_sha"
 }
 
+# Helper to build a stable upstream URL to the *exact spec blob* that produced this output.
+# This is factored out so both write_breadcrumb and check-mode can use it.
+build_upstream_spec_url_from_spec_json() {
+  local spec_json="$1"
+
+  local upstream_sha_val repo_root_abs spec_abs rel
+  local upstream_spec_url=""
+
+  upstream_sha_val="${UPSTREAM_SHA:-${upstream_sha:-}}"
+  [[ -z "$upstream_sha_val" ]] && { echo ""; return 0; }
+
+  # MODELS_ROOT points at: <snapshot_root>/models
+  # so the snapshot root is: <snapshot_root>
+  repo_root_abs="$(cd "$MODELS_ROOT/.." && pwd -P)"
+
+  # Normalize spec_json to an absolute path when possible.
+  spec_abs="$spec_json"
+  if [[ "$spec_abs" != /* ]]; then
+    spec_abs="$(cd "$ROOT_DIR" && perl -MCwd=abs_path -e 'print abs_path(shift)' "$spec_json" 2>/dev/null || true)"
+    [[ -n "$spec_abs" ]] || spec_abs="$spec_json"
+  fi
+
+  # Preferred: compute path relative to the snapshot git repo root.
+  if [[ "$spec_abs" == "$repo_root_abs/"* ]]; then
+    rel="${spec_abs#"$repo_root_abs/"}"
+  else
+    # Fallback: if the path contains `/models/`, derive a repo-relative path starting at `models/`.
+    # Example:
+    #   .models/df0f6a4/models/aplus-content-api-model/aplusContent_2020-11-01.json
+    # becomes:
+    #   models/aplus-content-api-model/aplusContent_2020-11-01.json
+    if [[ "$spec_json" == *"/models/"* ]]; then
+      rel="models/${spec_json#*"/models/"}"
+    else
+      rel=""
+    fi
+  fi
+
+  if [[ -n "$rel" ]]; then
+    upstream_spec_url="https://github.com/amzn/selling-partner-api-models/blob/${upstream_sha_val}/${rel}"
+  fi
+
+  echo "$upstream_spec_url"
+}
+
 write_breadcrumb() {
   local out_name="$1"
   local model="$2"
@@ -481,45 +526,8 @@ write_breadcrumb() {
   crumb_dir="$(dirname "$crumb")"
   mkdir -p "$crumb_dir"
 
-  # Build a stable upstream URL to the *exact spec blob* that produced this output.
-  # We derive a repo-relative path from `spec_json`.
-  # `spec_json` may be absolute or relative (often under .models/<short>/models/...).
-  local upstream_spec_url=""
-  local upstream_sha_val repo_root_abs spec_abs rel
-
-  upstream_sha_val="${UPSTREAM_SHA:-${upstream_sha:-}}"
-  if [[ -n "$upstream_sha_val" ]]; then
-    # MODELS_ROOT points at: <snapshot_root>/models
-    # so the snapshot root is: <snapshot_root>
-    repo_root_abs="$(cd "$MODELS_ROOT/.." && pwd -P)"
-
-    # Normalize spec_json to an absolute path when possible.
-    spec_abs="$spec_json"
-    if [[ "$spec_abs" != /* ]]; then
-      spec_abs="$(cd "$ROOT_DIR" && perl -MCwd=abs_path -e 'print abs_path(shift)' "$spec_json" 2>/dev/null || true)"
-      [[ -n "$spec_abs" ]] || spec_abs="$spec_json"
-    fi
-
-    # Preferred: compute path relative to the snapshot git repo root.
-    if [[ "$spec_abs" == "$repo_root_abs/"* ]]; then
-      rel="${spec_abs#"$repo_root_abs/"}"
-    else
-      # Fallback: if the path contains `/models/`, derive a repo-relative path starting at `models/`.
-      # Example:
-      #   .models/df0f6a4/models/aplus-content-api-model/aplusContent_2020-11-01.json
-      # becomes:
-      #   models/aplus-content-api-model/aplusContent_2020-11-01.json
-      if [[ "$spec_json" == *"/models/"* ]]; then
-        rel="models/${spec_json#*"/models/"}"
-      else
-        rel=""
-      fi
-    fi
-
-    if [[ -n "$rel" ]]; then
-      upstream_spec_url="https://github.com/amzn/selling-partner-api-models/blob/${upstream_sha_val}/${rel}"
-    fi
-  fi
+  local upstream_spec_url
+  upstream_spec_url="$(build_upstream_spec_url_from_spec_json "$spec_json")"
 
   {
     echo "model=$model"
@@ -737,7 +745,51 @@ while IFS= read -r raw_line; do
     fi
 
     if breadcrumb_matches_at "$CHECK_LIB_ROOT" "$out_name" "$sha"; then
-      emit_check_status "$api_id" "ok" "$sha"
+      # SHA matches; now validate breadcrumb metadata so we know we're checking the right version.
+      crumb_path="$(breadcrumb_path_for_root "$CHECK_LIB_ROOT" "$out_name")"
+
+      actual_model="$(awk -F= '/^model=/{print $2; exit}' "$crumb_path" 2>/dev/null || true)"
+      actual_prefix="$(awk -F= '/^prefix=/{print $2; exit}' "$crumb_path" 2>/dev/null || true)"
+      actual_version="$(awk -F= '/^version=/{print $2; exit}' "$crumb_path" 2>/dev/null || true)"
+      actual_flags="$(awk -F= '/^codegen_flags=/{print $2; exit}' "$crumb_path" 2>/dev/null || true)"
+      actual_url="$(awk -F= '/^upstream_spec_url=/{print $2; exit}' "$crumb_path" 2>/dev/null || true)"
+
+      meta_ok=1
+
+      # Model/prefix/version must match the plan entry.
+      [[ "$actual_model" == "$model" ]] || meta_ok=0
+      [[ "$actual_prefix" == "$prefix" ]] || meta_ok=0
+      [[ "$actual_version" == "$version" ]] || meta_ok=0
+
+      # Flags are part of provenance; normalize empty to empty and compare exact.
+      [[ "${actual_flags:-}" == "${flags_part:-}" ]] || meta_ok=0
+
+      # upstream_spec_url should be present and (when possible) match what we'd compute.
+      expected_url=""
+      spec_for_url=""
+      spec_for_url="$(find_spec_json "$model" "$prefix" "$version" "$sha" 2>/dev/null || true)"
+      if [[ -n "$spec_for_url" ]]; then
+        expected_url="$(build_upstream_spec_url_from_spec_json "$spec_for_url")"
+      fi
+
+      if [[ -z "$actual_url" ]]; then
+        meta_ok=0
+      elif [[ -n "$expected_url" && "$actual_url" != "$expected_url" ]]; then
+        meta_ok=0
+      fi
+
+      if [[ "$meta_ok" == "1" ]]; then
+        emit_check_status "$api_id" "ok" "$sha"
+      else
+        # Keep output compact: mark stale, but include a short reason token.
+        reason="meta_mismatch"
+        if [[ -z "$actual_url" ]]; then reason="missing_upstream_spec_url"; fi
+        if [[ -n "$expected_url" && "$actual_url" != "$expected_url" ]]; then reason="upstream_spec_url_mismatch"; fi
+        if [[ "$actual_model" != "$model" || "$actual_prefix" != "$prefix" || "$actual_version" != "$version" ]]; then reason="id_mismatch"; fi
+        if [[ "${actual_flags:-}" != "${flags_part:-}" ]]; then reason="flags_mismatch"; fi
+        emit_check_status "$api_id" "stale" "$sha" "$reason"
+        CHECK_FAILED=1
+      fi
     else
       actual="$(breadcrumb_actual_sha_at "$CHECK_LIB_ROOT" "$out_name" 2>/dev/null || true)"
       if [[ -z "$actual" ]]; then
