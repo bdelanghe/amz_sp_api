@@ -4,8 +4,10 @@ set -e
 
 # Generate Ruby clients from the checked-out SP-API models snapshot, driven by .codegen-plan.
 #
+#
 # Plan line format:
 #   <model>/<prefix>@<version>#<sha>[; flag,flag,...]
+#     - <sha> may be a full 40-hex blob SHA or a short prefix (e.g. 7 chars)
 #
 # Flags we currently honor here:
 #   - skip_deprecated   => do not generate
@@ -82,76 +84,125 @@ has_flag() {
   [[ ",${flags_csv}," == *",${needle},"* ]]
 }
 
+# Verify that the spec JSON we are about to feed into swagger-codegen matches the plan's blob SHA.
+# This guards against path resolution mistakes.
+verify_spec_sha() {
+  local spec_json="$1"
+  local expected_sha="$2"
+
+  [[ -z "$expected_sha" ]] && return 0
+
+  local repo_root rel actual_sha
+
+  repo_root="$(cd "$MODELS_ROOT/.." && pwd -P)"
+
+  # If spec_json is inside the models repo, prefer git hash-object on the repo-relative path.
+  if [[ "$spec_json" == "$repo_root/"* ]]; then
+    rel="${spec_json#"$repo_root/"}"
+    actual_sha="$(cd "$repo_root" && git hash-object "$rel")"
+  else
+    # Fallback: hash the file contents directly.
+    actual_sha="$(git hash-object "$spec_json")"
+  fi
+
+  # Accept either full 40-hex or short prefix SHAs from the plan.
+  if [[ "$actual_sha" != "$expected_sha"* ]]; then
+    echo "Spec SHA mismatch for $spec_json" >&2
+    echo "  expected: $expected_sha" >&2
+    echo "  actual:   $actual_sha" >&2
+    return 1
+  fi
+
+  return 0
+}
+
 # Locate the JSON spec by blob SHA from the models git repo.
 # The plan's `#<sha>` is the blob SHA of the spec file contents.
-# We resolve it to a repo-relative path, and (when possible) constrain it to the expected leaf dir.
+# We resolve it to a repo-relative path, and (when possible) constrain it to the expected model prefix.
 resolve_spec_json_by_sha() {
-  local leaf_dir="$1"
+  local model="$1"
   local sha="$2"
 
-  local repo_root leaf_rel matches
+  local repo_root matches constrain
 
   # MODELS_ROOT points at: <models-repo>/models
   # so the git repo root is MODELS_ROOT/..
   repo_root="$(cd "$MODELS_ROOT/.." && pwd -P)"
 
-  # leaf_dir is an absolute or relative path; normalize to absolute so we can derive a repo-relative prefix.
-  leaf_dir="$(cd "$leaf_dir" && pwd -P)"
-
-  # Derive repo-relative leaf prefix (e.g. models/finances-api-model/finances/V0)
-  leaf_rel="${leaf_dir#"$repo_root"/}"
+  # Constrain to the model directory when possible.
+  # e.g. models/finances-api-model/
+  constrain="models/${model}/"
 
   # Find all paths at HEAD whose blob SHA matches.
+  # Allow short SHAs: match any object whose full SHA starts with the provided prefix.
   # Output format: <mode> <type> <object>\t<path>
-  matches="$(cd "$repo_root" && git ls-tree -r HEAD | awk -v s="$sha" '$3==s {sub(/^\t/,"",$4); print $4}')"
+  matches="$(cd "$repo_root" && git ls-tree -r HEAD | awk -v s="$sha" 'index($3,s)==1 {sub(/^\t/,"",$4); print $4}')"
 
   if [[ -z "$matches" ]]; then
     return 1
   fi
 
-  # Prefer a match within the expected leaf dir.
-  local in_leaf
-  in_leaf="$(printf '%s\n' "$matches" | awk -v p="$leaf_rel/" 'index($0,p)==1 && $0 ~ /\.json$/ {print $0}' | head -n 1)"
-  if [[ -n "$in_leaf" ]]; then
-    echo "$repo_root/$in_leaf"
+  # Prefer a match within the expected model dir.
+  local in_model
+  in_model="$(printf '%s\n' "$matches" | awk -v p="$constrain" 'index($0,p)==1 && $0 ~ /\.json$/ {print $0}' | head -n 1)"
+  if [[ -n "$in_model" ]]; then
+    echo "$repo_root/$in_model"
     return 0
   fi
 
-  # Otherwise, take the first json match anywhere (should be rare; indicates the sha wasn't leaf-specific).
-  local any_json
-  any_json="$(printf '%s\n' "$matches" | awk '$0 ~ /\.json$/ {print $0}' | head -n 1)"
-  if [[ -n "$any_json" ]]; then
-    echo "$repo_root/$any_json"
+  # Otherwise, take the first json match anywhere (should be rare; indicates the sha wasn't model-specific).
+  local any_spec
+  # Prefer JSON first, but allow MD to be located so we can emit a clear error upstream.
+  any_spec="$(printf '%s\n' "$matches" | awk '$0 ~ /\.(json|md)$/ {print $0}' | head -n 1)"
+  if [[ -n "$any_spec" ]]; then
+    echo "$repo_root/$any_spec"
     return 0
   fi
 
   return 2
 }
 
-# Find exactly one JSON spec inside a leaf directory, but prefer resolving by blob SHA first.
+# Find the spec JSON for a plan entry.
+# The SP-API models snapshot uses a *flat* layout inside each API folder:
+#   <MODELS_ROOT>/<model>/<prefix>_<version>.json
+# (Some APIs may also include .md files, but swagger-codegen needs the JSON spec.)
+#
+# Resolution order:
+#   1) Exact flat filename match
+#   2) Resolve by blob SHA (robust against renames) within the model dir
 find_spec_json() {
-  local leaf_dir="$1"
-  local sha="$2"
+  local model="$1"
+  local prefix="$2"
+  local version="$3"
+  local sha="$4"
 
-  # First choice: resolve by blob SHA so we don't depend on directory heuristics.
+  local model_dir flat_json
+
+  model_dir="$MODELS_ROOT/$model"
+  flat_json="$model_dir/${prefix}_${version}.json"
+
+  # 1) Preferred flat-file naming.
+  if [[ -f "$flat_json" ]]; then
+    echo "$flat_json"
+    return 0
+  fi
+
+  # 2) Resolve by blob SHA (most robust, ignores naming/layout).
   if [[ -n "$sha" ]]; then
-    if resolve_spec_json_by_sha "$leaf_dir" "$sha"; then
+    local resolved
+    resolved="$(resolve_spec_json_by_sha "$model" "$sha" || true)"
+    if [[ -n "$resolved" ]]; then
+      # We only accept JSON specs for codegen.
+      if [[ "$resolved" != *.json ]]; then
+        echo "Resolved blob SHA to a non-JSON file (cannot codegen): $resolved" >&2
+        return 2
+      fi
+      echo "$resolved"
       return 0
     fi
   fi
 
-  # Fallback: Prefer openapi.json if it exists (common convention), otherwise any *.json.
-  if [[ -f "$leaf_dir/openapi.json" ]]; then
-    echo "$leaf_dir/openapi.json"
-    return 0
-  fi
-
-  local found
-  found="$(find "$leaf_dir" -maxdepth 1 -type f -name "*.json" | head -n 1 || true)"
-  if [[ -z "$found" ]]; then
-    return 1
-  fi
-  echo "$found"
+  return 1
 }
 
 # Drive generation from the plan.
@@ -185,14 +236,14 @@ while IFS= read -r raw_line; do
     continue
   fi
 
-  leaf_dir="$MODELS_ROOT/$model/$prefix/$version"
-  if [[ ! -d "$leaf_dir" ]]; then
-    echo "Missing leaf dir: $leaf_dir (from: $raw_line)" >&2
+  spec_json="$(find_spec_json "$model" "$prefix" "$version" "$sha")" || {
+    echo "No spec JSON found for: $model/$prefix@$version#$sha (from: $raw_line)" >&2
+    echo "Tried: $MODELS_ROOT/$model/${prefix}_${version}.json" >&2
     exit 1
-  fi
+  }
 
-  spec_json="$(find_spec_json "$leaf_dir" "$sha")" || {
-    echo "No *.json found in leaf dir: $leaf_dir (from: $raw_line)" >&2
+  verify_spec_sha "$spec_json" "$sha" || {
+    echo "Refusing to run codegen due to SHA mismatch (from: $raw_line)" >&2
     exit 1
   }
 
