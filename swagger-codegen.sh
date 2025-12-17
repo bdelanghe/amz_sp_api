@@ -58,41 +58,56 @@ COUNT_SKIPPED_CACHED=0
 COUNT_SKIPPED_LEGACY=0
 COUNT_SKIPPED_DEPRECATED=0
 
+UNKNOWN_ARGS=()
+
 
 for arg in "$@"; do
   case "$arg" in
-    --dry-run)
+    --dry-run|dry-run)
       DRY_RUN=1
       ;;
-    --stage)
+    --stage|stage)
       STAGE=1
       ;;
-    --diff-only)
+    --diff-only|diff-only)
       STAGE=1
       DIFF_ONLY=1
       ;;
-    --apply)
+    --apply|apply)
       STAGE=1
       APPLY=1
       ;;
-    --name-only)
+    --name-only|name-only)
       NAME_ONLY=1
       ;;
-    --list-api-changes)
+    --list-api-changes|list-api-changes|list)
       LIST_API_CHANGES=1
       ;;
-    --force)
+    --force|force)
       FORCE=1
       ;;
-    --check)
+    --check|check)
       CHECK=1
       ;;
-    --check-staged)
+    --check-staged|check-staged)
       CHECK=1
       CHECK_STAGED=1
       ;;
+    --check-stagged|check-stagged)
+      CHECK=1
+      CHECK_STAGED=1
+      ;;
+    *)
+      UNKNOWN_ARGS+=("$arg")
+      ;;
   esac
 done
+
+if [[ "${#UNKNOWN_ARGS[@]}" -gt 0 ]]; then
+  echo "Unknown argument(s): ${UNKNOWN_ARGS[*]}" >&2
+  echo "Hint: supported args: stage apply diff-only dry-run name-only list-api-changes force check check-staged" >&2
+  exit 2
+fi
 
 # --list-api-changes is an inspection mode: only parse the plan and report statuses.
 # It should NOT stage/diff/generate.
@@ -136,6 +151,16 @@ LIB_ROOT="$ACTIVE_LIB_ROOT"
 CHECK_LIB_ROOT="$FINAL_LIB_ROOT"
 if [[ "$CHECK" == "1" && "$CHECK_STAGED" == "1" ]]; then
   CHECK_LIB_ROOT="$ACTIVE_LIB_ROOT"
+fi
+
+# Preflight: --check-staged expects a prior staged run to have created $CHECK_LIB_ROOT.
+# We intentionally do NOT generate in check mode.
+if [[ "$CHECK" == "1" && "$CHECK_STAGED" == "1" ]]; then
+  if [[ ! -d "$CHECK_LIB_ROOT" ]]; then
+    echo "Missing staged output dir: $CHECK_LIB_ROOT" >&2
+    echo "Hint: run ./swagger-codegen.sh --diff-only (or --stage) first to populate $STAGE_ROOT, then re-run --check-staged" >&2
+    exit 1
+  fi
 fi
 
 # Inputs
