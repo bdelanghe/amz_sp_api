@@ -305,15 +305,40 @@ write_breadcrumb() {
   crumb_dir="$(dirname "$crumb")"
   mkdir -p "$crumb_dir"
 
+  # Build a stable upstream URL to the *exact spec blob* that produced this output.
+  # We derive the repo-relative path from `spec_json` (which is typically an absolute
+  # path into the models repo checkout).
+  local upstream_spec_url=""
+  local upstream_models_url=""
+  local repo_root rel
+
+  if [[ -n "${UPSTREAM_SHA:-}" ]]; then
+    upstream_models_url="https://github.com/amzn/selling-partner-api-models/tree/${UPSTREAM_SHA}/models"
+
+    repo_root="$(cd "$MODELS_ROOT/.." && pwd -P)"
+    if [[ "$spec_json" == "$repo_root/"* ]]; then
+      rel="${spec_json#"$repo_root/"}"
+      upstream_spec_url="https://github.com/amzn/selling-partner-api-models/blob/${UPSTREAM_SHA}/${rel}"
+    fi
+  fi
+
   {
     echo "model=$model"
     echo "prefix=$prefix"
     echo "version=$version"
     echo "sha=$sha"
     echo "spec_json=$spec_json"
+
     if [[ -n "${UPSTREAM_SHA:-}" ]]; then
       echo "upstream_sha=$UPSTREAM_SHA"
     fi
+    if [[ -n "$upstream_models_url" ]]; then
+      echo "upstream_models_url=$upstream_models_url"
+    fi
+    if [[ -n "$upstream_spec_url" ]]; then
+      echo "upstream_spec_url=$upstream_spec_url"
+    fi
+
     echo "generated_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "$crumb"
 }
