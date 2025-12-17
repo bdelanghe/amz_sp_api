@@ -20,7 +20,7 @@ for model_dir in $MODEL_DIRS; do
 
   tmp="$(mktemp)"
 
-  # Collect (prefix, version, deprecated) tuples for this model.
+  # Collect (prefix, version, deprecated, blob_sha) tuples for this model.
   find "$model_dir" -type f | sort | while read -r file; do
     fname="$(basename "$file")"
     ext="${fname##*.}"
@@ -49,7 +49,9 @@ for model_dir in $MODEL_DIRS; do
       fi
     fi
 
-    printf '%s\t%s\t%s\n' "$prefix" "$version" "$deprecated" >> "$tmp"
+    blob_sha="$(git hash-object "$file" 2>/dev/null | cut -c1-7)"
+
+    printf '%s\t%s\t%s\t%s\n' "$prefix" "$version" "$deprecated" "$blob_sha" >> "$tmp"
   done
 
   # If this model has no non-deprecated entries at all, color the model header red.
@@ -68,7 +70,7 @@ for model_dir in $MODEL_DIRS; do
   cut -f1 "$tmp" | sort -u | while read -r prefix; do
     # Emit version leaves (once per prefix)
     versions_tmp="$(mktemp)"
-    awk -F'\t' -v p="$prefix" '$1==p {print $2"\t"$3}' "$tmp" | sort -u > "$versions_tmp"
+    awk -F'\t' -v p="$prefix" '$1==p {print $2"\t"$3"\t"$4}' "$tmp" | sort -u > "$versions_tmp"
 
     # If this prefix has no non-deprecated leaves, color the prefix red.
     prefix_all_deprecated=1
@@ -115,57 +117,61 @@ for model_dir in $MODEL_DIRS; do
 
     for v in $date_versions; do
       dep="$(awk -F'\t' -v vv="$v" '$1==vv && $2!="" {print $2; exit}' "$versions_tmp")"
+      sha="$(awk -F'\t' -v vv="$v" '$1==vv {print $3; exit}' "$versions_tmp")"
 
       if [[ -n "$dep" ]]; then
         # Deprecated date version: version and marker are red.
-        printb "    └─ ${RED}$v${RESET} [${RED}$dep${RESET}]"
+        printb "    └─ ${RED}$v${RESET} [${RED}$dep${RESET}] (${sha})"
         continue
       fi
 
       # Not deprecated
       if [[ "$leaf_count" -eq 1 ]]; then
         # Single non-deprecated leaf => green
-        printb "    └─ ${GREEN}$v${RESET}"
+        printb "    └─ ${GREEN}$v${RESET} (${sha})"
       elif [[ -n "$best_version" && "$v" == "$best_version" ]]; then
         # Best version => green
-        printb "    └─ ${GREEN}$v${RESET}"
+        printb "    └─ ${GREEN}$v${RESET} (${sha})"
       else
         # Non-best => grey
-        printb "    └─ ${GREY}$v${RESET}"
+        printb "    └─ ${GREY}$v${RESET} (${sha})"
       fi
     done
 
     for v in $other_versions; do
       dep="$(awk -F'\t' -v vv="$v" '$1==vv && $2!="" {print $2; exit}' "$versions_tmp")"
+      sha="$(awk -F'\t' -v vv="$v" '$1==vv {print $3; exit}' "$versions_tmp")"
       if [[ -n "$dep" ]]; then
         # Deprecated non-date version: version and marker are red.
-        printb "    └─ ${RED}$v${RESET} [${RED}$dep${RESET}]"
+        printb "    └─ ${RED}$v${RESET} [${RED}$dep${RESET}] (${sha})"
       else
         # Not deprecated
         if [[ "$leaf_count" -eq 1 ]]; then
-          printb "    └─ ${GREEN}$v${RESET}"
+          printb "    └─ ${GREEN}$v${RESET} (${sha})"
         elif [[ -n "$best_version" && "$v" == "$best_version" ]]; then
-          printb "    └─ ${GREEN}$v${RESET}"
+          printb "    └─ ${GREEN}$v${RESET} (${sha})"
         else
-          printb "    └─ ${GREY}$v${RESET}"
+          printb "    └─ ${GREY}$v${RESET} (${sha})"
         fi
       fi
     done
 
     # Deprecated-only (no version)
     if awk -F'\t' '$1=="" && $2!=""' "$versions_tmp" | grep -q .; then
-      printb "    └─ [${RED}DEPRECATED${RESET}]"
+      sha="$(awk -F'\t' '$1=="" && $2!="" {print $3; exit}' "$versions_tmp")"
+      printb "    └─ [${RED}DEPRECATED${RESET}] (${sha})"
     fi
 
     # Unversioned normal file
     if awk -F'\t' '$1=="" && $2==""' "$versions_tmp" | grep -q .; then
+      sha="$(awk -F'\t' '$1=="" && $2=="" {print $3; exit}' "$versions_tmp")"
       # If there are other versioned leaves, the unversioned file is legacy (not latest).
       if [[ "$leaf_count" -eq 1 ]]; then
-        printb "    └─ ${GREEN}latest${RESET}"
+        printb "    └─ ${GREEN}latest${RESET} (${sha})"
       elif [[ "$n_dates" -gt 0 || "$n_other" -gt 0 ]]; then
-        printb "    └─ ${GREY}legacy${RESET}"
+        printb "    └─ ${GREY}legacy${RESET} (${sha})"
       else
-        echo "    └─ latest"
+        echo "    └─ latest (${sha})"
       fi
     fi
 
