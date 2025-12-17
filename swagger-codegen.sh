@@ -364,7 +364,7 @@ write_breadcrumb() {
     echo "prefix=$prefix"
     echo "version=$version"
     echo "json_spec_blob_sha=$sha"
-    echo "flags=${flags_csv:-}"
+    echo "codegen_flags=${flags_csv:-}"
     echo "upstream_spec_url=$upstream_spec_url"
     echo "generated_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "$crumb"
