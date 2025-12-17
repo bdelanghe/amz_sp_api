@@ -41,8 +41,7 @@ DRY_RUN=0
 STAGE=0
 DIFF_ONLY=0
 APPLY=0
-NAME_ONLY=0
-LIST_API_CHANGES=0
+DIFF_VIEW=0
 FORCE="${FORCE:-0}"
 [[ "$FORCE" == "1" ]] || FORCE="0"
 
@@ -58,6 +57,9 @@ COUNT_SKIPPED_CACHED=0
 COUNT_SKIPPED_LEGACY=0
 COUNT_SKIPPED_DEPRECATED=0
 
+# Stage reuse flag: only true when we keep an existing stage for the same plan.
+STAGE_REUSED=0
+
 UNKNOWN_ARGS=()
 
 
@@ -69,19 +71,18 @@ for arg in "$@"; do
     --stage|stage)
       STAGE=1
       ;;
-    --diff-only|diff-only|--diff|diff)
+    --diff-only|diff-only)
       STAGE=1
       DIFF_ONLY=1
+      ;;
+    --diff|diff)
+      STAGE=1
+      DIFF_ONLY=1
+      DIFF_VIEW=1
       ;;
     --apply|apply)
       STAGE=1
       APPLY=1
-      ;;
-    --name-only|name-only)
-      NAME_ONLY=1
-      ;;
-    --list-api-changes|list-api-changes|list)
-      LIST_API_CHANGES=1
       ;;
     --force|force)
       FORCE=1
@@ -105,17 +106,10 @@ done
 
 if [[ "${#UNKNOWN_ARGS[@]}" -gt 0 ]]; then
   echo "Unknown argument(s): ${UNKNOWN_ARGS[*]}" >&2
-  echo "Hint: supported args: stage apply diff-only diff dry-run name-only list-api-changes force check check-staged" >&2
+  echo "Hint: supported args: stage apply diff-only diff dry-run force check check-staged" >&2
   exit 2
 fi
 
-# --list-api-changes is an inspection mode: only parse the plan and report statuses.
-# It should NOT stage/diff/generate.
-if [[ "$LIST_API_CHANGES" == "1" ]]; then
-  STAGE=0
-  DIFF_ONLY=0
-  APPLY=0
-fi
 
 # --check / --check-staged are inspection modes: do not generate, do not stage, do not diff, do not apply.
 if [[ "$CHECK" == "1" ]]; then
@@ -200,7 +194,7 @@ mkdir -p "$FINAL_LIB_ROOT"
 
 # If staging and not dry-run, ensure the stage root is ready and created.
 # For --stage, only cache-skip if the plan is the same as the previous staged run.
-if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
+if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" && "$DIFF_VIEW" != "1" ]]; then
   # stage: only keep existing stage (and allow cache-skips) if this is the *same plan* as last stage run.
   # This makes the first `--stage` build, and the second `--stage` cache-skip.
   stage_marker="$STAGE_ROOT/.stage-plan-sha"
@@ -218,8 +212,10 @@ if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
   fi
 
   if [[ -d "$STAGE_ROOT/lib" && "$FORCE" != "1" && -n "$plan_sha" && "$prev_sha" == "$plan_sha" ]]; then
+    STAGE_REUSED=1
     : # keep existing staged output
   else
+    STAGE_REUSED=0
     rm -rf "$STAGE_ROOT"
     mkdir -p "$STAGE_ROOT/lib"
     if [[ -d "$FINAL_LIB_ROOT" ]]; then
@@ -232,6 +228,21 @@ if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
     if [[ -n "$plan_sha" ]]; then
       printf '%s' "$plan_sha" > "$stage_marker"
     fi
+  fi
+fi
+LIB_ROOT="$ACTIVE_LIB_ROOT"
+
+# --diff is a pure inspection mode: it requires an existing staged lib and does not generate.
+if [[ "$DIFF_VIEW" == "1" ]]; then
+  if [[ ! -d "$ACTIVE_LIB_ROOT" ]]; then
+    if [[ -t 2 && -z "${NO_COLOR:-}" ]]; then
+      printf '\033[31m[missing]\033[0m\t%s\n' "$ACTIVE_LIB_ROOT" >&2
+      printf '\033[2m[hint]\033[0m\t%s\n' 'run: ./swagger-codegen.sh stage' >&2
+    else
+      printf '[missing]\t%s\n' "$ACTIVE_LIB_ROOT" >&2
+      printf '[hint]\t%s\n' 'run: ./swagger-codegen.sh stage' >&2
+    fi
+    exit 1
   fi
 fi
 
@@ -922,27 +933,19 @@ while IFS= read -r raw_line; do
 
   # Honor skip flags.
   if has_flag "$flags_part" "skip_deprecated"; then
-    if [[ "$LIST_API_CHANGES" == "1" ]]; then
-      emit_api_status "$api_id" "skip_deprecated" "$sha"
+    if [[ "$STAGE" == "1" ]]; then
+      emit_run_status "$api_id" "skip_deprecated" "$sha"
     else
-      if [[ "$STAGE" == "1" ]]; then
-        emit_run_status "$api_id" "skip_deprecated" "$sha"
-      else
-        echo "[skip_deprecated] $model/$prefix@$version#$sha"
-      fi
+      echo "[skip_deprecated] $model/$prefix@$version#$sha"
     fi
     COUNT_SKIPPED_DEPRECATED=$((COUNT_SKIPPED_DEPRECATED + 1))
     continue
   fi
   if has_flag "$flags_part" "skip_legacy" && ! has_flag "$flags_part" "supported_legacy"; then
-    if [[ "$LIST_API_CHANGES" == "1" ]]; then
-      emit_api_status "$api_id" "skip_legacy" "$sha"
+    if [[ "$STAGE" == "1" ]]; then
+      emit_run_status "$api_id" "skip_legacy" "$sha"
     else
-      if [[ "$STAGE" == "1" ]]; then
-        emit_run_status "$api_id" "skip_legacy" "$sha"
-      else
-        echo "[skip_legacy] $model/$prefix@$version#$sha"
-      fi
+      echo "[skip_legacy] $model/$prefix@$version#$sha"
     fi
     COUNT_SKIPPED_LEGACY=$((COUNT_SKIPPED_LEGACY + 1))
     continue
@@ -989,44 +992,37 @@ while IFS= read -r raw_line; do
 
   out_dir="$LIB_ROOT/$out_name"
 
-  # If we already generated this exact spec (by SHA) into the target lib root, we can skip.
-  # This matters most for staged runs where we seed the stage lib from the current lib.
-  if [[ "$FORCE" != "1" ]] && breadcrumb_matches_target "$out_name" "$sha"; then
-    if [[ "$LIST_API_CHANGES" == "1" ]]; then
+  # Cache-skip rules:
+  # - Non-staged runs: cache-skip if FINAL_LIB_ROOT matches (fast, classic behavior).
+  # - Staged runs: only cache-skip if we are reusing an existing stage for the same plan,
+  #   and the *staged* breadcrumb matches. This guarantees the first `--stage` builds and
+  #   the second `--stage` can be cached.
+  if [[ "$FORCE" != "1" ]] && {
+    if [[ "$STAGE" == "1" ]]; then
+      [[ "$STAGE_REUSED" == "1" ]] && breadcrumb_matches_at "$ACTIVE_LIB_ROOT" "$out_name" "$sha"
+    else
+      breadcrumb_matches_target "$out_name" "$sha"
+    fi
+  }; then
+    if [[ "$STAGE" == "1" ]]; then
       if [[ "$is_supported_legacy" == "1" ]]; then
-        emit_api_status "$api_id" "supported" "$sha"
+        emit_run_status "$api_id" "supported" "$sha"
       else
-        emit_api_status "$api_id" "cached" "$sha"
+        emit_run_status "$api_id" "cached" "$sha"
       fi
     else
-      if [[ "$STAGE" == "1" ]]; then
-        if [[ "$is_supported_legacy" == "1" ]]; then
-          emit_run_status "$api_id" "supported" "$sha"
-        else
-          emit_run_status "$api_id" "cached" "$sha"
-        fi
+      if [[ "$DRY_RUN" == "1" ]]; then
+        echo "[dry-run] would skip (cached) $model/$prefix@$version#$sha -> $out_dir"
       else
-        if [[ "$DRY_RUN" == "1" ]]; then
-          echo "[dry-run] would skip (cached) $model/$prefix@$version#$sha -> $out_dir"
-        else
-          echo "[skip_cached] $model/$prefix@$version#$sha (matches breadcrumb)"
-        fi
+        echo "[skip_cached] $model/$prefix@$version#$sha (matches breadcrumb)"
       fi
-      COUNT_SKIPPED_CACHED=$((COUNT_SKIPPED_CACHED + 1))
     fi
+    COUNT_SKIPPED_CACHED=$((COUNT_SKIPPED_CACHED + 1))
     continue
   fi
 
   if [[ "$DRY_RUN" == "1" ]]; then
-    if [[ "$LIST_API_CHANGES" == "1" ]]; then
-      if [[ "$is_supported_legacy" == "1" ]]; then
-        emit_api_status "$api_id" "supported" "$sha"
-      else
-        emit_api_status "$api_id" "dry_run" "$sha"
-      fi
-    else
-      echo "[dry-run] would generate $spec_json -> $out_dir (module=$module_name sha=$sha)"
-    fi
+    echo "[dry-run] would generate $spec_json -> $out_dir (module=$module_name sha=$sha)"
   else
     # Compute log file path
     safe_model="${model//[^a-zA-Z0-9]/_}"
@@ -1035,22 +1031,14 @@ while IFS= read -r raw_line; do
     LOG_FILE="$CODEGEN_LOG_DIR/${safe_model}__${safe_prefix}__${safe_version}.log"
     mkdir -p "$CODEGEN_LOG_DIR"
 
-    if [[ "$LIST_API_CHANGES" == "1" ]]; then
+    if [[ "$STAGE" == "1" ]]; then
       if [[ "$is_supported_legacy" == "1" ]]; then
-        emit_api_status "$api_id" "supported" "$sha"
+        emit_run_status "$api_id" "supported" "$sha"
       else
-        emit_api_status "$api_id" "generate" "$sha"
+        emit_run_status "$api_id" "build" "$sha"
       fi
     else
-      if [[ "$STAGE" == "1" ]]; then
-        if [[ "$is_supported_legacy" == "1" ]]; then
-          emit_run_status "$api_id" "supported" "$sha"
-        else
-          emit_run_status "$api_id" "build" "$sha"
-        fi
-      else
-        echo "[generate] $spec_json -> $out_dir (module=$module_name sha=$sha log=$LOG_FILE)"
-      fi
+      echo "[generate] $spec_json -> $out_dir (module=$module_name sha=$sha log=$LOG_FILE)"
     fi
     COUNT_GENERATED=$((COUNT_GENERATED + 1))
   fi
@@ -1113,11 +1101,8 @@ if [[ "$CHECK" == "1" ]]; then
   exit 0
 fi
 
-if [[ "$LIST_API_CHANGES" == "1" ]]; then
-  exit 0
-fi
 
-if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" && ( "$DIFF_ONLY" == "1" || "$APPLY" == "1" || "$NAME_ONLY" == "1" ) ]]; then
+if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" && ( "$DIFF_ONLY" == "1" || "$APPLY" == "1" ) ]]; then
 
   # Guard: if these ever point at the same directory, the diff output is nonsense.
   if [[ "$(cd "$FINAL_LIB_ROOT" && pwd -P)" == "$(cd "$ACTIVE_LIB_ROOT" && pwd -P)" ]]; then
@@ -1138,9 +1123,7 @@ if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" && ( "$DIFF_ONLY" == "1" || "$APPLY" 
     echo "[note] all planned APIs were cache-skipped because $FINAL_LIB_ROOT already matches the plan's json_spec_blob_sha breadcrumbs (use FORCE=1 to regenerate)"
   fi
 
-  if [[ "$NAME_ONLY" == "1" ]]; then
-    GIT_PAGER=cat git diff --no-index --name-only -- "$FINAL_LIB_ROOT" "$ACTIVE_LIB_ROOT" || true
-  elif [[ "$DIFF_ONLY" == "1" ]]; then
+  if [[ "$DIFF_ONLY" == "1" ]]; then
     GIT_PAGER=cat git diff --no-index -- "$FINAL_LIB_ROOT" "$ACTIVE_LIB_ROOT" || true
   fi
 
