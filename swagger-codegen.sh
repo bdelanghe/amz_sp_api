@@ -38,6 +38,7 @@ LIST_API_CHANGES=0
 FORCE="${FORCE:-0}"
 [[ "$FORCE" == "1" ]] || FORCE="0"
 
+
 for arg in "$@"; do
   case "$arg" in
     --dry-run)
@@ -65,6 +66,14 @@ for arg in "$@"; do
       ;;
   esac
 done
+
+# --list-api-changes is an inspection mode: only parse the plan and report statuses.
+# It should NOT stage/diff/generate.
+if [[ "$LIST_API_CHANGES" == "1" ]]; then
+  STAGE=0
+  DIFF_ONLY=0
+  APPLY=0
+fi
 
 # Final destination for generated code. Keep this distinct from LIB_ROOT so
 # staging/diffing can't accidentally point both sides at the same directory.
@@ -179,6 +188,16 @@ has_flag() {
   local flags_csv="$1"
   local needle="$2"
   [[ ",${flags_csv}," == *",${needle},"* ]]
+}
+
+emit_api_status() {
+  local api="$1"          # canonical API id: <model>/<prefix>@<version>
+  local status="$2"       # cached | generate | skip_deprecated | skip_legacy | dry_run
+  local sha="$3"          # short or full
+
+  # Keep output very simple and stable for parsing:
+  #   <api>\t<status>\t<sha>
+  echo "$api"$'\t'"$status"$'\t'"$sha"
 }
 
 breadcrumb_path_for() {
@@ -381,14 +400,23 @@ while IFS= read -r raw_line; do
   rest2="${rest#*@}"          # version#sha
   version="${rest2%%#*}"
   sha="${rest2#*#}"
+  api_id="$model/$prefix@$version"
 
   # Honor skip flags.
   if has_flag "$flags_part" "skip_deprecated"; then
-    echo "[skip_deprecated] $model/$prefix@$version#$sha"
+    if [[ "$LIST_API_CHANGES" == "1" ]]; then
+      emit_api_status "$api_id" "skip_deprecated" "$sha"
+    else
+      echo "[skip_deprecated] $model/$prefix@$version#$sha"
+    fi
     continue
   fi
   if has_flag "$flags_part" "skip_legacy" && ! has_flag "$flags_part" "supported_legacy"; then
-    echo "[skip_legacy] $model/$prefix@$version#$sha"
+    if [[ "$LIST_API_CHANGES" == "1" ]]; then
+      emit_api_status "$api_id" "skip_legacy" "$sha"
+    else
+      echo "[skip_legacy] $model/$prefix@$version#$sha"
+    fi
     continue
   fi
 
@@ -436,16 +464,24 @@ while IFS= read -r raw_line; do
   # If we already generated this exact spec (by SHA) into the active lib root, we can skip.
   # This matters most for staged runs where we seed the stage lib from the current lib.
   if [[ "$FORCE" != "1" ]] && breadcrumb_matches "$out_name" "$sha"; then
-    if [[ "$DRY_RUN" == "1" ]]; then
-      echo "[dry-run] would skip (cached) $model/$prefix@$version#$sha -> $out_dir"
+    if [[ "$LIST_API_CHANGES" == "1" ]]; then
+      emit_api_status "$api_id" "cached" "$sha"
     else
-      echo "[skip_cached] $model/$prefix@$version#$sha (matches breadcrumb)"
+      if [[ "$DRY_RUN" == "1" ]]; then
+        echo "[dry-run] would skip (cached) $model/$prefix@$version#$sha -> $out_dir"
+      else
+        echo "[skip_cached] $model/$prefix@$version#$sha (matches breadcrumb)"
+      fi
     fi
     continue
   fi
 
   if [[ "$DRY_RUN" == "1" ]]; then
-    echo "[dry-run] would generate $spec_json -> $out_dir (module=$module_name sha=$sha)"
+    if [[ "$LIST_API_CHANGES" == "1" ]]; then
+      emit_api_status "$api_id" "dry_run" "$sha"
+    else
+      echo "[dry-run] would generate $spec_json -> $out_dir (module=$module_name sha=$sha)"
+    fi
   else
     # Compute log file path
     safe_model="${model//[^a-zA-Z0-9]/_}"
@@ -454,7 +490,11 @@ while IFS= read -r raw_line; do
     LOG_FILE="$CODEGEN_LOG_DIR/${safe_model}__${safe_prefix}__${safe_version}.log"
     mkdir -p "$CODEGEN_LOG_DIR"
 
-    echo "[generate] $spec_json -> $out_dir (module=$module_name sha=$sha log=$LOG_FILE)"
+    if [[ "$LIST_API_CHANGES" == "1" ]]; then
+      emit_api_status "$api_id" "generate" "$sha"
+    else
+      echo "[generate] $spec_json -> $out_dir (module=$module_name sha=$sha log=$LOG_FILE)"
+    fi
   fi
 
   if [[ "$DRY_RUN" != "1" ]]; then
@@ -506,6 +546,10 @@ while IFS= read -r raw_line; do
 
 done < "$PLAN_FILE"
 
+if [[ "$LIST_API_CHANGES" == "1" ]]; then
+  exit 0
+fi
+
 if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
   echo "[diff] $FINAL_LIB_ROOT <-> $ACTIVE_LIB_ROOT"
 
@@ -515,15 +559,6 @@ if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
     echo "  FINAL_LIB_ROOT=$FINAL_LIB_ROOT" >&2
     echo "  ACTIVE_LIB_ROOT=$ACTIVE_LIB_ROOT" >&2
     exit 1
-  fi
-
-  if [[ "$LIST_API_CHANGES" == "1" ]]; then
-    # List unique API modules that changed between FINAL_LIB_ROOT and ACTIVE_LIB_ROOT
-    GIT_PAGER=cat git diff --no-index --name-only -- "$FINAL_LIB_ROOT" "$ACTIVE_LIB_ROOT" \
-      | sed 's|^.*/lib/||' \
-      | sed 's|/.*||' \
-      | sort -u
-    exit 0
   fi
 
   if [[ "$NAME_ONLY" == "1" ]]; then
