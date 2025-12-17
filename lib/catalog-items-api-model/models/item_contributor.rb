@@ -1,7 +1,4 @@
-# NOTE: Generated from https://github.com/amzn/selling-partner-api-models/tree/df0f6a4d062dc27a42952c07a681d937172e38d8/models
-# NOTE: Spec: 
-# NOTE: Spec candidates: 
-# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh=begin
+=begin
 #Selling Partner API for Catalog Items
 
 #Use the Selling Partner API for Catalog Items to retrieve information about items in the Amazon catalog.  For more information, refer to the [Catalog Items API Use Case Guide](https://developer-docs.amazon.com/sp-api/docs/:catalog-items-api-v2022-04-01-use-case-guide).

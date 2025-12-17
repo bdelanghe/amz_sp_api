@@ -34,6 +34,7 @@ STAGE=0
 DIFF_ONLY=0
 APPLY=0
 NAME_ONLY=0
+LIST_API_CHANGES=0
 FORCE="${FORCE:-0}"
 [[ "$FORCE" == "1" ]] || FORCE="0"
 
@@ -55,6 +56,9 @@ for arg in "$@"; do
       ;;
     --name-only)
       NAME_ONLY=1
+      ;;
+    --list-api-changes)
+      LIST_API_CHANGES=1
       ;;
     --force)
       FORCE=1
@@ -511,6 +515,15 @@ if [[ "$DRY_RUN" != "1" && "$STAGE" == "1" ]]; then
     echo "  FINAL_LIB_ROOT=$FINAL_LIB_ROOT" >&2
     echo "  ACTIVE_LIB_ROOT=$ACTIVE_LIB_ROOT" >&2
     exit 1
+  fi
+
+  if [[ "$LIST_API_CHANGES" == "1" ]]; then
+    # List unique API modules that changed between FINAL_LIB_ROOT and ACTIVE_LIB_ROOT
+    GIT_PAGER=cat git diff --no-index --name-only -- "$FINAL_LIB_ROOT" "$ACTIVE_LIB_ROOT" \
+      | sed 's|^.*/lib/||' \
+      | sed 's|/.*||' \
+      | sort -u
+    exit 0
   fi
 
   if [[ "$NAME_ONLY" == "1" ]]; then

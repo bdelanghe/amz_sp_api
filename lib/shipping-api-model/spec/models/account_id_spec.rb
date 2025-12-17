@@ -1,7 +1,4 @@
-# NOTE: Generated from https://github.com/amzn/selling-partner-api-models/tree/df0f6a4d062dc27a42952c07a681d937172e38d8/models
-# NOTE: Spec: 
-# NOTE: Spec candidates: 
-# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh=begin
+=begin
 #Amazon Shipping API
 
 #The Amazon Shipping API is designed to support outbound shipping use cases both for orders originating on Amazon-owned marketplaces as well as external channels/marketplaces. With these APIs, you can request shipping rates, create shipments, cancel shipments, and track shipments.

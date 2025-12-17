@@ -43,3 +43,6 @@ build/
 
 # Codegen logs
 .codegen-logs/
+
+# Codegen stage (used by codegen.sh)
+.codegen-stage/

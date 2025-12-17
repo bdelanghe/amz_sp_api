@@ -1,7 +1,4 @@
-# NOTE: Generated from https://github.com/amzn/selling-partner-api-models/tree/df0f6a4d062dc27a42952c07a681d937172e38d8/models
-# NOTE: Spec: 
-# NOTE: Spec candidates: 
-# NOTE: If you need to regenerate: ./pull_models.sh && ./codegen.sh=begin
+=begin
 #The Selling Partner API for FBA inbound operations.
 
 #The Selling Partner API for Fulfillment By Amazon (FBA) Inbound. The FBA Inbound API enables building inbound workflows to create, manage, and send shipments into Amazon's fulfillment network. The API has interoperability with the Send-to-Amazon user interface.

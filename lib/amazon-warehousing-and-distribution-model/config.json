@@ -1,6 +1,6 @@
 {
-  "gemName": "GEMNAME",
-  "moduleName": "AmzSpApi::MODULENAME",
+  "gemName": "amazon-warehousing-and-distribution-model",
+  "moduleName": "AmzSpApi::AmazonWarehousingAndDistributionModel",
   "gemVersion": "0.1.0",
   "gemAuthor": "Eric Jensen",
   "gemAuthorEmail": "",
