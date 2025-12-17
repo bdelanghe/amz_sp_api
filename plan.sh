@@ -4,11 +4,60 @@ RED="\033[31m"
 GREEN="\033[32m"
 GREY="\033[90m"
 RESET="\033[0m"
+YELLOW="\033[33m"
 
+# Print with ANSI escapes enabled (portable-ish across macOS bash).
+# Use this instead of `echo -e`.
 printb() {
-  # Interpret backslash escapes reliably (ANSI colors, etc.)
-  printf '%b\n' "$1"
+  printf "%b\n" "$1"
 }
+
+# Optional: mark specific non-best versions as "supported legacy".
+# Usage (repeatable):
+#   ./plan.sh --support-legacy <model>/<prefix>@<version>
+# Example:
+#   ./plan.sh --support-legacy fulfillment-inbound-api-model/fulfillmentInbound@V0
+SUPPORTED_LEGACY_KEYS=""
+
+add_supported_legacy() {
+  local spec="$1"
+  local m p v
+
+  # Expect: model/prefix@version
+  m="${spec%%/*}"
+  p="${spec#*/}"; p="${p%@*}"
+  v="${spec##*@}"
+
+  if [[ -z "$m" || -z "$p" || -z "$v" || "$spec" != */*@* ]]; then
+    echo "Invalid --support-legacy value: '$spec'" >&2
+    echo "Expected: <model>/<prefix>@<version> (e.g. fulfillment-inbound-api-model/fulfillmentInbound@V0)" >&2
+    exit 1
+  fi
+
+  SUPPORTED_LEGACY_KEYS+="${m}|${p}|${v}"$'\n'
+}
+
+is_supported_legacy() {
+  local key="$1"
+  # Exact, whole-line match.
+  printf '%s' "$SUPPORTED_LEGACY_KEYS" | grep -Fxq "$key"
+}
+
+# Parse args (keep it simple; ignore unknown flags for now)
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --support-legacy)
+      shift
+      [[ $# -gt 0 ]] || { echo "Missing value for --support-legacy" >&2; exit 1; }
+      add_supported_legacy "$1"
+      shift
+      ;;
+    *)
+      # Ignore unknown args for forward-compat.
+      shift
+      ;;
+  esac
+done
 
 MODEL_DIRS=$(find "$MODELS_DIR" -mindepth 1 -maxdepth 1 -type d | sort)
 
@@ -125,6 +174,12 @@ for model_dir in $MODEL_DIRS; do
         continue
       fi
 
+      # Supported legacy (explicitly opted-in): yellow + label.
+      if is_supported_legacy "${model}|${prefix}|${v}"; then
+        printb "    └─ ${YELLOW}$v${RESET} (${sha}) ${YELLOW}(supported legacy)${RESET}"
+        continue
+      fi
+
       # Not deprecated
       if [[ "$leaf_count" -eq 1 ]]; then
         # Single non-deprecated leaf => green
@@ -146,7 +201,9 @@ for model_dir in $MODEL_DIRS; do
         printb "    └─ ${RED}$v${RESET} [${RED}$dep${RESET}] (${sha})"
       else
         # Not deprecated
-        if [[ "$leaf_count" -eq 1 ]]; then
+        if is_supported_legacy "${model}|${prefix}|${v}"; then
+          printb "    └─ ${YELLOW}$v${RESET} (${sha}) ${YELLOW}(supported legacy)${RESET}"
+        elif [[ "$leaf_count" -eq 1 ]]; then
           printb "    └─ ${GREEN}$v${RESET} (${sha})"
         elif [[ -n "$best_version" && "$v" == "$best_version" ]]; then
           printb "    └─ ${GREEN}$v${RESET} (${sha})"
