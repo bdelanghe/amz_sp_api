@@ -5,7 +5,7 @@ set -e
 
 TEST_DIR="test"
 MODELS_DIR="$TEST_DIR/models"
-OUTPUT_LIB="$TEST_DIR/lib_output"
+OUTPUT_LIB="tmp/lib_output"
 
 # Cleanup previous runs
 rm -rf "$OUTPUT_LIB"
