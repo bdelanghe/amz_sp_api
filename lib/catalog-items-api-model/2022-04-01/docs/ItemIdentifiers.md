@@ -1,0 +1,6 @@
+# AmzSpApi::CatalogItemsApiModel::2022_04_01::ItemIdentifiers
+
+## Properties
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+

@@ -1,0 +1,7 @@
+# AmzSpApi::FulfillmentInboundApiModel::2024_03_20::SetPackingInformationRequest
+
+## Properties
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**package_groupings** | [**Array&lt;PackageGroupingInput&gt;**](PackageGroupingInput.md) | List of packing information for the inbound plan. | 
+
