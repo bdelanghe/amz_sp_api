@@ -3,5 +3,5 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**payload** | [**CancelShipmentResult**](CancelShipmentResult.md) |  | [optional] 
+**errors** | [**ErrorList**](ErrorList.md) |  | [optional] 
 

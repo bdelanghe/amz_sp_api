@@ -1,99 +1,47 @@
-#!/bin/bash
-set -euo pipefail
+#!/bin/sh
 
-# Generate Ruby client code from pinned Amazon SP-API models.
-# Environment + prerequisites are enforced by env.sh.
+# exit on error
+set -e
 
-if [[ ! -f "./env.sh" ]]; then
-  echo "Missing ./env.sh. Run from repo root." >&2
-  exit 1
-fi
-# shellcheck disable=SC1091
-source "./env.sh"
+MODELS_DIR=${1:-../selling-partner-api-models/models}
+OUTPUT_LIB=${2:-lib}
+VERSIONED_MODELS=${VERSIONED_MODELS:-.versioned_models}
 
-# Contract inputs (exported by env.sh)
-: "${MODELS_DIR:?MODELS_DIR must be set by env.sh}"
-: "${UPSTREAM_SHA:?UPSTREAM_SHA must be set by env.sh}"
-: "${MODELS_URL:?MODELS_URL must be set by env.sh}"
-: "${CODEGEN_ARTIFACT_FILE:?CODEGEN_ARTIFACT_FILE must be set by env.sh}"
-: "${RUNTIME_SOURCE_DIR:?RUNTIME_SOURCE_DIR must be set by env.sh}"
-FORCE="${FORCE:-0}"
+# Allow invoking the script with custom model/output roots while keeping the old defaults.
+# The VERSIONED_MODELS file is optional; when present it maps relative paths to suffixes.
 
-# Guard: avoid regenerating when lib/ already matches the current upstream SHA,
-# unless FORCE=1 is explicitly set.
-if [[ -f "$CODEGEN_ARTIFACT_FILE" && "$FORCE" != "1" ]]; then
-  existing_sha="$(cat "$CODEGEN_ARTIFACT_FILE" 2>/dev/null || true)"
-  if [[ "$existing_sha" == "$UPSTREAM_SHA" ]]; then
-    echo "lib/ already generated from ${MODELS_URL}; refusing to re-run codegen without FORCE=1" >&2
-    echo "Run: FORCE=1 ./codegen.sh to regenerate anyway" >&2
-    exit 1
-  fi
-fi
+# Iterate over specs with the original single-pass find/for pattern so the script keeps its linear structure.
+for FILE in `find "$MODELS_DIR" -name "*.json"`; do
+	# Derive the API name from the swagger folder, matching the original path slicing.
+	API_NAME=`basename "$(dirname "$FILE")"`
+	RELATIVE_PATH="${FILE#"$MODELS_DIR"/}"
 
-# Start clean so deletions propagate, but preserve a couple hand-maintained files.
-KEEP_FILES=("amz_sp_api.rb" "amz_sp_api_version.rb")
+	# If file is in VERSIONED_MODELS, extract version from path:version format.
+	VERSION=$(awk -F: -v path="$RELATIVE_PATH" '$1==path {print $2; exit}' "$VERSIONED_MODELS" 2>/dev/null) || true
+	if [ -n "$VERSION" ]; then
+		# Lowercase the version so gem names stay predictable across platforms.
+		VERSION=$(printf '%s' "$VERSION" | tr '[:upper:]' '[:lower:]')
+		API_NAME="${API_NAME}-${VERSION}"
+	fi
 
-KEEP_TMP_DIR="$(mktemp -d)"
-restore_keep_files() {
-  # Always attempt to restore preserved files on exit (success or failure).
-  # This prevents a partial/failed codegen run from leaving lib/ missing hand-maintained files.
-  mkdir -p lib
-  for f in "${KEEP_FILES[@]}"; do
-    if [[ -f "$KEEP_TMP_DIR/$f" ]]; then
-      cp "$KEEP_TMP_DIR/$f" "lib/$f"
-    fi
-  done
-}
+	# Convert the kebab API name into a CamelCase module name for config templating.
+	MODULE_NAME=`echo $API_NAME | perl -pe 's/(^|-)./uc($&)/ge;s/-//g'`
 
-trap 'restore_keep_files; rm -rf "$KEEP_TMP_DIR"' EXIT
+	rm -rf "$OUTPUT_LIB/${API_NAME}"
+	mkdir -p "$OUTPUT_LIB/$API_NAME"
+	cp config.json "$OUTPUT_LIB/$API_NAME"
+	# Use sed -i.bak to stay compatible with both GNU and BSD sed, then clean up the backup.
+	sed -i.bak "s/GEMNAME/${API_NAME}/g" "$OUTPUT_LIB/${API_NAME}/config.json"
+	sed -i.bak "s/MODULENAME/${MODULE_NAME}/g" "$OUTPUT_LIB/${API_NAME}/config.json"
+	rm -f "$OUTPUT_LIB/${API_NAME}/config.json.bak"
 
-for f in "${KEEP_FILES[@]}"; do
-  if [[ -f "lib/$f" ]]; then
-    cp "lib/$f" "$KEEP_TMP_DIR/$f"
-  fi
+	# Run swagger-codegen with quoted paths to avoid issues with spaces/special chars.
+	swagger-codegen generate -i "$FILE" -l ruby -c "$OUTPUT_LIB/${API_NAME}/config.json" -o "$OUTPUT_LIB/$API_NAME"
+
+	mv "$OUTPUT_LIB/${API_NAME}/lib/${API_NAME}.rb" "$OUTPUT_LIB/"
+	# Hoist and flatten the generated lib folder so downstream consumers see the same layout.
+	mv "$OUTPUT_LIB/${API_NAME}/lib/${API_NAME}"/* "$OUTPUT_LIB/${API_NAME}"
+	# Clean up extra scaffolding the generator creates but we don't need.
+	rm -r "$OUTPUT_LIB/${API_NAME}/lib"
+	rm "$OUTPUT_LIB/${API_NAME}"/*.gemspec
 done
-
-rm -rf lib
-mkdir -p lib
-
-# Generate code for each API spec
-find "$MODELS_DIR" -name "*.json" -print0 | while IFS= read -r -d '' FILE; do
-  FILE_PATH="${FILE#$MODELS_DIR/}"
-  API_NAME="${FILE_PATH%%/*}"
-
-  # Amazon Seller Central still uses Fulfillment Inbound API v0.
-  # The models repo contains both v0 and v1; keep them distinct.
-  if [[ "$API_NAME" == "fulfillment-inbound-api-model" && "$FILE" == *V0.json ]]; then
-    API_NAME="${API_NAME}-V0"
-  fi
-
-  MODULE_NAME="$(echo "$API_NAME" | perl -pe 's/(^|-)./uc($&)/ge;s/-//g')"
-
-  rm -rf "lib/${API_NAME}"
-  mkdir -p "lib/${API_NAME}"
-  cp config.json "lib/${API_NAME}/config.json"
-
-  gsed -i "s/GEMNAME/${API_NAME}/g" "lib/${API_NAME}/config.json"
-  gsed -i "s/MODULENAME/${MODULE_NAME}/g" "lib/${API_NAME}/config.json"
-
-  swagger-codegen generate \
-    -i "$FILE" \
-    -l ruby \
-    -c "lib/${API_NAME}/config.json" \
-    -o "lib/${API_NAME}"
-
-  mv "lib/${API_NAME}/lib/${API_NAME}.rb" lib/
-  mv "lib/${API_NAME}/lib/${API_NAME}/"* "lib/${API_NAME}"
-  rm -rf "lib/${API_NAME}/lib"
-  rm -f "lib/${API_NAME}/"*.gemspec
-done
-
-# Restore preserved files (if they existed before cleanup)
-restore_keep_files
-
-# Note: post-generation normalization (hoisting + provenance headers)
-# is handled separately by hoist.sh.
-
-# Record provenance so subsequent runs can detect an identical upstream SHA
-mkdir -p "$(dirname "$CODEGEN_ARTIFACT_FILE")"
-echo "$UPSTREAM_SHA" > "$CODEGEN_ARTIFACT_FILE"

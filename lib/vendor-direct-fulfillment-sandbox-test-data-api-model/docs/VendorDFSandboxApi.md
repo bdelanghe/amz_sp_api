@@ -19,7 +19,7 @@ Submits a request to generate test order data for Vendor Direct Fulfillment API 
 require 'vendor-direct-fulfillment-sandbox-test-data-api-model'
 
 api_instance = AmzSpApi::VendorDirectFulfillmentSandboxTestDataApiModel::VendorDFSandboxApi.new
-body = AmzSpApi::VendorDirectFulfillmentSandboxTestDataApiModel::GenerateOrderScenarioRequest.new # GenerateOrderScenarioRequest | The request payload containing parameters for generating test order data scenarios.
+body = AmzSpApi::VendorDirectFulfillmentSandboxTestDataApiModel::GenerateOrderScenarioRequest.new # GenerateOrderScenarioRequest | 
 
 
 begin
@@ -34,7 +34,7 @@ end
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | [**GenerateOrderScenarioRequest**](GenerateOrderScenarioRequest.md)| The request payload containing parameters for generating test order data scenarios. | 
+ **body** | [**GenerateOrderScenarioRequest**](GenerateOrderScenarioRequest.md)|  | 
 
 ### Return type
 
