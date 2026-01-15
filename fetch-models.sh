@@ -26,5 +26,4 @@ else
 fi
 
 MODELS_SHA_ACTUAL=$(cd "$MODELS_REPO_DIR" && git rev-parse --short HEAD)
-MODELS_SHA_FULL=$(cd "$MODELS_REPO_DIR" && git rev-parse HEAD)
-echo "✓ models ready $MODELS_DIR @${MODELS_SHA_ACTUAL} https://github.com/amzn/selling-partner-api-models/commit/${MODELS_SHA_FULL}"
+echo "✓ models ready $MODELS_DIR (amzn/selling-partner-api-models@${MODELS_SHA_ACTUAL}, $MODELS_SHA)"
