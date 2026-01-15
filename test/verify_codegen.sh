@@ -35,9 +35,9 @@ verify_api() {
 }
 
 # Verify models from test/models
-# v0.json should become fulfillment-inbound-api-model-V0
+# fulfillmentInboundV0.json should become fulfillment-inbound-api-model-V0
 verify_api "fulfillment-inbound-api-model-V0" "FulfillmentInboundApiModelV0"
-# v1.json should become fulfillment-inbound-api-model
+# fulfillmentInbound_2024-03-20.json should become fulfillment-inbound-api-model
 verify_api "fulfillment-inbound-api-model" "FulfillmentInboundApiModel"
 
 echo "VERIFICATION SUCCESSFUL!"
