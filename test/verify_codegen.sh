@@ -1,9 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-#!/bin/bash
-set -euo pipefail
-
 fail() {
   echo "FAIL: $1" >&2
   exit 1
@@ -30,20 +27,20 @@ v0|${API}-v0|AmzSpApi::FulfillmentInboundApiModelV0
 EOF
 )
 
-echo "test: setup"
 rm -rf "$OUTPUT_LIB"
 mkdir -p "$OUTPUT_LIB/$API"
 touch "$OUTPUT_LIB/$API/legacy.marker"
-
-echo "test: validate fixtures"
+echo "✓ setup complete"
 assert_file "$MODELS_DIR/$API/fulfillmentInboundV0.json"
 assert_file "$MODELS_DIR/$API/fulfillmentInbound_2024-03-20.json"
 [[ ! -f "$MODELS_DIR/$API/v0.json" ]] || fail "Legacy fixture should not exist: $MODELS_DIR/$API/v0.json"
 [[ ! -f "$MODELS_DIR/$API/2024-03-20.json" ]] || fail "Legacy fixture should not exist: $MODELS_DIR/$API/2024-03-20.json"
 assert_grep "^$API/fulfillmentInboundV0.json:V0$" "$VERSIONED_MODELS"
+echo "✓ fixtures validated"
 
-echo "test: run codegen"
-VERSIONED_MODELS="$VERSIONED_MODELS" "$BIN" "$MODELS_DIR" "$OUTPUT_LIB"
+# Silence swagger-codegen’s chatter so the test output stays focused on our phase markers.
+VERSIONED_MODELS="$VERSIONED_MODELS" "$BIN" "$MODELS_DIR" "$OUTPUT_LIB" >/dev/null
+echo "✓ codegen executed"
 
 [[ ! -f "$OUTPUT_LIB/$API/legacy.marker" ]] || fail "Old artifacts were not cleared"
 
@@ -66,7 +63,6 @@ verify_one() {
   fi
 }
 
-echo "test: verify outputs"
 while IFS='|' read -r version gem_name module_name; do
   verify_one "$version" "$gem_name" "$module_name"
 done <<< "$EXPECTATIONS"
@@ -74,4 +70,5 @@ done <<< "$EXPECTATIONS"
 [[ ! -d "$OUTPUT_LIB/$API/v0" ]] || fail "Nested v0 directory should not exist"
 [[ ! -d "$OUTPUT_LIB/$API/2024-03-20" ]] || fail "Nested 2024-03-20 directory should not exist"
 
-echo "test: ok"
+echo "✓ outputs verified"
+echo "✓ test passed"
