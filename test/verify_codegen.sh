@@ -1,69 +1,86 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# Codegen Verification Test
-#
-# This script verifies that codegen.sh correctly handles multiple versions of the same API.
-#
-# Structure:
-# - test/fixtures/models/: Contains mock OpenAPI specs for testing.
-# - test/verify_codegen.sh: This test script.
-#
-# Running the test:
-# From the project root, run:
-# ./test/verify_codegen.sh
-#
-# The script will:
-# 1. Create a temporary output directory.
-# 2. Run codegen.sh using the mock models.
-# 3. Verify that:
-#    - Separate directories are created for each version (e.g., v0, 2024-03-20).
-#    - The generated Ruby code uses versioned namespaces (e.g., AmzSpApi::FulfillmentInboundApiModel::V0).
-#    - The bootstrapper is updated correctly to require all versions.
+fail() {
+  echo "FAIL: $1" >&2
+  exit 1
+}
 
 TEST_DIR="test"
-MODELS_DIR="$TEST_DIR/fixtures/models"
+MODELS_DIR="$TEST_DIR/models"
 OUTPUT_LIB="tmp/lib_output"
+API="fulfillment-inbound-api-model"
+BIN="./codegen.sh"
+VERSIONS=("v0" "2024-03-20")
 
-# Cleanup previous runs
+expected_gem_name_for_version() {
+  local version=$1
+  case "$version" in
+    v0) echo "${API}-v0" ;;
+    2024-03-20) echo "${API}" ;;
+    *) fail "Unknown expected gem name for version $version" ;;
+  esac
+}
+
+expected_module_name_for_version() {
+  local version=$1
+  case "$version" in
+    v0) echo "AmzSpApi::FulfillmentInboundApiModelV0" ;;
+    2024-03-20) echo "AmzSpApi::FulfillmentInboundApiModel" ;;
+    *) fail "Unknown expected module name for version $version" ;;
+  esac
+}
+
+cleanup() {
+  rm -rf "$OUTPUT_LIB"
+}
+
+trap cleanup EXIT INT TERM
+
+echo "Preparing output directory..."
 rm -rf "$OUTPUT_LIB"
-mkdir -p "$OUTPUT_LIB"
+mkdir -p "$OUTPUT_LIB/$API"
+touch "$OUTPUT_LIB/$API/legacy.marker"
 
 echo "Running codegen.sh..."
-./codegen.sh "$MODELS_DIR" "$OUTPUT_LIB"
+"$BIN" "$MODELS_DIR" "$OUTPUT_LIB"
 
-# Helper to verify API structure and namespacing
-verify_api() {
-  local api=$1
-  local version=$2
-  local module=$3
-  local base_dir="$OUTPUT_LIB/$api/$version"
-  local entry="$base_dir/$api.rb"
+echo "Step 1: previous artifacts removed..."
+[ ! -f "$OUTPUT_LIB/$API/legacy.marker" ] || fail "Old artifacts were not cleared before generation"
 
-  echo "Verifying $api v$version..."
+verify_version_output() {
+  local version=$1
+  local gem_name
+  gem_name=$(expected_gem_name_for_version "$version")
+  local api_dir="$OUTPUT_LIB/$gem_name"
+  local config="$api_dir/config.json"
+  local module_name
+  module_name=$(expected_module_name_for_version "$version")
 
-  [ -d "$base_dir" ] || { echo "FAIL: $base_dir missing"; exit 1; }
-  [ -f "$entry" ] || { echo "FAIL: $entry missing"; exit 1; }
-  [ -f "$base_dir/api_client.rb" ] || { echo "FAIL: $base_dir/api_client.rb missing"; exit 1; }
+  echo "Verifying $gem_name ($version)..."
+  [ -d "$api_dir" ] || fail "$api_dir missing"
+  [ -f "$config" ] || fail "$config missing"
+  grep -q "\"gemName\": \"$gem_name\"" "$config" || fail "gemName placeholder not replaced for $version"
+  grep -q "\"moduleName\": \"$module_name\"" "$config" || fail "moduleName placeholder not replaced for $version"
 
-  local expected_namespace="module AmzSpApi::${module}"
-  if ! grep -q "$expected_namespace" "$base_dir/api_client.rb"; then
-    echo "FAIL: $base_dir/api_client.rb does not contain $expected_namespace"
-    exit 1
+  [ -f "$OUTPUT_LIB/$gem_name.rb" ] || fail "$OUTPUT_LIB/$gem_name.rb missing"
+  
+  local api_client="$api_dir/api/default_api.rb"
+  [ -f "$api_client" ] || fail "$api_client missing"
+  grep -q "$module_name" "$api_client" || fail "$api_client does not declare $module_name"
+
+  [ ! -d "$api_dir/lib" ] || fail "Nested lib directory still present for $version"
+  if find "$api_dir" -maxdepth 1 -name '*.gemspec' -print -quit | grep -q .; then
+    fail "Gemspec not removed for $version"
   fi
 }
 
-# Verify models from test/fixtures/models
-# fulfillmentInboundV0.json should become fulfillment-inbound-api-model/v0
-verify_api "fulfillment-inbound-api-model" "v0" "FulfillmentInboundApiModel::V0"
-# fulfillmentInbound_2024-03-20.json should become fulfillment-inbound-api-model/2024-03-20
-verify_api "fulfillment-inbound-api-model" "2024-03-20" "FulfillmentInboundApiModel::V2024_03_20"
+for version in "${VERSIONS[@]}"; do
+  verify_version_output "$version"
+done
 
-# Verify bootstrapper
-BOOTSTRAPPER="$OUTPUT_LIB/fulfillment-inbound-api-model.rb"
-echo "Verifying bootstrapper $BOOTSTRAPPER..."
-[ -f "$BOOTSTRAPPER" ] || { echo "FAIL: $BOOTSTRAPPER missing"; exit 1; }
-grep -q "require 'fulfillment-inbound-api-model/v0/fulfillment-inbound-api-model'" "$BOOTSTRAPPER" || { echo "FAIL: v0 require missing in bootstrapper"; exit 1; }
-grep -q "require 'fulfillment-inbound-api-model/2024-03-20/fulfillment-inbound-api-model'" "$BOOTSTRAPPER" || { echo "FAIL: 2024-03-20 require missing in bootstrapper"; exit 1; }
+echo "Step 2: verify no nested versions..."
+[ ! -d "$OUTPUT_LIB/$API/v0" ] || fail "Nested v0 directory should not exist"
+[ ! -d "$OUTPUT_LIB/$API/2024-03-20" ] || fail "Nested 2024-03-20 directory should not exist"
 
 echo "VERIFICATION SUCCESSFUL!"
