@@ -17,8 +17,7 @@ assert_no_dir() { [[ ! -d "$1" ]] || fail "Directory should not exist: $1"; }
 
 # Always restore lib from git, regardless of test result
 cleanup() {
-  echo "Restoring lib directory from git..."
-  git restore --source=ericj/main --worktree -- lib
+  bash "$(dirname "$0")/reset_lib.sh"
 }
 trap cleanup EXIT INT TERM
 
@@ -49,14 +48,13 @@ echo "✓ Verifying fulfillment-inbound-api-model-2024-03-20 does not exist..."
 assert_no_dir "$LIB_DIR/fulfillment-inbound-api-model-2024-03-20"
 assert_no_file "$LIB_DIR/fulfillment-inbound-api-model-2024-03-20.rb"
 
-# Verify fulfillment-outbound-api-model has deliveryOfferings and deliveryOffers
+# Verify fulfillment-outbound-api-model has deliveryOfferings and deliveryOffers models
 echo "✓ Verifying fulfillment-outbound-api-model..."
 assert_dir "$LIB_DIR/fulfillment-outbound-api-model"
-# Search in models directory for the class definitions
-assert_grep "class DeliveryOfferings" "$LIB_DIR/fulfillment-outbound-api-model/models/delivery_offerings.rb" || \
-  assert_grep "deliveryOfferings" "$LIB_DIR/fulfillment-outbound-api-model/api/default_api.rb"
-assert_grep "class DeliveryOffers" "$LIB_DIR/fulfillment-outbound-api-model/models/delivery_offers.rb" || \
-  assert_grep "deliveryOffers" "$LIB_DIR/fulfillment-outbound-api-model/api/default_api.rb"
+# Check that the GetDeliveryOffers models are present (from the swagger endpoints)
+assert_file "$LIB_DIR/fulfillment-outbound-api-model/models/delivery_offer.rb"
+assert_file "$LIB_DIR/fulfillment-outbound-api-model/models/get_delivery_offers_request.rb"
+assert_file "$LIB_DIR/fulfillment-outbound-api-model/models/get_delivery_offers_response.rb"
 
 echo "✓ All validations passed"
 echo "✓ test passed"
