@@ -12,6 +12,11 @@ OUTPUT_LIB="tmp/lib_output"
 API="fulfillment-inbound-api-model"
 BIN="./codegen.sh"
 VERSIONS=("v0" "2024-03-20")
+VERSIONED_MODELS="${VERSIONED_MODELS:-.versioned_models}"
+FIXTURE_V0="$MODELS_DIR/$API/fulfillmentInboundV0.json"
+FIXTURE_LATEST="$MODELS_DIR/$API/fulfillmentInbound_2024-03-20.json"
+LEGACY_V0="$MODELS_DIR/$API/v0.json"
+LEGACY_LATEST="$MODELS_DIR/$API/2024-03-20.json"
 
 expected_gem_name_for_version() {
   local version=$1
@@ -42,8 +47,16 @@ rm -rf "$OUTPUT_LIB"
 mkdir -p "$OUTPUT_LIB/$API"
 touch "$OUTPUT_LIB/$API/legacy.marker"
 
+echo "Validating fixtures..."
+[ -f "$FIXTURE_V0" ] || fail "Missing fixture $FIXTURE_V0"
+[ -f "$FIXTURE_LATEST" ] || fail "Missing fixture $FIXTURE_LATEST"
+[ ! -f "$LEGACY_V0" ] || fail "Legacy fixture should not exist: $LEGACY_V0"
+[ ! -f "$LEGACY_LATEST" ] || fail "Legacy fixture should not exist: $LEGACY_LATEST"
+grep -q "^$API/fulfillmentInboundV0.json:V0$" "$VERSIONED_MODELS" || \
+  fail "Missing V0 mapping in $VERSIONED_MODELS"
+
 echo "Running codegen.sh..."
-"$BIN" "$MODELS_DIR" "$OUTPUT_LIB"
+VERSIONED_MODELS="$VERSIONED_MODELS" "$BIN" "$MODELS_DIR" "$OUTPUT_LIB"
 
 echo "Step 1: previous artifacts removed..."
 [ ! -f "$OUTPUT_LIB/$API/legacy.marker" ] || fail "Old artifacts were not cleared before generation"

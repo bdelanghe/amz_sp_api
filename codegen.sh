@@ -12,16 +12,20 @@ for FILE in `find "$MODELS_DIR" -name "*.json"`; do
 	RELATIVE_PATH="${FILE#"$MODELS_DIR"/}"
 
 	# If file is in VERSIONED_MODELS, extract version from path:version format.
-	VERSION=$(grep "^$RELATIVE_PATH:" "$VERSIONED_MODELS" 2>/dev/null | cut -d: -f2) && \
-	  API_NAME="${API_NAME}-${VERSION}" || true
+	VERSION=$(awk -F: -v path="$RELATIVE_PATH" '$1==path {print $2; exit}' "$VERSIONED_MODELS" 2>/dev/null) || true
+	if [ -n "$VERSION" ]; then
+	VERSION=$(printf '%s' "$VERSION" | tr '[:upper:]' '[:lower:]')
+		API_NAME="${API_NAME}-${VERSION}"
+	fi
 
 	MODULE_NAME=`echo $API_NAME | perl -pe 's/(^|-)./uc($&)/ge;s/-//g'`
 
 	rm -rf "$OUTPUT_LIB/${API_NAME}"
 	mkdir -p "$OUTPUT_LIB/$API_NAME"
 	cp config.json "$OUTPUT_LIB/$API_NAME"
-	sed -i '' "s/GEMNAME/${API_NAME}/g" "$OUTPUT_LIB/${API_NAME}/config.json"
-	sed -i '' "s/MODULENAME/${MODULE_NAME}/g" "$OUTPUT_LIB/${API_NAME}/config.json"
+	sed -i.bak "s/GEMNAME/${API_NAME}/g" "$OUTPUT_LIB/${API_NAME}/config.json"
+	sed -i.bak "s/MODULENAME/${MODULE_NAME}/g" "$OUTPUT_LIB/${API_NAME}/config.json"
+	rm -f "$OUTPUT_LIB/${API_NAME}/config.json.bak"
 
 	swagger-codegen generate -i "$FILE" -l ruby -c "$OUTPUT_LIB/${API_NAME}/config.json" -o "$OUTPUT_LIB/$API_NAME"
 
