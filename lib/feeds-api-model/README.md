@@ -66,7 +66,7 @@ rescue AmzSpApi::FeedsApiModel::ApiError => e
 end
 
 api_instance = AmzSpApi::FeedsApiModel::FeedsApi.new
-body = AmzSpApi::FeedsApiModel::CreateFeedSpecification.new # CreateFeedSpecification | Information required to create the feed.
+body = AmzSpApi::FeedsApiModel::CreateFeedSpecification.new # CreateFeedSpecification | 
 
 
 begin
@@ -77,7 +77,7 @@ rescue AmzSpApi::FeedsApiModel::ApiError => e
 end
 
 api_instance = AmzSpApi::FeedsApiModel::FeedsApi.new
-body = AmzSpApi::FeedsApiModel::CreateFeedDocumentSpecification.new # CreateFeedDocumentSpecification | Specifies the content type for the createFeedDocument operation.
+body = AmzSpApi::FeedsApiModel::CreateFeedDocumentSpecification.new # CreateFeedDocumentSpecification | 
 
 
 begin

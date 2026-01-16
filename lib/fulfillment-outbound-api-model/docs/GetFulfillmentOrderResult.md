@@ -8,5 +8,4 @@ Name | Type | Description | Notes
 **fulfillment_shipments** | [**FulfillmentShipmentList**](FulfillmentShipmentList.md) |  | [optional] 
 **return_items** | [**ReturnItemList**](ReturnItemList.md) |  | 
 **return_authorizations** | [**ReturnAuthorizationList**](ReturnAuthorizationList.md) |  | 
-**payment_information** | [**PaymentInformationList**](PaymentInformationList.md) |  | [optional] 
 
