@@ -57,64 +57,6 @@ require 'fulfillment-inbound-api-model'
 
 api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
 shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
-need_by_date = Date.parse('2013-10-20') # Date | Date that the shipment must arrive at the Amazon fulfillment center to avoid delivery promise breaks for pre-ordered items. Must be in YYYY-MM-DD format. The response to the getPreorderInfo operation returns this value.
-marketplace_id = 'marketplace_id_example' # String | A marketplace identifier. Specifies the marketplace the shipment is tied to.
-
-
-begin
-  result = api_instance.confirm_preorder(shipment_id, need_by_date, marketplace_id)
-  p result
-rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
-  puts "Exception when calling FbaInboundApi->confirm_preorder: #{e}"
-end
-
-api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
-
-
-begin
-  result = api_instance.confirm_transport(shipment_id)
-  p result
-rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
-  puts "Exception when calling FbaInboundApi->confirm_transport: #{e}"
-end
-
-api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-body = AmzSpApi::FulfillmentInboundApiModel::InboundShipmentRequest.new # InboundShipmentRequest | 
-shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
-
-
-begin
-  result = api_instance.create_inbound_shipment(body, shipment_id)
-  p result
-rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
-  puts "Exception when calling FbaInboundApi->create_inbound_shipment: #{e}"
-end
-
-api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-body = AmzSpApi::FulfillmentInboundApiModel::CreateInboundShipmentPlanRequest.new # CreateInboundShipmentPlanRequest | 
-
-
-begin
-  result = api_instance.create_inbound_shipment_plan(body)
-  p result
-rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
-  puts "Exception when calling FbaInboundApi->create_inbound_shipment_plan: #{e}"
-end
-
-api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
-
-
-begin
-  result = api_instance.estimate_transport(shipment_id)
-  p result
-rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
-  puts "Exception when calling FbaInboundApi->estimate_transport: #{e}"
-end
-
-api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
 
 
 begin
@@ -125,26 +67,12 @@ rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
 end
 
 api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-marketplace_id = 'marketplace_id_example' # String | A marketplace identifier. Specifies the marketplace where the product would be stored.
-opts = { 
-  seller_sku_list: ['seller_sku_list_example'], # Array<String> | A list of SellerSKU values. Used to identify items for which you want inbound guidance for shipment to Amazon's fulfillment network. Note: SellerSKU is qualified by the SellerId, which is included with every Selling Partner API operation that you submit. If you specify a SellerSKU that identifies a variation parent ASIN, this operation returns an error. A variation parent ASIN represents a generic product that cannot be sold. Variation child ASINs represent products that have specific characteristics (such as size and color) and can be sold. 
-  asin_list: ['asin_list_example'] # Array<String> | A list of ASIN values. Used to identify items for which you want inbound guidance for shipment to Amazon's fulfillment network. Note: If you specify a ASIN that identifies a variation parent ASIN, this operation returns an error. A variation parent ASIN represents a generic product that cannot be sold. Variation child ASINs represent products that have specific characteristics (such as size and color) and can be sold.
-}
-
-begin
-  result = api_instance.get_inbound_guidance(marketplace_id, opts)
-  p result
-rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
-  puts "Exception when calling FbaInboundApi->get_inbound_guidance: #{e}"
-end
-
-api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
 shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
 page_type = 'page_type_example' # String | The page type to use to print the labels. Submitting a PageType value that is not supported in your marketplace returns an error.
 label_type = 'label_type_example' # String | The type of labels requested. 
 opts = { 
   number_of_packages: 56, # Integer | The number of packages in the shipment.
-  package_labels_to_print: ['package_labels_to_print_example'], # Array<String> | A list of identifiers that specify packages for which you want package labels printed.  Must match CartonId values previously passed using the FBA Inbound Shipment Carton Information Feed. If not, the operation returns the IncorrectPackageIdentifier error code.
+  package_labels_to_print: ['package_labels_to_print_example'], # Array<String> | A list of identifiers that specify packages for which you want package labels printed.  If you provide box content information with the [FBA Inbound Shipment Carton Information Feed](https://developer-docs.amazon.com/sp-api/docs/fulfillment-by-amazon-feed-type-values#fba-inbound-shipment-carton-information-feed), then `PackageLabelsToPrint` must match the `CartonId` values you provide through that feed. If you provide box content information with the Fulfillment Inbound API v2024-03-20, then `PackageLabelsToPrint` must match the `boxID` values from the [`listShipmentBoxes`](https://developer-docs.amazon.com/sp-api/reference/listshipmentboxes) response. If these values do not match as required, the operation returns the `IncorrectPackageIdentifier` error code.
   number_of_pallets: 56, # Integer | The number of pallets in the shipment. This returns four identical labels for each pallet.
   page_size: 56, # Integer | The page size for paginating through the total packages' labels. This is a required parameter for Non-Partnered LTL Shipments. Max value:1000.
   page_start_index: 56 # Integer | The page start index for paginating through the total packages' labels. This is a required parameter for Non-Partnered LTL Shipments.
@@ -155,18 +83,6 @@ begin
   p result
 rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
   puts "Exception when calling FbaInboundApi->get_labels: #{e}"
-end
-
-api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
-marketplace_id = 'marketplace_id_example' # String | A marketplace identifier. Specifies the marketplace the shipment is tied to.
-
-
-begin
-  result = api_instance.get_preorder_info(shipment_id, marketplace_id)
-  p result
-rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
-  puts "Exception when calling FbaInboundApi->get_preorder_info: #{e}"
 end
 
 api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
@@ -201,11 +117,12 @@ end
 
 api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
 shipment_id = 'shipment_id_example' # String | A shipment identifier used for selecting items in a specific inbound shipment.
-marketplace_id = 'marketplace_id_example' # String | A marketplace identifier. Specifies the marketplace where the product would be stored.
-
+opts = { 
+  marketplace_id: 'marketplace_id_example' # String | Deprecated. Do not use.
+}
 
 begin
-  result = api_instance.get_shipment_items_by_shipment_id(shipment_id, marketplace_id)
+  result = api_instance.get_shipment_items_by_shipment_id(shipment_id, opts)
   p result
 rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
   puts "Exception when calling FbaInboundApi->get_shipment_items_by_shipment_id: #{e}"
@@ -228,52 +145,6 @@ begin
 rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
   puts "Exception when calling FbaInboundApi->get_shipments: #{e}"
 end
-
-api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
-
-
-begin
-  result = api_instance.get_transport_details(shipment_id)
-  p result
-rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
-  puts "Exception when calling FbaInboundApi->get_transport_details: #{e}"
-end
-
-api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-body = AmzSpApi::FulfillmentInboundApiModel::PutTransportDetailsRequest.new # PutTransportDetailsRequest | 
-shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
-
-
-begin
-  result = api_instance.put_transport_details(body, shipment_id)
-  p result
-rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
-  puts "Exception when calling FbaInboundApi->put_transport_details: #{e}"
-end
-
-api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-body = AmzSpApi::FulfillmentInboundApiModel::InboundShipmentRequest.new # InboundShipmentRequest | 
-shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
-
-
-begin
-  result = api_instance.update_inbound_shipment(body, shipment_id)
-  p result
-rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
-  puts "Exception when calling FbaInboundApi->update_inbound_shipment: #{e}"
-end
-
-api_instance = AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi.new
-shipment_id = 'shipment_id_example' # String | A shipment identifier originally returned by the createInboundShipmentPlan operation.
-
-
-begin
-  result = api_instance.void_transport(shipment_id)
-  p result
-rescue AmzSpApi::FulfillmentInboundApiModel::ApiError => e
-  puts "Exception when calling FbaInboundApi->void_transport: #{e}"
-end
 ```
 
 ## Documentation for API Endpoints
@@ -282,28 +153,15 @@ All URIs are relative to *https://sellingpartnerapi-na.amazon.com/*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**confirm_preorder**](docs/FbaInboundApi.md#confirm_preorder) | **PUT** /fba/inbound/v0/shipments/{shipmentId}/preorder/confirm | 
-*AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**confirm_transport**](docs/FbaInboundApi.md#confirm_transport) | **POST** /fba/inbound/v0/shipments/{shipmentId}/transport/confirm | 
-*AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**create_inbound_shipment**](docs/FbaInboundApi.md#create_inbound_shipment) | **POST** /fba/inbound/v0/shipments/{shipmentId} | 
-*AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**create_inbound_shipment_plan**](docs/FbaInboundApi.md#create_inbound_shipment_plan) | **POST** /fba/inbound/v0/plans | 
-*AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**estimate_transport**](docs/FbaInboundApi.md#estimate_transport) | **POST** /fba/inbound/v0/shipments/{shipmentId}/transport/estimate | 
 *AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**get_bill_of_lading**](docs/FbaInboundApi.md#get_bill_of_lading) | **GET** /fba/inbound/v0/shipments/{shipmentId}/billOfLading | 
-*AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**get_inbound_guidance**](docs/FbaInboundApi.md#get_inbound_guidance) | **GET** /fba/inbound/v0/itemsGuidance | 
 *AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**get_labels**](docs/FbaInboundApi.md#get_labels) | **GET** /fba/inbound/v0/shipments/{shipmentId}/labels | 
-*AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**get_preorder_info**](docs/FbaInboundApi.md#get_preorder_info) | **GET** /fba/inbound/v0/shipments/{shipmentId}/preorder | 
 *AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**get_prep_instructions**](docs/FbaInboundApi.md#get_prep_instructions) | **GET** /fba/inbound/v0/prepInstructions | 
 *AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**get_shipment_items**](docs/FbaInboundApi.md#get_shipment_items) | **GET** /fba/inbound/v0/shipmentItems | 
 *AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**get_shipment_items_by_shipment_id**](docs/FbaInboundApi.md#get_shipment_items_by_shipment_id) | **GET** /fba/inbound/v0/shipments/{shipmentId}/items | 
 *AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**get_shipments**](docs/FbaInboundApi.md#get_shipments) | **GET** /fba/inbound/v0/shipments | 
-*AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**get_transport_details**](docs/FbaInboundApi.md#get_transport_details) | **GET** /fba/inbound/v0/shipments/{shipmentId}/transport | 
-*AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**put_transport_details**](docs/FbaInboundApi.md#put_transport_details) | **PUT** /fba/inbound/v0/shipments/{shipmentId}/transport | 
-*AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**update_inbound_shipment**](docs/FbaInboundApi.md#update_inbound_shipment) | **PUT** /fba/inbound/v0/shipments/{shipmentId} | 
-*AmzSpApi::FulfillmentInboundApiModel::FbaInboundApi* | [**void_transport**](docs/FbaInboundApi.md#void_transport) | **POST** /fba/inbound/v0/shipments/{shipmentId}/transport/void | 
 
 ## Documentation for Models
 
- - [AmzSpApi::FulfillmentInboundApiModel::ASINInboundGuidance](docs/ASINInboundGuidance.md)
- - [AmzSpApi::FulfillmentInboundApiModel::ASINInboundGuidanceList](docs/ASINInboundGuidanceList.md)
  - [AmzSpApi::FulfillmentInboundApiModel::ASINPrepInstructions](docs/ASINPrepInstructions.md)
  - [AmzSpApi::FulfillmentInboundApiModel::ASINPrepInstructionsList](docs/ASINPrepInstructionsList.md)
  - [AmzSpApi::FulfillmentInboundApiModel::Address](docs/Address.md)
@@ -315,111 +173,39 @@ Class | Method | HTTP request | Description
  - [AmzSpApi::FulfillmentInboundApiModel::BillOfLadingDownloadURL](docs/BillOfLadingDownloadURL.md)
  - [AmzSpApi::FulfillmentInboundApiModel::BoxContentsFeeDetails](docs/BoxContentsFeeDetails.md)
  - [AmzSpApi::FulfillmentInboundApiModel::BoxContentsSource](docs/BoxContentsSource.md)
- - [AmzSpApi::FulfillmentInboundApiModel::CommonTransportResult](docs/CommonTransportResult.md)
- - [AmzSpApi::FulfillmentInboundApiModel::Condition](docs/Condition.md)
- - [AmzSpApi::FulfillmentInboundApiModel::ConfirmPreorderResponse](docs/ConfirmPreorderResponse.md)
- - [AmzSpApi::FulfillmentInboundApiModel::ConfirmPreorderResult](docs/ConfirmPreorderResult.md)
- - [AmzSpApi::FulfillmentInboundApiModel::ConfirmTransportResponse](docs/ConfirmTransportResponse.md)
- - [AmzSpApi::FulfillmentInboundApiModel::Contact](docs/Contact.md)
- - [AmzSpApi::FulfillmentInboundApiModel::CreateInboundShipmentPlanRequest](docs/CreateInboundShipmentPlanRequest.md)
- - [AmzSpApi::FulfillmentInboundApiModel::CreateInboundShipmentPlanResponse](docs/CreateInboundShipmentPlanResponse.md)
- - [AmzSpApi::FulfillmentInboundApiModel::CreateInboundShipmentPlanResult](docs/CreateInboundShipmentPlanResult.md)
  - [AmzSpApi::FulfillmentInboundApiModel::CurrencyCode](docs/CurrencyCode.md)
  - [AmzSpApi::FulfillmentInboundApiModel::DateStringType](docs/DateStringType.md)
- - [AmzSpApi::FulfillmentInboundApiModel::Dimensions](docs/Dimensions.md)
  - [AmzSpApi::FulfillmentInboundApiModel::Error](docs/Error.md)
  - [AmzSpApi::FulfillmentInboundApiModel::ErrorList](docs/ErrorList.md)
  - [AmzSpApi::FulfillmentInboundApiModel::ErrorReason](docs/ErrorReason.md)
- - [AmzSpApi::FulfillmentInboundApiModel::EstimateTransportResponse](docs/EstimateTransportResponse.md)
  - [AmzSpApi::FulfillmentInboundApiModel::GetBillOfLadingResponse](docs/GetBillOfLadingResponse.md)
- - [AmzSpApi::FulfillmentInboundApiModel::GetInboundGuidanceResponse](docs/GetInboundGuidanceResponse.md)
- - [AmzSpApi::FulfillmentInboundApiModel::GetInboundGuidanceResult](docs/GetInboundGuidanceResult.md)
  - [AmzSpApi::FulfillmentInboundApiModel::GetLabelsResponse](docs/GetLabelsResponse.md)
- - [AmzSpApi::FulfillmentInboundApiModel::GetPreorderInfoResponse](docs/GetPreorderInfoResponse.md)
- - [AmzSpApi::FulfillmentInboundApiModel::GetPreorderInfoResult](docs/GetPreorderInfoResult.md)
  - [AmzSpApi::FulfillmentInboundApiModel::GetPrepInstructionsResponse](docs/GetPrepInstructionsResponse.md)
  - [AmzSpApi::FulfillmentInboundApiModel::GetPrepInstructionsResult](docs/GetPrepInstructionsResult.md)
  - [AmzSpApi::FulfillmentInboundApiModel::GetShipmentItemsResponse](docs/GetShipmentItemsResponse.md)
  - [AmzSpApi::FulfillmentInboundApiModel::GetShipmentItemsResult](docs/GetShipmentItemsResult.md)
  - [AmzSpApi::FulfillmentInboundApiModel::GetShipmentsResponse](docs/GetShipmentsResponse.md)
  - [AmzSpApi::FulfillmentInboundApiModel::GetShipmentsResult](docs/GetShipmentsResult.md)
- - [AmzSpApi::FulfillmentInboundApiModel::GetTransportDetailsResponse](docs/GetTransportDetailsResponse.md)
- - [AmzSpApi::FulfillmentInboundApiModel::GetTransportDetailsResult](docs/GetTransportDetailsResult.md)
- - [AmzSpApi::FulfillmentInboundApiModel::GuidanceReason](docs/GuidanceReason.md)
- - [AmzSpApi::FulfillmentInboundApiModel::GuidanceReasonList](docs/GuidanceReasonList.md)
- - [AmzSpApi::FulfillmentInboundApiModel::InboundGuidance](docs/InboundGuidance.md)
- - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentHeader](docs/InboundShipmentHeader.md)
  - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentInfo](docs/InboundShipmentInfo.md)
  - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentItem](docs/InboundShipmentItem.md)
  - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentItemList](docs/InboundShipmentItemList.md)
  - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentList](docs/InboundShipmentList.md)
- - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentPlan](docs/InboundShipmentPlan.md)
- - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentPlanItem](docs/InboundShipmentPlanItem.md)
- - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentPlanItemList](docs/InboundShipmentPlanItemList.md)
- - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentPlanList](docs/InboundShipmentPlanList.md)
- - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentPlanRequestItem](docs/InboundShipmentPlanRequestItem.md)
- - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentPlanRequestItemList](docs/InboundShipmentPlanRequestItemList.md)
- - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentRequest](docs/InboundShipmentRequest.md)
- - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentResponse](docs/InboundShipmentResponse.md)
- - [AmzSpApi::FulfillmentInboundApiModel::InboundShipmentResult](docs/InboundShipmentResult.md)
- - [AmzSpApi::FulfillmentInboundApiModel::IntendedBoxContentsSource](docs/IntendedBoxContentsSource.md)
  - [AmzSpApi::FulfillmentInboundApiModel::InvalidASIN](docs/InvalidASIN.md)
  - [AmzSpApi::FulfillmentInboundApiModel::InvalidASINList](docs/InvalidASINList.md)
  - [AmzSpApi::FulfillmentInboundApiModel::InvalidSKU](docs/InvalidSKU.md)
  - [AmzSpApi::FulfillmentInboundApiModel::InvalidSKUList](docs/InvalidSKUList.md)
  - [AmzSpApi::FulfillmentInboundApiModel::LabelDownloadURL](docs/LabelDownloadURL.md)
- - [AmzSpApi::FulfillmentInboundApiModel::LabelPrepPreference](docs/LabelPrepPreference.md)
  - [AmzSpApi::FulfillmentInboundApiModel::LabelPrepType](docs/LabelPrepType.md)
- - [AmzSpApi::FulfillmentInboundApiModel::NonPartneredLtlDataInput](docs/NonPartneredLtlDataInput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::NonPartneredLtlDataOutput](docs/NonPartneredLtlDataOutput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::NonPartneredSmallParcelDataInput](docs/NonPartneredSmallParcelDataInput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::NonPartneredSmallParcelDataOutput](docs/NonPartneredSmallParcelDataOutput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::NonPartneredSmallParcelPackageInput](docs/NonPartneredSmallParcelPackageInput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::NonPartneredSmallParcelPackageInputList](docs/NonPartneredSmallParcelPackageInputList.md)
- - [AmzSpApi::FulfillmentInboundApiModel::NonPartneredSmallParcelPackageOutput](docs/NonPartneredSmallParcelPackageOutput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::NonPartneredSmallParcelPackageOutputList](docs/NonPartneredSmallParcelPackageOutputList.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PackageStatus](docs/PackageStatus.md)
- - [AmzSpApi::FulfillmentInboundApiModel::Pallet](docs/Pallet.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PalletList](docs/PalletList.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PartneredEstimate](docs/PartneredEstimate.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PartneredLtlDataInput](docs/PartneredLtlDataInput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PartneredLtlDataOutput](docs/PartneredLtlDataOutput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PartneredSmallParcelDataInput](docs/PartneredSmallParcelDataInput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PartneredSmallParcelDataOutput](docs/PartneredSmallParcelDataOutput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PartneredSmallParcelPackageInput](docs/PartneredSmallParcelPackageInput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PartneredSmallParcelPackageInputList](docs/PartneredSmallParcelPackageInputList.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PartneredSmallParcelPackageOutput](docs/PartneredSmallParcelPackageOutput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PartneredSmallParcelPackageOutputList](docs/PartneredSmallParcelPackageOutputList.md)
  - [AmzSpApi::FulfillmentInboundApiModel::PrepDetails](docs/PrepDetails.md)
  - [AmzSpApi::FulfillmentInboundApiModel::PrepDetailsList](docs/PrepDetailsList.md)
  - [AmzSpApi::FulfillmentInboundApiModel::PrepGuidance](docs/PrepGuidance.md)
  - [AmzSpApi::FulfillmentInboundApiModel::PrepInstruction](docs/PrepInstruction.md)
  - [AmzSpApi::FulfillmentInboundApiModel::PrepInstructionList](docs/PrepInstructionList.md)
  - [AmzSpApi::FulfillmentInboundApiModel::PrepOwner](docs/PrepOwner.md)
- - [AmzSpApi::FulfillmentInboundApiModel::ProNumber](docs/ProNumber.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PutTransportDetailsRequest](docs/PutTransportDetailsRequest.md)
- - [AmzSpApi::FulfillmentInboundApiModel::PutTransportDetailsResponse](docs/PutTransportDetailsResponse.md)
  - [AmzSpApi::FulfillmentInboundApiModel::Quantity](docs/Quantity.md)
- - [AmzSpApi::FulfillmentInboundApiModel::SKUInboundGuidance](docs/SKUInboundGuidance.md)
- - [AmzSpApi::FulfillmentInboundApiModel::SKUInboundGuidanceList](docs/SKUInboundGuidanceList.md)
  - [AmzSpApi::FulfillmentInboundApiModel::SKUPrepInstructions](docs/SKUPrepInstructions.md)
  - [AmzSpApi::FulfillmentInboundApiModel::SKUPrepInstructionsList](docs/SKUPrepInstructionsList.md)
- - [AmzSpApi::FulfillmentInboundApiModel::SellerFreightClass](docs/SellerFreightClass.md)
  - [AmzSpApi::FulfillmentInboundApiModel::ShipmentStatus](docs/ShipmentStatus.md)
- - [AmzSpApi::FulfillmentInboundApiModel::ShipmentType](docs/ShipmentType.md)
- - [AmzSpApi::FulfillmentInboundApiModel::TimeStampStringType](docs/TimeStampStringType.md)
- - [AmzSpApi::FulfillmentInboundApiModel::TrackingId](docs/TrackingId.md)
- - [AmzSpApi::FulfillmentInboundApiModel::TransportContent](docs/TransportContent.md)
- - [AmzSpApi::FulfillmentInboundApiModel::TransportDetailInput](docs/TransportDetailInput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::TransportDetailOutput](docs/TransportDetailOutput.md)
- - [AmzSpApi::FulfillmentInboundApiModel::TransportHeader](docs/TransportHeader.md)
- - [AmzSpApi::FulfillmentInboundApiModel::TransportResult](docs/TransportResult.md)
- - [AmzSpApi::FulfillmentInboundApiModel::TransportStatus](docs/TransportStatus.md)
- - [AmzSpApi::FulfillmentInboundApiModel::UnitOfMeasurement](docs/UnitOfMeasurement.md)
- - [AmzSpApi::FulfillmentInboundApiModel::UnitOfWeight](docs/UnitOfWeight.md)
- - [AmzSpApi::FulfillmentInboundApiModel::UnsignedIntType](docs/UnsignedIntType.md)
- - [AmzSpApi::FulfillmentInboundApiModel::VoidTransportResponse](docs/VoidTransportResponse.md)
- - [AmzSpApi::FulfillmentInboundApiModel::Weight](docs/Weight.md)
 
 ## Documentation for Authorization
 
