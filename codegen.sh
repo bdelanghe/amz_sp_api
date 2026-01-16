@@ -20,8 +20,8 @@ for FILE in `find ../selling-partner-api-models/models -name "*.json"`; do
 	mkdir lib/$API_NAME
 	cp config.json lib/$API_NAME
 	# sed must be BSD sed; not GNU sed
-	/usr/bin/sed -i '' "s/GEMNAME/${API_NAME}/g" lib/${API_NAME}/config.json
-	/usr/bin/sed -i '' "s/MODULENAME/${MODULE_NAME}/g" lib/${API_NAME}/config.json
+	sed -i '' "s/GEMNAME/${API_NAME}/g" lib/${API_NAME}/config.json
+	sed -i '' "s/MODULENAME/${MODULE_NAME}/g" lib/${API_NAME}/config.json
 
 	swagger-codegen generate -i $FILE -l ruby -c lib/${API_NAME}/config.json -o lib/$API_NAME
 
