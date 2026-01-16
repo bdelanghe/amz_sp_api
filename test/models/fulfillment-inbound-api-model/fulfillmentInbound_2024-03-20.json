@@ -1,0 +1,19 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Fulfillment Inbound API",
+    "version": "2024-03-20",
+    "description": "Latest spec"
+  },
+  "paths": {
+    "/test": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}
