@@ -11,6 +11,6 @@ Name | Type | Description | Notes
 **scheduled_delivery_shipment** | [**ScheduledDeliveryShipment**](ScheduledDeliveryShipment.md) |  | [optional] 
 **gift_details** | [**GiftDetails**](GiftDetails.md) |  | [optional] 
 **net_price** | [**Money**](Money.md) |  | 
-**tax_details** | [**OrderItemTaxDetails**](OrderItemTaxDetails.md) |  | [optional] 
+**tax_details** | [**TaxItemDetails**](TaxItemDetails.md) |  | [optional] 
 **total_price** | [**Money**](Money.md) |  | [optional] 
 
